@@ -4,8 +4,17 @@ All notable changes to Smart Parks Protect Go. The format follows Keep a Changel
 
 ## Unreleased
 
+Nothing yet.
+
+## v0.8.3, 2026-10-17
+
+### Fixed
+
+- The self-update refused its own download: electron-updater demanded the publisher's signature on the installer, which the unsigned installers do not carry ("not signed by the application owner"). An unsigned build now says so and skips that check; a signed build keeps it (Tim, 2026-10-17). From v0.7.0 to v0.8.2 the update has to be installed by hand once more.
+
 ### Changed
 
+- The download of an update shows a progress bar.
 - The release check repeats every quarter hour and when the window regains focus, so a release made while the app runs shows soon; the start's answer stood for an hour (Tim, 2026-10-17).
 
 ## v0.8.2, 2026-10-17

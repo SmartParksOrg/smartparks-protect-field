@@ -191,7 +191,11 @@ jobs:
           REQUIRE_NOTARIZATION: ${{ matrix.os == 'macos' && github.ref_type == 'tag' && env.REQUIRE_SIGNING == '1' && '1' || '0' }}
         run: |
           npm run build
-          npx electron-builder ${{ matrix.electron-builder-args }} --publish never
+          # an unsigned build says so in its package.json, and the updater then skips the
+          # signature check it cannot pass (decision D17); a signed build keeps the check
+          EXTRA=""
+          if [ "${{ steps.signing.outputs.have }}" != "1" ]; then EXTRA="-c.extraMetadata.unsignedBuild=true"; fi
+          npx electron-builder ${{ matrix.electron-builder-args }} --publish never $EXTRA
 
       - name: What was built
         run: ls -lh electron/dist-build/ | grep -E "\.(exe|dmg|deb|blockmap|yml)$"

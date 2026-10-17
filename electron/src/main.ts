@@ -13,7 +13,7 @@ import http from "node:http";
 import os from "node:os";
 import path from "node:path";
 import { app, BrowserWindow, dialog, ipcMain, Menu, shell } from "electron";
-import { autoUpdater } from "electron-updater";
+import { autoUpdater, type NsisUpdater } from "electron-updater";
 
 const BACKEND_PORT = Number(process.env.PROTECT_GO_PORT ?? 18090);
 const BACKEND_URL = `http://127.0.0.1:${BACKEND_PORT}`;
@@ -337,6 +337,18 @@ function setupMenu(): void {
 
 const UPDATES_SUPPORTED = app.isPackaged && process.platform === "win32";
 
+/** The build says in its package.json when it was not signed (the workflow's `extraMetadata`);
+ * electron-updater then cannot demand the publisher's signature on the downloaded installer,
+ * which an unsigned one does not carry. A signed build keeps that check. */
+function unsignedBuild(): boolean {
+  try {
+    const manifest = JSON.parse(fs.readFileSync(path.join(app.getAppPath(), "package.json"), "utf8")) as { unsignedBuild?: boolean };
+    return manifest.unsignedBuild === true;
+  } catch {
+    return false;
+  }
+}
+
 interface UpdateStatus {
   state: "unsupported" | "idle" | "checking" | "none" | "available" | "downloading" | "downloaded" | "error";
   version?: string;
@@ -356,6 +368,10 @@ function setupUpdater(): void {
   if (!UPDATES_SUPPORTED) return;
   autoUpdater.autoDownload = false;
   autoUpdater.autoInstallOnAppQuit = true;
+  if (unsignedBuild()) {
+    logLine("[update]", "unsigned build: the downloaded installer's signature is not checked");
+    (autoUpdater as NsisUpdater).verifyUpdateCodeSignature = () => Promise.resolve(null);
+  }
   autoUpdater.logger = {
     info: (message: unknown) => logLine("[update]", String(message)),
     warn: (message: unknown) => logLine("[update]", `warning: ${String(message)}`),

@@ -76,10 +76,21 @@ function SelfUpdate({ status }: { status: UpdateStatus }) {
     );
   }
   if (status.state === "downloading") {
+    const percent = Math.min(100, Math.max(0, status.percent ?? 0));
     return (
-      <p className="mt-2 text-xs text-muted-foreground" role="status">
-        {t("Downloading the new version, {{percent}}%", { percent: status.percent ?? 0 })}
-      </p>
+      <div className="mt-2 flex flex-col gap-1.5" role="status">
+        <div
+          className="h-2 w-full max-w-md overflow-hidden rounded-full bg-muted"
+          role="progressbar"
+          aria-valuemin={0}
+          aria-valuemax={100}
+          aria-valuenow={percent}
+          aria-label={t("Downloading the new version")}
+        >
+          <div className="h-full rounded-full bg-primary transition-[width] duration-300" style={{ width: `${percent}%` }} />
+        </div>
+        <p className="text-xs text-muted-foreground">{t("Downloading the new version, {{percent}}%", { percent })}</p>
+      </div>
     );
   }
   return (
