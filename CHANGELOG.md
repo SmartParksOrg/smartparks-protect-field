@@ -4,6 +4,12 @@ All notable changes to Smart Parks Protect Field. The format follows Keep a Chan
 
 ## Unreleased
 
+Nothing yet.
+
+## v0.1.0, 2026-10-17
+
+The first release: the installers and the first-run setup. Reading a card, the map and the upload queue come in the next releases.
+
 ### Added
 
 - The repository: Protect's conventions mirrored, the git hooks, CI (ruff, mypy, pytest; the frontend's lint, catalogue check, build and tests; the documentation site built strictly; a dependency audit), Dependabot for security updates, MIT licence (2026-10-17).

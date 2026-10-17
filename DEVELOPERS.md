@@ -2,7 +2,7 @@
 
 This file describes how the Smart Parks Protect Field codebase works today. The plan for where it is going lives in `PROJECT_PLAN.md`. Conventions live in `CONVENTIONS.md`, mirrored from Protect; the frontend's in `frontend/FRONTEND_CONVENTIONS.md`.
 
-Status: phase 0 and the packaging (2026-10-17): the Electron shell, the frozen backend, the installers' workflow, the first-run setup (server, account) and the update notice; phase 2 (a card read offline) next. Protect's `shared` package is pinned at 8c0a6b6 (Protect's `main` of 2026-10-17, decisions up to D331, with `shared.station_files` and the field bundle endpoint). Decisions here at D10.
+Status: v0.1.0 (2026-10-17) is the first tag: the repository, the Electron shell, the frozen backend, the installers' workflow, the first-run setup (server, account) and the update notice; phase 2 (a card read offline) next. Protect's `shared` package is pinned at 8c0a6b6 (Protect's `main` of 2026-10-17, decisions up to D331, with `shared.station_files` and the field bundle endpoint). Decisions here at D10.
 
 ## What this program is
 

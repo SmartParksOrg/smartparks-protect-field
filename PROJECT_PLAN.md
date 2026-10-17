@@ -17,10 +17,10 @@ Living plan for building Smart Parks Protect Field, the companion of Smart Parks
 
 | Field | Value |
 | --- | --- |
-| Active phase | Phase 1b (installed like AddaxAI, D6 to D10) built on 2026-10-17: the shell, the frozen backend, the installers' workflow, the setup, the update notice, the user page; I8 (the first release) and I9 (certificates) wait for Tim. Phase 1 (the Protect side) P1, P2 and P4 done in Protect (8c0a6b6), P3 open. Phase 2 (a card read offline) next |
-| Latest release | None. `VERSION` is `v0.0.0` |
+| Active phase | Phase 1b (installed like AddaxAI, D6 to D10) built on 2026-10-17: the shell, the frozen backend, the installers' workflow, the setup, the update notice, the user page; v0.1.0 released the same day (I8); I9 (certificates) waits for Tim. Phase 1 (the Protect side) P1, P2 and P4 done in Protect (8c0a6b6), P3 open. Phase 2 (a card read offline) next |
+| Latest release | v0.1.0 (2026-10-17): the installers, the setup, the update notice |
 | Last session | 2026-10-17 (Claude and Tim): the design chosen (ADR 0001, D1 to D5), the repository created with Protect's conventions, hooks, CI, docs and frontend tooling mirrored, the Python package with the server skeleton and the proof that Protect's decoding runs here, the frontend skeleton with its first screen, the documentation site; Protect pinned at 2755c92. Committed as 9391087, pushed to `SmartParksOrg/smartparks-protect-field` (private); the first CI run failed on the audit's export of the git package, fixed in ad9bafa, CI green since |
-| Next item | Tim publishes release v0.1.0 (I8) so the Offload page's download links resolve, and tries the installer on a Windows and a Mac laptop; then phase 2 F1 and F2 (the bundle loaded, a card read); P3 in Protect when the map is wanted |
+| Next item | Tim tries the v0.1.0 installer on a Windows and a Mac laptop from the Offload page on dev; then phase 2 F1 and F2 (the bundle loaded, a card read); P3 in Protect when the map is wanted |
 | Blockers | No code-signing certificates (Windows Authenticode, Apple Developer ID), so the installers are unsigned and users click through SmartScreen and Gatekeeper as the user page explains; I9 is Tim's. A real LP0 v5 card does not exist yet (Protect's O8 waits for the firmware developer); until then the cards are synthetic, built with `build_uplink` as Protect's demo script builds them |
 
 ## What we are building
@@ -84,7 +84,7 @@ Every item, every phase:
 - [x] I5. The first-run setup: the server (probed), the account (Protect's login), the token kept and the password not; `?server=` prefilled from the protocol link
 - [x] I6. The update notice from GitHub's releases list, and Check for updates in the menu
 - [x] I7. The user page rewritten after AddaxAI's install guide: per system, the warnings, updates, uninstall, the data folder
-- [ ] I8. A first release `v0.1.0` published so the installers exist for the Offload page's links (Tim's call: the release notes are shown to users)
+- [x] I8. The first release `v0.1.0` published on 2026-10-17 at Tim's word, with notes written for users; the workflow attached the three installers
 - [ ] I9. Certificates: a Windows Authenticode certificate and an Apple Developer ID with notarisation credentials as repository secrets, then `REQUIRE_SIGNING` on (Tim)
 
 ### Phase 2: a card read offline
