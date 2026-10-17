@@ -6,6 +6,12 @@ All notable changes to Smart Parks Protect Go. The format follows Keep a Changel
 
 Nothing yet.
 
+## v0.9.5, 2026-10-17
+
+### Fixed
+
+- An update asked "Also remove your Protect Go data?", with Yes as the way to lose everything (decision D24). An update never asks now and keeps the data; a real uninstall asks "Keep your Protect Go data?", where Yes and the default both keep it (Tim, 2026-10-17).
+
 ## v0.9.4, 2026-10-17
 
 ### Fixed

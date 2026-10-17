@@ -93,7 +93,7 @@ Your bundles and cards are kept in every case. Without a connection the check fa
 
 ## Uninstall
 
-- Windows: **Settings**, **Apps**, Protect Go, **Uninstall**. The uninstaller asks whether to remove your data and keeps it unless you say yes.
+- Windows: **Settings**, **Apps**, Protect Go, **Uninstall**. The uninstaller asks "Keep your Protect Go data?"; **Yes**, the default, keeps the bundles and the files you read for a later install, **No** removes them for good. An update never asks: your data stays.
 - macOS: drag Protect Go from Applications to the Trash.
 - Linux: `sudo apt remove protect-go`.
 
