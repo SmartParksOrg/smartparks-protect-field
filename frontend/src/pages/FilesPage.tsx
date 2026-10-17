@@ -3,16 +3,19 @@ import { useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router";
 
-import { api, type Bundle, type Card } from "@/api/client";
+import { api, send, type Bundle, type Card, type Volume } from "@/api/client";
 import { queryKeys } from "@/api/queryKeys";
 import { Callout } from "@/components/common/Callout";
 import { Page, PageHeader } from "@/components/common/PageHeader";
 import { Button } from "@/components/ui/button";
 import { FilesExplorer } from "@/components/files/FilesExplorer";
+import { sizeLabel } from "@/lib/files";
+import { shell } from "@/lib/shell";
 
 /** The SD card files read on this laptop (phase 2 F2; "files", not "cards", since Tim,
- * 2026-10-17: in Dutch "kaart" is the map): drop a card's LOG folders or a zip of them, and the
- * list of what was read, each batch a link to its detail. Reading needs the loaded project's
+ * 2026-10-17: in Dutch "kaart" is the map): the SD cards the computer holds, each read with one
+ * click (decision D16), a folder picked in the system's dialog, or a drop of the card's LOG
+ * folders or a zip of them; then the list of what was read. Reading needs the loaded project's
  * keys. */
 export function FilesPage() {
   const { t } = useTranslation();
@@ -49,6 +52,32 @@ export function FilesPage() {
     read.mutate(Array.from(list));
   };
   const canRead = bundle.data?.present === true;
+  // the SD cards in this computer, looked for every few seconds while the page is open
+  const volumes = useQuery({
+    queryKey: queryKeys.volumes,
+    queryFn: () => api<Volume[]>("/api/cards/volumes"),
+    enabled: canRead,
+    refetchInterval: 5000,
+  });
+  const readPath = useMutation({
+    mutationFn: (body: { path: string; name?: string }) => send<Card>("POST", "/api/cards/path", body),
+    onSuccess: (card) => {
+      setLast(card);
+      void queryClient.invalidateQueries({ queryKey: queryKeys.cards });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.files });
+    },
+  });
+  const pickFolder = async () => {
+    const bridge = shell();
+    if (bridge?.pickFolder) {
+      const path = await bridge.pickFolder(t("The SD card or the folder it was copied to"));
+      if (path) readPath.mutate({ path });
+    } else {
+      folderInput.current?.click();
+    }
+  };
+  const busy = read.isPending || readPath.isPending;
+  const error = read.error ?? readPath.error;
   return (
     <>
       <PageHeader title={t("Files")} description={t("The files of the offload stations' SD cards, read on this laptop with the project's keys.")} />
@@ -79,14 +108,39 @@ export function FilesPage() {
         }`}
       >
         <p className="font-medium">{t("Read SD card files")}</p>
+        {canRead && volumes.data && volumes.data.length > 0 && (
+          <ul className="flex w-full max-w-xl flex-col gap-2 text-left" aria-label={t("SD cards in this computer")}>
+            {volumes.data.map((volume) => (
+              <li key={volume.path} className="flex flex-wrap items-center justify-between gap-2 rounded-md border bg-background px-3 py-2">
+                <div className="min-w-0">
+                  <p className="truncate font-medium">{volume.label}</p>
+                  <p className="truncate text-xs text-muted-foreground">
+                    {volume.files === 0
+                      ? t("No station files on it")
+                      : t("{{files}} files of {{stations}}, {{size}}", {
+                          files: volume.files,
+                          stations: volume.stations.map((s) => s.name || s.eui).join(", "),
+                          size: sizeLabel(volume.size),
+                        })}
+                  </p>
+                </div>
+                <Button type="button" size="sm" disabled={busy || volume.files === 0} onClick={() => readPath.mutate({ path: volume.path, name: volume.label })}>
+                  {t("Read this SD card")}
+                </Button>
+              </li>
+            ))}
+          </ul>
+        )}
         <p className="text-muted-foreground">
-          {t("Drop the card's LOG folders or a zip of them here, or pick them below. The files are read with the project's keys and kept for the upload.")}
+          {canRead && volumes.data && volumes.data.length === 0
+            ? t("No SD card is in this computer. Put the card in, or pick the folder it was copied to, or drop the card's LOG folders or a zip of them here. The files are read with the project's keys and kept for the upload.")
+            : t("Or pick the folder the card was copied to, or drop the card's LOG folders or a zip of them here. The files are read with the project's keys and kept for the upload.")}
         </p>
         <div className="flex flex-wrap justify-center gap-2">
-          <Button type="button" size="sm" disabled={!canRead || read.isPending} onClick={() => folderInput.current?.click()}>
+          <Button type="button" size="sm" variant="outline" disabled={!canRead || busy} onClick={() => void pickFolder()}>
             {t("Pick the card's folder")}
           </Button>
-          <Button type="button" size="sm" variant="outline" disabled={!canRead || read.isPending} onClick={() => zipInput.current?.click()}>
+          <Button type="button" size="sm" variant="outline" disabled={!canRead || busy} onClick={() => zipInput.current?.click()}>
             {t("Pick a zip")}
           </Button>
         </div>
@@ -101,8 +155,8 @@ export function FilesPage() {
           onChange={(event) => onFiles(event.target.files)}
         />
         <input ref={zipInput} type="file" accept=".zip,.jsonl" multiple className="hidden" aria-label={t("A zip of the card")} onChange={(event) => onFiles(event.target.files)} />
-        {read.isPending && <p className="text-muted-foreground">{t("Reading the files")}</p>}
-        {read.isError && <Callout kind="error">{read.error.message}</Callout>}
+        {busy && <p className="text-muted-foreground">{t("Reading the files")}</p>}
+        {error && <Callout kind="error">{error.message}</Callout>}
         {last && (
           <Callout kind="success">
             {t("{{name}} read: {{frames}} frames, {{decoded}} decoded, {{positions}} new positions; {{refused}} refused, {{unknown}} of unknown trackers, {{repeated}} repeats.", {

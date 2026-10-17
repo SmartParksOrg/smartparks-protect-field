@@ -2,11 +2,13 @@
 files, read with the bundle's keys, listed with their counts, each with its files, its trackers
 and what could not be read, and their positions for the map."""
 
+from pathlib import Path
 from typing import Annotated, Any
 
 from fastapi import APIRouter, File, Form, HTTPException, Request, UploadFile
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
+from protect_go import volumes
 from protect_go.bundle import BundleStore
 from protect_go.cards import POSITIONS_LIMIT, CardStore
 
@@ -113,6 +115,80 @@ async def read_card(
     label = name or (dropped[0][0].split("/")[0] if len(dropped) > 1 else dropped[0][0])
     try:
         return _cards(request).import_card(label, dropped, bundle)
+    except ValueError as exc:
+        raise HTTPException(422, str(exc)) from None
+
+
+class VolumeStation(BaseModel):
+    eui: str
+    name: str | None
+
+
+class VolumeRead(BaseModel):
+    path: str
+    label: str
+    files: int
+    size: int
+    stations: list[VolumeStation]
+
+
+class PathRead(BaseModel):
+    path: str = Field(min_length=1, max_length=4096)
+    name: str | None = Field(default=None, max_length=200)
+
+
+def _station_names(request: Request) -> dict[str, str]:
+    bundle_store: BundleStore = request.app.state.bundle_store
+    loaded = bundle_store.load()
+    if loaded is None:
+        return {}
+    bundle, _fetched = loaded
+    return {
+        str(s["station_eui"]).upper(): str(s.get("name") or s.get("device_name") or "")
+        for s in bundle.get("stations", [])
+        if s.get("station_eui")
+    }
+
+
+@router.get("/cards/volumes", response_model=list[VolumeRead])
+def list_volumes(request: Request) -> list[dict[str, Any]]:
+    """The SD cards in this computer (decision D16): every removable volume with the station
+    files found on it, so the card is read with one click and nothing is picked by hand."""
+    names = _station_names(request)
+    return [
+        {
+            "path": v.path,
+            "label": v.label,
+            "files": v.files,
+            "size": v.size,
+            "stations": [{"eui": eui, "name": names.get(eui)} for eui in v.stations],
+        }
+        for v in volumes.volumes()
+    ]
+
+
+@router.post("/cards/path", response_model=CardRead, status_code=201)
+def read_card_from_path(body: PathRead, request: Request) -> dict[str, Any]:
+    """Read a card from a path on this computer: the SD card itself or a folder it was copied
+    to (decision D16). The station files under it are found a few levels deep."""
+    bundle_store: BundleStore = request.app.state.bundle_store
+    loaded = bundle_store.load()
+    if loaded is None:
+        raise HTTPException(409, "Load a project first; the card is read with its keys")
+    bundle, _fetched = loaded
+    root = Path(body.path)
+    if not root.is_dir():
+        raise HTTPException(404, f"No folder at {body.path}")
+    files = volumes.read_files(root)
+    if not files:
+        raise HTTPException(
+            422,
+            "No station file under this folder: a card's LOG folders hold "
+            "STATIONEUI_timestamp.jsonl files",
+        )
+    label = body.name or root.name or str(root)
+    try:
+        return _cards(request).import_card(label, files, bundle)
     except ValueError as exc:
         raise HTTPException(422, str(exc)) from None
 

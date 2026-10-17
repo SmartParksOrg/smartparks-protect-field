@@ -63,7 +63,6 @@
   "Card": "Kaart",
   "Cards": "Kaarten",
   "Decoded": "Gedecodeerd",
-  "Drop the card's LOG folders or a zip of them here, or pick them below. The files are read with the project's keys and kept for the upload.": "Sleep de LOG-mappen van de kaart of een zip ervan hierheen, of kies ze hieronder. De bestanden worden gelezen met de sleutels van het project en bewaard voor de upload.",
   "File": "Bestand",
   "Files": "Bestanden",
   "Frames": "Frames",
@@ -216,5 +215,14 @@
   "None of your projects has an offload station yet; make one on Protect's Offload page first.": "Geen van je projecten heeft al een offloadstation; maak er eerst een op de Offload-pagina van Protect.",
   "{{count}} projects without an offload station are not offered._one": "{{count}} project zonder offloadstation wordt niet aangeboden.",
   "{{count}} projects without an offload station are not offered._other": "{{count}} projecten zonder offloadstation worden niet aangeboden.",
-  "Signing in from Protect": "Aanmelden vanuit Protect"
+  "Signing in from Protect": "Aanmelden vanuit Protect",
+  "Full screen. Esc or F11 leaves it.": "Volledig scherm. Esc of F11 verlaat het.",
+  "Leave full screen": "Volledig scherm verlaten",
+  "The SD card or the folder it was copied to": "De SD-kaart of de map waarnaar ze is gekopieerd",
+  "SD cards in this computer": "SD-kaarten in deze computer",
+  "No station files on it": "Geen stationsbestanden erop",
+  "{{files}} files of {{stations}}, {{size}}": "{{files}} bestanden van {{stations}}, {{size}}",
+  "Read this SD card": "Deze SD-kaart lezen",
+  "No SD card is in this computer. Put the card in, or pick the folder it was copied to, or drop the card's LOG folders or a zip of them here. The files are read with the project's keys and kept for the upload.": "Er zit geen SD-kaart in deze computer. Steek de kaart erin, kies de map waarnaar ze is gekopieerd, of sleep de LOG-mappen van de kaart of een zip ervan hierheen. De bestanden worden gelezen met de sleutels van het project en bewaard voor de upload.",
+  "Or pick the folder the card was copied to, or drop the card's LOG folders or a zip of them here. The files are read with the project's keys and kept for the upload.": "Of kies de map waarnaar de kaart is gekopieerd, of sleep de LOG-mappen van de kaart of een zip ervan hierheen. De bestanden worden gelezen met de sleutels van het project en bewaard voor de upload."
 }

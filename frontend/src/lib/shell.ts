@@ -5,6 +5,10 @@ export interface ShellBridge {
   getPlatform(): Promise<string>;
   openExternal(url: string): Promise<void>;
   onMenuCommand(handler: (id: string) => void): () => void;
+  /** The system's folder dialog: the path picked, or null when the person closed it. */
+  pickFolder?(title: string): Promise<string | null>;
+  leaveFullScreen?(): Promise<void>;
+  onFullScreen?(handler: (on: boolean) => void): () => void;
 }
 
 declare global {

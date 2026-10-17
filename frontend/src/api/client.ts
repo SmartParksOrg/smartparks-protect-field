@@ -210,3 +210,12 @@ export interface FileDetail extends FileRow {
   trackers: { device_id: string; device_name: string; frames: number; decoded: number; positions: number }[];
   failures: { line: number; dev_addr: string | null; device_name: string | null; status: string; code: string | null; reason: string | null }[];
 }
+
+/** A removable volume of this computer with the station files found on it (decision D16). */
+export interface Volume {
+  path: string;
+  label: string;
+  files: number;
+  size: number;
+  stations: { eui: string; name: string | null }[];
+}

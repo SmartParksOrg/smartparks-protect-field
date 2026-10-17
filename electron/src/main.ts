@@ -12,7 +12,7 @@ import fs from "node:fs";
 import http from "node:http";
 import os from "node:os";
 import path from "node:path";
-import { app, BrowserWindow, ipcMain, Menu, shell } from "electron";
+import { app, BrowserWindow, dialog, ipcMain, Menu, shell } from "electron";
 
 const BACKEND_PORT = Number(process.env.PROTECT_GO_PORT ?? 18090);
 const BACKEND_URL = `http://127.0.0.1:${BACKEND_PORT}`;
@@ -237,6 +237,20 @@ async function createWindow(): Promise<void> {
   });
   mainWindow.once("ready-to-show", () => mainWindow?.show());
   mainWindow.on("page-title-updated", (event) => event.preventDefault());
+  // full screen hides the menu bar, and with it the way back (Tim, 2026-10-17, on Windows): F11
+  // toggles and Escape leaves it whatever the menu does, and the page is told so it can show
+  // the way out
+  mainWindow.webContents.on("before-input-event", (event, input) => {
+    if (!mainWindow || input.type !== "keyDown") return;
+    if (input.key === "F11") {
+      event.preventDefault();
+      mainWindow.setFullScreen(!mainWindow.isFullScreen());
+    } else if (input.key === "Escape" && mainWindow.isFullScreen()) {
+      mainWindow.setFullScreen(false);
+    }
+  });
+  mainWindow.on("enter-full-screen", () => mainWindow?.webContents.send("window:fullscreen", true));
+  mainWindow.on("leave-full-screen", () => mainWindow?.webContents.send("window:fullscreen", false));
   // links to the web open in the system browser; the window never leaves the app
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
     if (/^https?:\/\//.test(url)) void shell.openExternal(url);
@@ -309,6 +323,13 @@ ipcMain.handle("app:getVersion", () => app.getVersion());
 ipcMain.handle("app:getPlatform", () => process.platform);
 ipcMain.handle("shell:openExternal", async (_event, url: string) => {
   if (/^https?:\/\//.test(url)) await shell.openExternal(url);
+});
+ipcMain.handle("window:leaveFullScreen", () => mainWindow?.setFullScreen(false));
+// the SD card or the folder it was copied to, picked in the system's own dialog (decision D16)
+ipcMain.handle("dialog:pickFolder", async (_event, title: string) => {
+  if (!mainWindow) return null;
+  const picked = await dialog.showOpenDialog(mainWindow, { title, properties: ["openDirectory"] });
+  return picked.canceled || picked.filePaths.length === 0 ? null : picked.filePaths[0];
 });
 
 // --- Lifecycle

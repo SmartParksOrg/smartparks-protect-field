@@ -7,6 +7,7 @@ export const queryKeys = {
   projects: ["projects"] as const,
   bundle: ["bundle"] as const,
   cards: ["cards"] as const,
+  volumes: ["cards", "volumes"] as const,
   uploads: ["uploads"] as const,
   trackers: ["trackers"] as const,
   positions: (deviceId: string, since: string | null) => ["positions", deviceId, since] as const,

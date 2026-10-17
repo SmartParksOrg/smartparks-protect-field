@@ -10,7 +10,13 @@ Nothing yet.
 
 ### Added
 
+- The SD card found by itself (decision D16): the Files page lists the removable drives in the computer with the station files found on them, and "Read this SD card" reads the whole card at once; "Pick the card's folder" opens the system's folder dialog for a copy of the card. The way out of full screen: Esc or F11 leaves it, and a bar on the page offers a button, since the menu bar disappears in full screen on Windows.
 - Signed in from Protect's Offload page (decision D15): the `protect-go://connect` link carries a one-time code beside the server, the app exchanges it at `POST /api/v1/auth/go-handoff/exchange` for a token of 30 days and lands on Overview; nothing is typed. Email and password stay as the way in when the app was not opened from that page. Protect's side is its decision D333.
+
+### Changed
+
+- The app icon is the Smart Parks logo with its name, white on brand green, instead of the mark alone.
+- The user guide tells Windows 11 users with Smart App Control what to do, since it blocks an unsigned app with no way to run it anyway.
 
 ## v0.5.0, 2026-10-17
 
