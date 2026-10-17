@@ -29,9 +29,9 @@ Field uploads the card's files exactly as it read them to `POST /devices/{statio
 - No master key. Field holds session keys for the trackers in the bundle, never the LP0 master key, as Protect does not (Protect's decision D327).
 - No notes, events or edits from Field, for now. Should the offline user need to record things that must travel back, that becomes a small append-only outbox, a later phase, never a general merge.
 
-## The parser
+## The parser and the decode path
 
-Field reads a card with `shared.station_files` from Protect's `shared` package (Protect's phase 43 P1): `unpack_card_zip`, `parse_station_jsonl`, `station_eui_from_name`, with `shared.connectivity.adapters.lp0_station.lorawan.unwrap` for the frame and `shared.device_drivers.opencollar` for the records. None of these import a database.
+Field reads a card with `shared.station_files` from Protect's `shared` package (Protect's phase 43 P1): `unpack_card_zip`, `parse_station_jsonl`, `station_eui_from_name`. Each frame then goes through `shared.station_decode` (Protect's P6), the same two calls the server's pipeline makes: `unwrap_station_frame` opens it with the tracker's keys from the bundle and refuses it with the server's own codes and words (no keys, a station naming another tracker than the address belongs to, an LP0 metadata version this code does not read, a frame that does not verify), and `decode_station_frame` has the OpenCollar driver read the records. Protect tests that one frame decoded both ways gives the same positions, so a card read here and on the server cannot differ. None of these import a database.
 
 ## Versions
 

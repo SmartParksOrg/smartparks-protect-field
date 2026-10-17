@@ -1667,7 +1667,7 @@ requires-dist = [
     { name = "pmtiles", specifier = "==3.4.1" },
     { name = "pydantic", specifier = "==2.13.5" },
     { name = "pydantic-settings", specifier = "==2.15.0" },
-    { name = "smartparks-protect-shared", git = "https://github.com/SmartParksOrg/smartparks-protect?subdirectory=shared&rev=8c0a6b6c52a81cc95065f4ffbd2c9130fbb8b2b7" },
+    { name = "smartparks-protect-shared", git = "https://github.com/SmartParksOrg/smartparks-protect?subdirectory=shared&rev=d79ffafedc3a918d8288c3dc9aeb0ae24c20d361" },
     { name = "uvicorn", extras = ["standard"], specifier = "==0.52.4" },
 ]
 
@@ -1691,7 +1691,7 @@ packaging = [
 [[package]]
 name = "smartparks-protect-shared"
 version = "0.0.0"
-source = { git = "https://github.com/SmartParksOrg/smartparks-protect?subdirectory=shared&rev=8c0a6b6c52a81cc95065f4ffbd2c9130fbb8b2b7#8c0a6b6c52a81cc95065f4ffbd2c9130fbb8b2b7" }
+source = { git = "https://github.com/SmartParksOrg/smartparks-protect?subdirectory=shared&rev=d79ffafedc3a918d8288c3dc9aeb0ae24c20d361#d79ffafedc3a918d8288c3dc9aeb0ae24c20d361" }
 dependencies = [
     { name = "aiomqtt" },
     { name = "aiosmtplib" },

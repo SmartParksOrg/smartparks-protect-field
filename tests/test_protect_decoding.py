@@ -75,3 +75,59 @@ def test_a_station_file_parses_with_protects_parser():
     assert (
         station_eui_from_name("LOG_3/0016c001f0abcdef_1791795031_002.jsonl") == "0016C001F0ABCDEF"
     )
+
+
+# Three stored short positions of 21 bytes, the OpenCollar wiki's port 29 example as Protect's
+# decoder tests keep it (tests/fixtures/payloads/opencollar/uplinks.jsonl there)
+FLASH = bytes.fromhex(
+    "0D930E3C636865FCA10D1F7D160E030C00436368650D930EF9636865ABA50D1F8E090E031500006468650D930EBA"
+    "64686536A30D1F0D140E031300C2646865"
+)
+
+
+def test_a_frame_is_opened_and_read_through_protects_shared_decode_path():
+    """Protect's phase 43 P6: the two calls Field makes for every line of a card, the same two
+    the server's pipeline makes, so the readings cannot differ."""
+    from datetime import UTC, datetime
+
+    from protect_field.decoding import (
+        FrameRefused,
+        OpenCollarDriver,
+        decode_station_frame,
+        unwrap_station_frame,
+    )
+
+    phy = build_uplink(CREDENTIALS, 7, 29, FLASH)
+    frame = unwrap_station_frame(
+        phy,
+        CREDENTIALS,
+        device_name="SP100001",
+        device_eui="0016C001F0100001",
+        source_eui="0016C001F0100001",
+        lp0_version=5,
+        last_f_cnt=None,
+    )
+    assert (frame.f_port, frame.f_cnt, frame.dev_addr) == (29, 7, "26010203")
+    records = decode_station_frame(
+        OpenCollarDriver(),
+        frame,
+        document={"gatewayEui": "0016C001F0ABCDEF", "rxpk": {}},
+        received_at=datetime(2026, 10, 12, 8, 50, 31, tzinfo=UTC),
+        fallback_time=datetime(2026, 10, 17, tzinfo=UTC),
+        firmware_version=None,
+    )
+    assert records.stored and len(records.positions) == 3
+    try:
+        unwrap_station_frame(
+            phy,
+            None,
+            device_name="SP100001",
+            device_eui=None,
+            source_eui=None,
+            lp0_version=None,
+            last_f_cnt=None,
+        )
+    except FrameRefused as refused:
+        assert "has no LP0 keys" in refused.message
+    else:
+        raise AssertionError("a frame without keys was opened")

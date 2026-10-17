@@ -6,6 +6,7 @@ All notable changes to Smart Parks Protect Field. The format follows Keep a Chan
 
 ### Added
 
+- Protect pinned at d79ffaf (main of 2026-10-17), which brings `shared.station_decode`, the one decode path of a station frame the server's pipeline and Field share; the proof test opens a frame and reads a stored stream through it.
 - The offline map (decision D4): the Map page fetches the project's PMTiles map from the Protect server while online (asking the server to cut it when it has none yet) and draws it on the laptop without a connection, with Protomaps' basemap style and its sprites and glyphs shipped inside Field; the backend serves the file with range requests. The account's projects are listed for the picker.
 
 ## v0.1.0, 2026-10-17
