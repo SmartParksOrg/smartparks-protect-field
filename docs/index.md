@@ -15,5 +15,6 @@ flowchart LR
 
 | Page | For whom | What it covers |
 | --- | --- | --- |
+| [Using Field](using-field.md) | People in the field | Where it runs, how to install it, the cycle of bundle, card and upload |
 | [The contract with Protect](contract.md) | Developers | What comes down in a field bundle, what goes up, and what never travels |
 | [Decisions](adr/index.md) | Developers | Architecture decision records |

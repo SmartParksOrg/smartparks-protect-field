@@ -22,7 +22,7 @@ Smart Parks Protect Field reads the SD card of a RangerEdge offload station wher
 - No authentication: the program runs on one person's computer and listens on 127.0.0.1. The bundle on disk is encrypted with a key the user gives (phase 2).
 - Settings carry the prefix `FIELD_` (`protect_field/config.py`, `.env.example`).
 - The pre-commit hook has no Ansible paths and refuses the `data/` folder and a LoRaWAN session key given a value in code, with the firmware's synthetic fixture allowed.
-- The docs check has no MCP half. The documentation site is not published yet (the repository is private; GitHub Pages on the organisation's plan needs a public one).
+- The docs check has no MCP half. The documentation site is published from `main` by the pages job, as Protect's is, at https://smartparksorg.github.io/smartparks-protect-field/.
 - CI has no services, no OpenAPI drift job yet (comes with the first API the frontend types against) and no compose job.
 
 ## Stack

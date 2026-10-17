@@ -51,6 +51,7 @@ markdown_extensions:
 
 nav:
   - Home: index.md
+  - Using Field: using-field.md
   - The contract with Protect: contract.md
   - Decisions:
       - adr/index.md
