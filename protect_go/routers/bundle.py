@@ -4,6 +4,7 @@ presses one button before leaving. The bundle is read back by the card pages (ph
 
 import contextlib
 from dataclasses import asdict
+from typing import Any
 
 import httpx
 from fastapi import APIRouter, HTTPException, Request
@@ -63,6 +64,28 @@ async def read_bundle(request: Request) -> BundleRead:
 async def clear_bundle(request: Request) -> BundleRead:
     _bundle_store(request).clear()
     return BundleRead(present=False)
+
+
+class MetricDefinition(BaseModel):
+    key: str
+    label: str
+    unit: str | None = None
+    value_type: str
+    category: str
+    description: str | None = None
+
+
+@router.get("/bundle/metrics", response_model=list[MetricDefinition])
+async def metric_definitions(request: Request) -> list[dict[str, Any]]:
+    """Protect's metric registry as the bundle carried it (Protect's decision D334), so the
+    Data explorer names and units the values as Protect does; empty without a bundle or with
+    one from a server older than the registry's arrival."""
+    loaded = _bundle_store(request).load()
+    if loaded is None:
+        return []
+    bundle, _fetched = loaded
+    rows: list[dict[str, Any]] = list(bundle.get("metrics") or [])
+    return rows
 
 
 @router.post("/bundle/fetch", response_model=LoadResult)

@@ -178,6 +178,16 @@ export interface Tracker {
   last_lon: number | null;
 }
 
+/** A metric's definition from Protect's registry, carried in the bundle (Protect's D334). */
+export interface MetricDefinition {
+  key: string;
+  label: string;
+  unit: string | null;
+  value_type: string;
+  category: string;
+  description: string | null;
+}
+
 export interface Metric {
   metric: string;
   count: number;

@@ -6,6 +6,12 @@ All notable changes to Smart Parks Protect Go. The format follows Keep a Changel
 
 Nothing yet.
 
+## v0.9.2, 2026-10-17
+
+### Changed
+
+- The Data explorer names and units the measurements as Protect does: the bundle carries Protect's metric registry (Protect's decision D334), served at `GET /api/bundle/metrics`. A bundle from an older server shows the keys as before; load the project again to get the names (Tim, 2026-10-17).
+
 ## v0.9.1, 2026-10-17
 
 ### Changed

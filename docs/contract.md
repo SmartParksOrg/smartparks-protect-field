@@ -11,6 +11,7 @@ When Protect Go is online, a user who is a member of a project asks Protect for 
 - `credentials_included`: whether the caller may set keys in Protect (device control in the project, or a server admin); a viewer gets every address and no key, and Protect Go shows that tracker's frames undecoded;
 - `entities`: the entities those devices track, with type key and label, icon and a GeoJSON place when set by hand;
 - `stations`: the offload stations with `station_eui` and a GeoJSON point where they stand, so a card is routed by the EUI in its file names;
+- `metrics`: Protect's metric registry (key, label, unit, value type, category, description; Protect's decision D334), so the Data explorer names and units the values as Protect does; a bundle from an older server has none and the keys show instead;
 - `area`: the project's bounding box (`west`, `south`, `east`, `north`) from its features, entity places and device places, or null when the project has none yet; `map`: the state of the offline map cut for it (below), once one was asked for.
 
 Protect writes every download to its audit log with how many devices, stations and keys it carried. Protect Go keeps the bundle encrypted on disk with a key from the laptop's keychain, or a key file where there is none (decision D11), and says when it is older than a week.

@@ -3,7 +3,7 @@ import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link, useSearchParams } from "react-router";
 
-import { api, type MapState, type Measurement, type Metric, type Position, type Tracker } from "@/api/client";
+import { api, type MapState, type Measurement, type Metric, type MetricDefinition, type Position, type Tracker } from "@/api/client";
 import { queryKeys } from "@/api/queryKeys";
 import { Callout } from "@/components/common/Callout";
 import { Page, PageHeader } from "@/components/common/PageHeader";
@@ -34,6 +34,12 @@ export function ExplorePage() {
   const map = useQuery({ queryKey: queryKeys.map, queryFn: () => api<MapState>("/api/map") });
   const trackers = useQuery({ queryKey: queryKeys.trackers, queryFn: () => api<Tracker[]>("/api/trackers") });
   const all = useMemo(() => trackers.data ?? [], [trackers.data]);
+  // Protect's metric registry from the bundle: the names and units the values are shown with
+  const definitions = useQuery({ queryKey: queryKeys.metricDefinitions, queryFn: () => api<MetricDefinition[]>("/api/bundle/metrics") });
+  const defined = useMemo(() => new Map((definitions.data ?? []).map((d) => [d.key, d])), [definitions.data]);
+  const labelOf = (metric: string) => defined.get(metric)?.label ?? metric;
+  const unitOf = (metric: string) => defined.get(metric)?.unit ?? null;
+  const titleOf = (metric: string) => (unitOf(metric) ? `${labelOf(metric)} (${unitOf(metric)})` : labelOf(metric));
   const colours = useMemo(() => new Map(all.map((tr, index) => [tr.device_id, colourFor(index)])), [all]);
 
   // whose records: all trackers until one is chosen, or the one the link named
@@ -183,8 +189,8 @@ export function ExplorePage() {
                 {metrics.map((metric) => {
                   const on = activeMetrics.includes(metric);
                   return (
-                    <button key={metric} type="button" aria-pressed={on} onClick={() => toggleMetric(metric)} className={`rounded-full border px-2.5 py-0.5 font-mono text-xs whitespace-nowrap ${on ? "bg-card" : "text-muted-foreground opacity-60"}`}>
-                      {metric}
+                    <button key={metric} type="button" aria-pressed={on} onClick={() => toggleMetric(metric)} title={defined.get(metric)?.description ?? metric} className={`rounded-full border px-2.5 py-0.5 text-xs whitespace-nowrap ${on ? "bg-card" : "text-muted-foreground opacity-60"} ${defined.has(metric) ? "" : "font-mono"}`}>
+                      {titleOf(metric)}
                     </button>
                   );
                 })}
@@ -212,10 +218,10 @@ export function ExplorePage() {
         {charts.map((chart) => (
           <Panel key={chart.metric}>
             <CardHeader>
-              <CardTitle className="font-mono text-sm">{chart.metric}</CardTitle>
+              <CardTitle className={`text-sm ${defined.has(chart.metric) ? "" : "font-mono"}`}>{titleOf(chart.metric)}</CardTitle>
             </CardHeader>
             <CardContent>
-              {chart.values === 0 ? <p className="text-sm text-muted-foreground">{t("Nothing in this window.")}</p> : <ExploreChart series={chart.series} dark={dark} />}
+              {chart.values === 0 ? <p className="text-sm text-muted-foreground">{t("Nothing in this window.")}</p> : <ExploreChart series={chart.series} dark={dark} unit={unitOf(chart.metric)} />}
             </CardContent>
           </Panel>
         ))}
@@ -230,8 +236,8 @@ export function ExplorePage() {
                   <tr>
                     <th className="py-1 pr-3 font-medium">{t("Tracker")}</th>
                     {activeMetrics.map((metric) => (
-                      <th key={metric} className="py-1 pr-3 text-right font-mono text-xs font-medium">
-                        {metric}
+                      <th key={metric} className={`py-1 pr-3 text-right text-xs font-medium ${defined.has(metric) ? "" : "font-mono"}`}>
+                        {titleOf(metric)}
                       </th>
                     ))}
                     <th className="py-1 font-medium">{t("Last")}</th>

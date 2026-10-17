@@ -45,6 +45,7 @@ test("draws the tracks on the map and the first measurement as a graph (D21)", a
       { device_id: "d1", entity_id: "e1", time: "2026-10-15T00:00:00Z", lat: 7.7, lon: -10.9 },
       { device_id: "d1", entity_id: "e1", time: "2026-10-14T00:00:00Z", lat: 7.71, lon: -10.91 },
     ],
+    "/api/bundle/metrics": [{ key: "battery_mv", label: "Battery", unit: "mV", value_type: "int", category: "power", description: null }],
     "/metrics": [{ metric: "battery_mv", count: 3, first_time: "2026-10-01T00:00:00Z", last_time: "2026-10-15T00:00:00Z", latest: 4011 }],
     "/measurements": [
       { time: "2026-10-15T00:00:00Z", value: 4011 },
@@ -55,12 +56,12 @@ test("draws the tracks on the map and the first measurement as a graph (D21)", a
   expect(await screen.findByText(/2 positions/)).toBeInTheDocument();
   expect(await screen.findByTestId("chart")).toHaveTextContent("SP100001:2");
   expect(screen.getByRole("button", { name: "SP100001" })).toHaveAttribute("aria-pressed", "true");
-  expect(screen.getByRole("button", { name: "battery_mv" })).toHaveAttribute("aria-pressed", "true");
+  expect(await screen.findByRole("button", { name: "Battery (mV)" })).toHaveAttribute("aria-pressed", "true");
   expect(screen.getByText("4,011")).toBeInTheDocument();
 });
 
 test("points to the Files page when nothing was read yet", async () => {
-  renderPage({ "/api/map": MAP, "/api/trackers": [] });
+  renderPage({ "/api/map": MAP, "/api/trackers": [], "/api/bundle/metrics": [] });
   expect(await screen.findByText(/No data on this laptop yet/)).toBeInTheDocument();
   expect(screen.getByRole("link", { name: "Files" })).toHaveAttribute("href", "/files");
 });

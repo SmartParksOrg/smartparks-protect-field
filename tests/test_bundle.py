@@ -75,6 +75,16 @@ BUNDLE = {
             "geometry": None,
         }
     ],
+    "metrics": [
+        {
+            "key": "battery_voltage",
+            "label": "Battery voltage",
+            "unit": "V",
+            "value_type": "float",
+            "category": "power",
+            "description": None,
+        }
+    ],
     "stations": [
         {
             "device_id": "d2",
@@ -174,3 +184,12 @@ def test_a_week_old_bundle_is_stale_and_another_key_reads_nothing(tmp_path):
     assert aged is not None and aged.stale is True
     (tmp_path / "bundle.key").unlink()
     assert BundleStore(tmp_path, "file").load() is None
+
+
+async def test_the_metric_definitions_come_from_the_bundle(app, tmp_path):
+    """Protect's D334: the registry rides in the bundle; the app serves it to the explorer."""
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        assert (await client.get("/api/bundle/metrics")).json() == []
+        BundleStore(tmp_path / "data", "file").save(BUNDLE)
+        rows = (await client.get("/api/bundle/metrics")).json()
+        assert rows == BUNDLE["metrics"]

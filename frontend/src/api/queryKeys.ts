@@ -7,6 +7,7 @@ export const queryKeys = {
   map: ["map"] as const,
   projects: ["projects"] as const,
   bundle: ["bundle"] as const,
+  metricDefinitions: ["bundle", "metrics"] as const,
   cards: ["cards"] as const,
   volumes: ["cards", "volumes"] as const,
   uploads: ["uploads"] as const,
