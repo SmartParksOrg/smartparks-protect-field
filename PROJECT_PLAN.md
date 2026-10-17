@@ -80,7 +80,7 @@ Every item, every phase:
 - [x] I1. The Electron shell (`electron/`): starts the frozen backend, waits for health, shows the interface, registers `protect-field://`, menu with Check for updates and the data folder
 - [x] I2. The frozen backend (`backend.spec`) with the built interface, `VERSION` and `uv.lock` inside; health names the decoders; 148 MB on Linux
 - [x] I3. electron-builder: `ProtectField-Setup.exe`, `ProtectField-arm64.dmg`, `ProtectField-amd64.deb`, the icon, NSIS asking before removing the data, hardened runtime and notarisation hook
-- [x] I4. `build-installers.yml` on a published release and by hand; signing when the secrets exist; the frozen backend checked before packaging
+- [x] I4. `build-installers.yml` on a published release and by hand; signing when the secrets exist; the frozen backend checked before packaging. Proven by a manual run on 2026-10-17 (39017725897): `ProtectField-Setup.exe` 143 MB, `ProtectField-arm64.dmg` 158 MB, `ProtectField-amd64.deb` 145 MB, unsigned; the first run failed on Linux until the shell's package named a homepage
 - [x] I5. The first-run setup: the server (probed), the account (Protect's login), the token kept and the password not; `?server=` prefilled from the protocol link
 - [x] I6. The update notice from GitHub's releases list, and Check for updates in the menu
 - [x] I7. The user page rewritten after AddaxAI's install guide: per system, the warnings, updates, uninstall, the data folder
@@ -130,4 +130,5 @@ Every item, every phase:
 
 - Tim: look at how the desktop AddaxAI (not Connect) offers installs on Apple and Windows, use the same methods, users are not technical; the install must start from Protect's Offload page; the setup asks the server URL, then email and password; think about automatic update checks. Read AddaxAI's `build-electron.yml`, `electron/package.json`, `backend.spec`, `main.ts`, `useLatestRelease.ts`, the download cards and the install page: an Electron shell over a PyInstaller backend, NSIS and dmg and deb from electron-builder on a published release, signed and notarised, fixed asset names, a releases-list check at start with a notice, the new installer over the old.
 - Built the same here (D6 to D10, phase 1b): the shell, the frozen backend (runs on Linux, health names the decoders), the electron-builder block, the installers' workflow (signing when the secrets exist, else a warning), the setup and session endpoints with tests, the setup and sign-in pages, the update notice, the user page after AddaxAI's. The Protect side (the Offload page's card and the protocol link) is Protect's D332.
+- The manual installer build on GitHub made all three installers (the Linux one after the shell's package got a homepage, 935c777). The artifacts of a manual run live 14 days; a release carries them for good.
 - Open for Tim: publish v0.1.0 so the installers exist (I8), and the certificates (I9).
