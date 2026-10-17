@@ -19,6 +19,7 @@ from protect_field.routers.bundle import router as bundle_router
 from protect_field.routers.cards import router as cards_router
 from protect_field.routers.map import router as map_router
 from protect_field.routers.setup import router as setup_router
+from protect_field.routers.uploads import router as uploads_router
 from protect_field.store import Store
 from protect_field.version import ROOT, __version__, protect_revision
 
@@ -45,6 +46,7 @@ def create_app() -> FastAPI:
     app.include_router(map_router)
     app.include_router(bundle_router)
     app.include_router(cards_router)
+    app.include_router(uploads_router)
 
     @app.get("/api/health", response_model=Health)
     async def health() -> Health:

@@ -122,3 +122,37 @@ export interface Position {
   lat: number;
   lon: number;
 }
+
+export interface UploadCard {
+  card_id: string;
+  name: string;
+  station_name: string | null;
+  station_eui: string | null;
+  station_device_id: string | null;
+  imported_at: string;
+  files: number;
+  pending: number;
+  uploaded: number;
+  duplicate: number;
+  refused: number;
+  failed: number;
+  last_uploaded_at: string | null;
+  last_problem: string | null;
+}
+
+export interface Uploads {
+  cards: UploadCard[];
+  pending: number;
+  failed: number;
+}
+
+export interface UploadRun {
+  attempted: number;
+  uploaded: number;
+  duplicate: number;
+  refused: number;
+  failed: number;
+  skipped_no_station: number;
+  stopped: string | null;
+  state: Uploads;
+}

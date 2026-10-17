@@ -26,8 +26,14 @@ STATION = "0016C001F0500101"
 OTHER_KEYS = type(CREDENTIALS)("26010203", bytes(range(1, 17)), bytes(range(2, 18)))
 
 
-def line(phy: bytes, *, time: str = "2026-10-12T08:50:31Z", lp0: dict | None = None) -> str:
-    document: dict = {"gatewayEui": STATION}
+def line(
+    phy: bytes,
+    *,
+    time: str = "2026-10-12T08:50:31Z",
+    lp0: dict | None = None,
+    station: str = STATION,
+) -> str:
+    document: dict = {"gatewayEui": station}
     if lp0 is not None:
         document["lp0"] = lp0
     document["rxpk"] = {
@@ -44,7 +50,7 @@ def line(phy: bytes, *, time: str = "2026-10-12T08:50:31Z", lp0: dict | None = N
     return json.dumps(document)
 
 
-def card_zip() -> bytes:
+def card_zip(station: str = STATION) -> bytes:
     frames = [
         build_uplink(CREDENTIALS, 1, 29, FLASH),  # three stored fixes
         build_uplink(CREDENTIALS, 1, 29, FLASH),  # the station saved it again
@@ -56,12 +62,27 @@ def card_zip() -> bytes:
         ),  # nobody's address
         build_uplink(OTHER_KEYS, 2, 29, FLASH),  # the tracker's address, the wrong keys
     ]
-    first = "\n".join(["", line(frames[0]), line(frames[1]), line(frames[2])]) + "\n"
-    second = "\n".join(["", line(frames[3], time="2026-10-12T09:00:00Z"), "not json at all"]) + "\n"
+    first = (
+        "\n".join(
+            [
+                "",
+                line(frames[0], station=station),
+                line(frames[1], station=station),
+                line(frames[2], station=station),
+            ]
+        )
+        + "\n"
+    )
+    second = (
+        "\n".join(
+            ["", line(frames[3], time="2026-10-12T09:00:00Z", station=station), "not json at all"]
+        )
+        + "\n"
+    )
     buffer = io.BytesIO()
     with zipfile.ZipFile(buffer, "w") as archive:
-        archive.writestr(f"LOG_1/{STATION}_1791795031.jsonl", first)
-        archive.writestr(f"LOG_2/{STATION}_1791796000.jsonl", second)
+        archive.writestr(f"LOG_1/{station}_1791795031.jsonl", first)
+        archive.writestr(f"LOG_2/{station}_1791796000.jsonl", second)
         archive.writestr("LOG_2/notes.txt", "hello")
     return buffer.getvalue()
 

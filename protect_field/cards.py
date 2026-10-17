@@ -58,7 +58,9 @@ CREATE TABLE IF NOT EXISTS card_files (
     id TEXT PRIMARY KEY, card_id TEXT NOT NULL REFERENCES cards(id) ON DELETE CASCADE,
     name TEXT NOT NULL, folder TEXT NOT NULL, path TEXT NOT NULL, sha256 TEXT NOT NULL,
     size INTEGER NOT NULL, station_eui TEXT, lines INTEGER NOT NULL, frames INTEGER NOT NULL,
-    errors INTEGER NOT NULL
+    errors INTEGER NOT NULL,
+    upload_status TEXT NOT NULL DEFAULT 'pending', upload_answer TEXT, uploaded_at TEXT,
+    attempts INTEGER NOT NULL DEFAULT 0, log_file_id TEXT
 );
 CREATE TABLE IF NOT EXISTS frames (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -172,6 +174,21 @@ class CardStore:
         data_dir.mkdir(parents=True, exist_ok=True)
         with self._connect() as db:
             db.executescript(SCHEMA)
+            self._migrate(db)
+
+    @staticmethod
+    def _migrate(db: sqlite3.Connection) -> None:
+        """Columns added after a database was made: the upload's state per file (F4)."""
+        have = {row["name"] for row in db.execute("PRAGMA table_info(card_files)").fetchall()}
+        for column, definition in (
+            ("upload_status", "TEXT NOT NULL DEFAULT 'pending'"),
+            ("upload_answer", "TEXT"),
+            ("uploaded_at", "TEXT"),
+            ("attempts", "INTEGER NOT NULL DEFAULT 0"),
+            ("log_file_id", "TEXT"),
+        ):
+            if column not in have:
+                db.execute(f"ALTER TABLE card_files ADD COLUMN {column} {definition}")
 
     def _connect(self) -> sqlite3.Connection:
         db = sqlite3.connect(self.path)
@@ -609,6 +626,60 @@ class CardStore:
                 f"WHERE {' AND '.join(clauses)} "
                 f"ORDER BY time DESC LIMIT ?",
                 (*params, limit),
+            ).fetchall()
+        return [dict(row) for row in rows]
+
+    # --- the upload (F4)
+
+    def pending_files(self, card_id: str | None = None) -> list[dict[str, Any]]:
+        """The files still to upload, or to try again: pending and failed ones, oldest card
+        first, with the card's station."""
+        clauses = ["f.upload_status IN ('pending', 'failed')"]
+        params: list[Any] = []
+        if card_id:
+            clauses.append("f.card_id = ?")
+            params.append(card_id)
+        with self._connect() as db:
+            rows = db.execute(
+                "SELECT f.id, f.card_id, f.name, f.folder, f.path, f.attempts, "
+                "c.station_device_id, c.station_eui, c.name AS card_name "
+                f"FROM card_files f JOIN cards c ON c.id = f.card_id WHERE {' AND '.join(clauses)} "
+                "ORDER BY c.imported_at, f.folder, f.name",
+                params,
+            ).fetchall()
+        return [dict(row) for row in rows]
+
+    def mark_upload(
+        self, file_id: str, status: str, answer: str | None, *, log_file_id: str | None = None
+    ) -> None:
+        with self._connect() as db:
+            db.execute(
+                "UPDATE card_files SET upload_status = ?, upload_answer = ?, "
+                "attempts = attempts + 1, "
+                "uploaded_at = CASE WHEN ? IN ('uploaded', 'duplicate') THEN ? "
+                "ELSE uploaded_at END, "
+                "log_file_id = COALESCE(?, log_file_id) WHERE id = ?",
+                (status, answer, status, datetime.now(UTC).isoformat(), log_file_id, file_id),
+            )
+
+    def upload_summary(self) -> list[dict[str, Any]]:
+        """Per card: how many files wait, went up, were there already, were refused or failed."""
+        with self._connect() as db:
+            rows = db.execute(
+                "SELECT c.id AS card_id, c.name, c.station_name, c.station_eui, "
+                "c.station_device_id, c.imported_at, COUNT(*) AS files, "
+                "SUM(f.upload_status = 'pending') AS pending, "
+                "SUM(f.upload_status = 'uploaded') AS uploaded, "
+                "SUM(f.upload_status = 'duplicate') AS duplicate, "
+                "SUM(f.upload_status = 'refused') AS refused, "
+                "SUM(f.upload_status = 'failed') AS failed, "
+                "MAX(f.uploaded_at) AS last_uploaded_at, "
+                "(SELECT upload_answer FROM card_files WHERE card_id = c.id "
+                " AND upload_status IN ('failed', 'refused') ORDER BY uploaded_at DESC LIMIT 1) "
+                "AS last_problem "
+                "FROM cards c JOIN card_files f ON f.card_id = c.id "
+                "GROUP BY c.id ORDER BY c.imported_at DESC LIMIT ?",
+                (LIST_LIMIT,),
             ).fetchall()
         return [dict(row) for row in rows]
 

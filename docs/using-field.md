@@ -2,7 +2,7 @@
 
 Protect Field is a program for your own laptop. It reads the SD card of an offload station where there is no connection, with the same decoding code the Protect server uses, and hands the card's files to Protect when you are online again. Protect stays the record; Field is a reader with a queue.
 
-Status (2026-10-17): the installers, the first-run setup, the update notice, loading a project, the offline map and reading a card are built. The upload to Protect is next and marked *planned* below.
+Status (2026-10-17): the whole cycle is built: the installers, the first-run setup, the update notice, loading a project, the offline map, reading a card and the upload to Protect.
 
 ## Where it runs
 

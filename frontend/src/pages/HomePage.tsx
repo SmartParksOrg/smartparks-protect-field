@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router";
 
-import { api, send, type Bundle, type Health, type Setup } from "@/api/client";
+import { api, send, type Bundle, type Health, type Setup, type Uploads } from "@/api/client";
 import { Callout } from "@/components/common/Callout";
 import { queryKeys } from "@/api/queryKeys";
 import { UpdateNotice } from "@/components/UpdateNotice";
@@ -19,6 +19,7 @@ export function HomePage({ setup }: { setup: Setup }) {
   const queryClient = useQueryClient();
   const health = useQuery({ queryKey: queryKeys.health, queryFn: () => api<Health>("/api/health") });
   const bundle = useQuery({ queryKey: queryKeys.bundle, queryFn: () => api<Bundle>("/api/bundle") });
+  const uploads = useQuery({ queryKey: queryKeys.uploads, queryFn: () => api<Uploads>("/api/uploads") });
   const [checkAsked, setCheckAsked] = useState(false);
   useEffect(() => shell()?.onMenuCommand((id) => id === "check-updates" && setCheckAsked(true)), []);
   const signOut = useMutation({
@@ -60,6 +61,13 @@ export function HomePage({ setup }: { setup: Setup }) {
           </Button>
           <Button asChild variant="secondary" size="sm">
             <Link to="/cards">{t("Cards")}</Link>
+          </Button>
+          <Button asChild variant={uploads.data && uploads.data.pending + uploads.data.failed > 0 ? "default" : "secondary"} size="sm">
+            <Link to="/upload">
+              {uploads.data && uploads.data.pending + uploads.data.failed > 0
+                ? t("Upload ({{count}} waiting)", { count: uploads.data.pending + uploads.data.failed })
+                : t("Upload")}
+            </Link>
           </Button>
         </CardContent>
       </Card>

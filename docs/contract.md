@@ -21,7 +21,7 @@ Protect writes every download to its audit log with how many devices, stations a
 
 ## Up: the card files
 
-Field uploads the card's files exactly as it read them to `POST /devices/{station id}/offload-files` on the server the bundle came from, the upload the station's device page makes (a `.jsonl` or a zip of the card's folders). Protect decodes them with the same code, attributes the records to the entities as of their record time, and refuses a file it already holds by its content digest and a frame it already holds by its hash. Field keeps a queue of what is uploaded and what is not, and shows it.
+Field uploads the card's files exactly as it read them to `POST /devices/{station id}/offload-files` on the server the bundle came from, the upload the station's device page makes, one file a request (the station's device id comes from the bundle's `stations`; the call takes device control in the project). The server answers 201 with the file's row, or 422 naming the file "uploaded before" when it has it, and Field keeps that answer on the file. Protect decodes them with the same code, attributes the records to the entities as of their record time, and refuses a file it already holds by its content digest and a frame it already holds by its hash. Field keeps a queue of what is uploaded and what is not, and shows it.
 
 ## What never travels
 

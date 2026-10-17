@@ -11,6 +11,7 @@ import { LoadPage } from "@/pages/LoadPage";
 import { MapPage } from "@/pages/MapPage";
 import { SetupPage } from "@/pages/SetupPage";
 import { SignInPage } from "@/pages/SignInPage";
+import { UploadPage } from "@/pages/UploadPage";
 
 /** The setup gates the app (decision D7): no server known sends every route to the setup page,
  * a server without a sign-in to the sign-in page, except the pages themselves. */
@@ -37,6 +38,10 @@ export default function App() {
       />
       <Route path="/cards" element={current.server_url ? <CardsPage /> : <Navigate to="/setup" replace />} />
       <Route path="/cards/:cardId" element={current.server_url ? <CardPage /> : <Navigate to="/setup" replace />} />
+      <Route
+        path="/upload"
+        element={current.server_url ? <UploadPage signedIn={current.signed_in} /> : <Navigate to="/setup" replace />}
+      />
       <Route
         path="/load"
         element={current.server_url ? <LoadPage signedIn={current.signed_in} /> : <Navigate to="/setup" replace />}

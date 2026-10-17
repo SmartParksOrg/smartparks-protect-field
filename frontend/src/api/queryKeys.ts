@@ -7,6 +7,7 @@ export const queryKeys = {
   projects: ["projects"] as const,
   bundle: ["bundle"] as const,
   cards: ["cards"] as const,
+  uploads: ["uploads"] as const,
   card: (id: string) => ["cards", id] as const,
   cardPositions: (id: string) => ["cards", id, "positions"] as const,
 };
