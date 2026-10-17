@@ -7,7 +7,7 @@
  * server to connect to (`protect-go://connect?server=https://...`, decision D9).
  */
 
-import { spawn, type ChildProcess } from "node:child_process";
+import { execFile, spawn, type ChildProcess } from "node:child_process";
 import fs from "node:fs";
 import http from "node:http";
 import os from "node:os";
@@ -177,10 +177,80 @@ async function waitForBackend(): Promise<void> {
   }
 }
 
-/** A backend of ours that answers already (an earlier window, or a developer's `uv run`) is
- * used as it is; a port held by something else is an error with the way out named. */
+function sameVersion(a: string | undefined, b: string): boolean {
+  return (a ?? "").replace(/^v/, "") === b.replace(/^v/, "");
+}
+
+function run(command: string, args: string[]): Promise<string> {
+  return new Promise((resolve) => {
+    execFile(command, args, { windowsHide: true }, (_error, stdout) => resolve(String(stdout ?? "")));
+  });
+}
+
+/** The process listening on the backend's port, killed: Windows by `netstat -ano`, the others
+ * by `lsof`. Only called once the port is known to hold a Protect Go backend of another
+ * version (decision D20), never for a stranger. */
+async function killListenerOnPort(port: number): Promise<void> {
+  const pids = new Set<string>();
+  if (process.platform === "win32") {
+    const table = await run("netstat", ["-ano", "-p", "tcp"]);
+    for (const line of table.split(/\r?\n/)) {
+      const parts = line.trim().split(/\s+/);
+      if (parts.length >= 5 && parts[1]?.endsWith(`:${port}`) && parts[3] === "LISTENING") pids.add(parts[4]);
+    }
+    for (const pid of pids) await run("taskkill", ["/F", "/PID", pid]);
+  } else {
+    const out = await run("lsof", ["-ti", `tcp:${port}`, "-sTCP:LISTEN"]);
+    for (const pid of out.split(/\s+/).filter(Boolean)) pids.add(pid);
+    for (const pid of pids) {
+      try {
+        process.kill(Number(pid), "SIGTERM");
+      } catch {
+        // gone already
+      }
+    }
+  }
+  logLine("[shell]", `stopped the listener on ${port} (pid ${[...pids].join(", ") || "none found"})`);
+}
+
+/** A backend of another version on the port is asked to stop (`POST /api/shutdown`), then
+ * killed by its port when it does not; the backend an installer's close left behind would
+ * otherwise serve the old interface to the new window (Tim, 2026-10-17; decision D20). */
+async function stopStaleBackend(version: string | undefined): Promise<void> {
+  logLine("[shell]", `a Protect Go backend of version ${version} answers on ${BACKEND_PORT}; this is ${app.getVersion()}, stopping it`);
+  await new Promise<void>((resolve) => {
+    const request = http.request(`${BACKEND_URL}/api/shutdown`, { method: "POST", timeout: 2000 }, (response) => {
+      response.resume();
+      response.on("end", resolve);
+    });
+    request.on("error", () => resolve());
+    request.on("timeout", () => {
+      request.destroy();
+      resolve();
+    });
+    request.end();
+  });
+  for (let i = 0; i < 8; i++) {
+    await delay(250);
+    if ((await probeHealth(500)) === null) return;
+  }
+  await killListenerOnPort(BACKEND_PORT);
+  for (let i = 0; i < 8; i++) {
+    await delay(250);
+    if ((await probeHealth(500)) === null) return;
+  }
+  throw new Error(`An older Protect Go backend (version ${version}) keeps port ${BACKEND_PORT}. End it in the task manager, or restart the computer, and start Protect Go again.`);
+}
+
+/** A backend of ours and of this version that answers already (an earlier window, or a
+ * developer's `uv run`) is used as it is; one of another version is stopped first; a port held
+ * by something else is an error with the way out named. */
 async function ensureBackend(): Promise<void> {
-  const existing = await probeHealth(1500);
+  let existing = await probeHealth(1500);
+  if (isFieldHealth(existing) && app.isPackaged && !sameVersion(existing?.version, app.getVersion())) {
+    await stopStaleBackend(existing?.version);
+    existing = null;
+  }
   if (isFieldHealth(existing)) {
     logLine("[shell]", `a Protect Go backend answers on ${BACKEND_PORT} already (version ${existing?.version}); using it`);
     return;

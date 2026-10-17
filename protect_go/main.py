@@ -5,6 +5,9 @@ http://127.0.0.1:18090. During development Vite serves the interface itself and 
 here (`frontend/vite.config.ts`).
 """
 
+import asyncio
+import os
+
 import uvicorn
 from fastapi import FastAPI
 from fastapi.responses import FileResponse
@@ -61,6 +64,15 @@ def create_app() -> FastAPI:
             decoders=decoders(),
             data_dir=str(settings.data_dir.resolve()),
         )
+
+    @app.post("/api/shutdown", status_code=202)
+    async def shutdown() -> dict[str, str]:
+        """The shell asks a backend of another version to stop, so its own can take the port
+        (decision D20): an installer that closed the old window left the old backend running,
+        and the new window used it, old interface and all. The answer goes out first."""
+        loop = asyncio.get_running_loop()
+        loop.call_later(0.3, os._exit, 0)
+        return {"status": "stopping"}
 
     if DIST.is_dir():
         app.mount("/assets", StaticFiles(directory=DIST / "assets"), name="assets")

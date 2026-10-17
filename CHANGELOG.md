@@ -6,6 +6,16 @@ All notable changes to Smart Parks Protect Go. The format follows Keep a Changel
 
 Nothing yet.
 
+## v0.8.5, 2026-10-17
+
+### Fixed
+
+- After an update the new window could show the old interface: the installer closed the old window but its backend kept running on the port, and the new window used it (decision D20). The app now stops a backend of another version before starting its own, so what you see is always the version you installed. If an older backend will not stop, the app says so and names the way out.
+
+### Changed
+
+- "Load a project" moved under Settings, next to Server, since a project belongs to a server (Tim, 2026-10-17). The Overview's server card leads to the Server page alone; "Another server" lives there.
+
 ## v0.8.4, 2026-10-17
 
 ### Changed

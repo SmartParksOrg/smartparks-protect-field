@@ -90,13 +90,8 @@ export function OverviewPage({ setup }: { setup: Setup }) {
               </CardDescription>
             </CardHeader>
             <CardContent className="flex flex-wrap gap-2">
-              {!setup.signed_in && (
-                <Button asChild size="sm">
-                  <Link to="/sign-in">{t("Sign in")}</Link>
-                </Button>
-              )}
-              <Button asChild variant="ghost" size="sm">
-                <Link to="/setup">{t("Another server")}</Link>
+              <Button asChild size="sm" variant={setup.signed_in ? "outline" : "default"}>
+                <Link to="/setup">{setup.signed_in ? t("Server") : t("Sign in")}</Link>
               </Button>
             </CardContent>
           </Panel>

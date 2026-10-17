@@ -23,7 +23,6 @@ export const sections: NavSection[] = [
     label: t("Project"),
     items: [
       { label: t("Overview"), icon: Home, to: "/" },
-      { label: t("Load a project"), icon: PackageOpen, to: "/load" },
       { label: t("Map"), icon: MapIcon, to: "/map", needsBundle: true },
       { label: t("Files"), icon: FolderOpen, to: "/files", needsBundle: true },
       { label: t("Upload"), icon: CloudUpload, to: "/upload", needsBundle: true },
@@ -33,6 +32,8 @@ export const sections: NavSection[] = [
     label: t("Settings"),
     items: [
       { label: t("Server"), icon: Server, to: "/setup" },
+      // a project is the server's, so its loading sits with the server (Tim, 2026-10-17)
+      { label: t("Load a project"), icon: PackageOpen, to: "/load" },
     ],
   },
 ];
