@@ -31,8 +31,10 @@ function renderPage(responses: Record<string, unknown>) {
 afterEach(() => vi.unstubAllGlobals());
 
 test("loads the chosen project and says what came", async () => {
-  renderPage({ "/api/bundle": EMPTY, "/api/projects": [{ id: "p1", name: "LP0" }], "/api/bundle/fetch": { bundle: LOADED, map: MAP } });
-  await screen.findByRole("option", { name: "LP0" });
+  renderPage({ "/api/bundle": EMPTY, "/api/projects": [{ id: "p1", name: "LP0", stations: 3 }, { id: "p2", name: "Cows", stations: 0 }], "/api/bundle/fetch": { bundle: LOADED, map: MAP } });
+  await screen.findByRole("option", { name: "LP0 (3 stations)" });
+  expect(screen.queryByRole("option", { name: /Cows/ })).not.toBeInTheDocument();
+  expect(screen.getByText("1 projects without an offload station are not offered.")).toBeInTheDocument();
   fireEvent.click(screen.getByRole("button", { name: "Load the project" }));
   await waitFor(() => expect(screen.getByText(/LP0 loaded: 4 devices, 3 stations, 4 entities, keys for 1 trackers/)).toBeInTheDocument());
   expect(screen.getByText(/The map came too \(0\.5 MB\)/)).toBeInTheDocument();
@@ -40,6 +42,6 @@ test("loads the chosen project and says what came", async () => {
 });
 
 test("warns about a stale bundle", async () => {
-  renderPage({ "/api/bundle": { ...LOADED, stale: true }, "/api/projects": [{ id: "p1", name: "LP0" }] });
+  renderPage({ "/api/bundle": { ...LOADED, stale: true }, "/api/projects": [{ id: "p1", name: "LP0", stations: 3 }] });
   expect(await screen.findByText(/older than a week/)).toBeInTheDocument();
 });

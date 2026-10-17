@@ -246,3 +246,47 @@ async def test_the_trackers_their_positions_and_measurements_across_files(app, t
             ).json()
             assert len(values) == first["count"] and values[0]["value"] == first["latest"]
         assert (await client.get("/api/trackers/nobody/metrics")).status_code == 404
+
+
+async def test_every_file_is_a_row_with_its_counts_and_its_properties(app, tmp_path):
+    BundleStore(tmp_path / "data", "file").save(BUNDLE)
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        read = await client.post(
+            "/api/cards", files=[("files", ("card.zip", card_zip(), "application/zip"))]
+        )
+        assert read.status_code == 201, read.text
+        files = (await client.get("/api/files")).json()
+        assert [f["name"] for f in files] == [
+            f"{STATION}_1791795031.jsonl",
+            f"{STATION}_1791796000.jsonl",
+        ]
+        first, second = files
+        assert (
+            first["folder"] == "LOG_1"
+            and first["card_name"] == "card.zip"
+            and first["station_name"] == "Station 1"
+        )
+        assert (
+            first["frames"],
+            first["decoded"],
+            first["repeated"],
+            first["unknown"],
+            first["positions"],
+        ) == (3, 1, 1, 1, 3)
+        assert (second["frames"], second["refused"], second["errors"]) == (1, 1, 1)
+        assert first["upload_status"] == "pending" and first["size"] > 0
+        detail = (await client.get(f"/api/files/{second['id']}")).json()
+        assert detail["trackers"] == [
+            {
+                "device_id": "d1",
+                "device_name": "SP100001",
+                "frames": 1,
+                "decoded": 0,
+                "positions": 0,
+            }
+        ]
+        assert [f["code"] for f in detail["failures"]] == [
+            "LINE_UNREADABLE",
+            "PAYLOAD_DECODE_FAILED",
+        ] or [f["code"] for f in detail["failures"]] == ["PAYLOAD_DECODE_FAILED", "LINE_UNREADABLE"]
+        assert (await client.get("/api/files/nothing")).status_code == 404

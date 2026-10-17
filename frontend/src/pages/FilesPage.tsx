@@ -8,7 +8,7 @@ import { queryKeys } from "@/api/queryKeys";
 import { Callout } from "@/components/common/Callout";
 import { Page, PageHeader } from "@/components/common/PageHeader";
 import { Button } from "@/components/ui/button";
-import { Card as Panel, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { FilesExplorer } from "@/components/files/FilesExplorer";
 
 /** The SD card files read on this laptop (phase 2 F2; "files", not "cards", since Tim,
  * 2026-10-17: in Dutch "kaart" is the map): drop a card's LOG folders or a zip of them, and the
@@ -21,6 +21,7 @@ export function FilesPage() {
   const bundle = useQuery({ queryKey: queryKeys.bundle, queryFn: () => api<Bundle>("/api/bundle") });
   const [dragging, setDragging] = useState(false);
   const [last, setLast] = useState<Card | null>(null);
+  const [filter, setFilter] = useState("");
   const folderInput = useRef<HTMLInputElement>(null);
   const zipInput = useRef<HTMLInputElement>(null);
   const read = useMutation({
@@ -40,6 +41,7 @@ export function FilesPage() {
     onSuccess: (card) => {
       setLast(card);
       void queryClient.invalidateQueries({ queryKey: queryKeys.cards });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.files });
     },
   });
   const onFiles = (list: FileList | null) => {
@@ -118,47 +120,26 @@ export function FilesPage() {
           </Callout>
         )}
       </div>
-      <Panel>
-        <CardHeader>
-          <CardTitle>{t("Files on this laptop")}</CardTitle>
-          <CardDescription>{t("Each row is one SD card read, newest first. Open one for its files, its trackers and what could not be read.")}</CardDescription>
-        </CardHeader>
-        <CardContent className="overflow-x-auto">
-          {cards.data && cards.data.length === 0 && <p className="text-sm text-muted-foreground">{t("No files read yet.")}</p>}
-          {cards.data && cards.data.length > 0 && (
-            <table className="w-full text-sm">
-              <thead className="text-left text-muted-foreground">
-                <tr>
-                  <th className="py-1 pr-3 font-medium">{t("SD card")}</th>
-                  <th className="py-1 pr-3 font-medium">{t("Station")}</th>
-                  <th className="py-1 pr-3 text-right font-medium">{t("Files")}</th>
-                  <th className="py-1 pr-3 text-right font-medium">{t("Frames")}</th>
-                  <th className="py-1 pr-3 text-right font-medium">{t("Positions")}</th>
-                  <th className="py-1 pr-3 text-right font-medium">{t("Not read")}</th>
-                  <th className="py-1 font-medium">{t("Read on")}</th>
-                </tr>
-              </thead>
-              <tbody>
-                {cards.data.map((card) => (
-                  <tr key={card.id} className="border-t">
-                    <td className="py-1 pr-3">
-                      <Link className="underline underline-offset-4" to={`/files/${card.id}`}>
-                        {card.name}
-                      </Link>
-                    </td>
-                    <td className="py-1 pr-3">{card.station_name ?? card.station_eui ?? t("unknown")}</td>
-                    <td className="py-1 pr-3 text-right tabular-nums">{card.files}</td>
-                    <td className="py-1 pr-3 text-right tabular-nums">{card.frames}</td>
-                    <td className="py-1 pr-3 text-right tabular-nums">{card.positions}</td>
-                    <td className="py-1 pr-3 text-right tabular-nums">{card.refused + card.unknown + card.line_errors}</td>
-                    <td className="py-1 whitespace-nowrap">{new Date(card.imported_at).toLocaleString()}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
-        </CardContent>
-      </Panel>
+      <div className="flex flex-wrap items-center gap-2 text-sm">
+        <label className="flex min-w-0 max-w-full flex-1 items-center gap-2 sm:flex-none">
+          <span className="shrink-0 text-muted-foreground">{t("SD card")}</span>
+          {/* a native select grows with its longest option; on a phone it must shrink to the row */}
+          <select className="h-8 min-w-0 max-w-full flex-1 truncate rounded-md border border-input bg-transparent px-2 text-sm sm:max-w-md" value={filter} onChange={(event) => setFilter(event.target.value)} aria-label={t("SD card")}>
+            <option value="">{t("All SD cards")}</option>
+            {(cards.data ?? []).map((card) => (
+              <option key={card.id} value={card.id}>
+                {card.name} · {card.station_name ?? card.station_eui ?? t("unknown")}
+              </option>
+            ))}
+          </select>
+        </label>
+        {filter && (
+          <Button asChild variant="ghost" size="sm">
+            <Link to={`/files/${filter}`}>{t("Open the SD card")}</Link>
+          </Button>
+        )}
+      </div>
+      <FilesExplorer cardId={filter || null} />
       </Page>
     </>
   );

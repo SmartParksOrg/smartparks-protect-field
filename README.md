@@ -12,7 +12,7 @@ Documentation: https://smartparksorg.github.io/smartparks-protect-go/
 
 The companion of [Smart Parks Protect](https://github.com/SmartParksOrg/smartparks-protect) for the place without a connection. It reads the SD card of a RangerEdge offload station on a laptop in the field, decodes the trackers' frames with Protect's own code, shows the positions and the measurements on a map and in tables, and hands the untouched card files to Protect the moment there is a connection. Protect decodes them itself; nothing decoded here is sent, so there is nothing to reconcile.
 
-Status: v0.4.0 (2026-10-17): the whole cycle in Protect's own shell, with the project map and a page per tracker. Install, connect to your Protect server, load a project while online, read a station's card where there is none and see it on the offline map, upload the files when back. `PROJECT_PLAN.md` has what comes next.
+Status: v0.5.0 (2026-10-17): the whole cycle in Protect's own shell, with the project map, a page per tracker and Protect's file explorer for the files. Install, connect to your Protect server, load a project while online, read a station's card where there is none and see it on the offline map, upload the files when back. `PROJECT_PLAN.md` has what comes next.
 
 ## How it fits
 

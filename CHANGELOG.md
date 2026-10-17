@@ -6,6 +6,15 @@ All notable changes to Smart Parks Protect Go. The format follows Keep a Changel
 
 Nothing yet.
 
+## v0.5.0, 2026-10-17
+
+Protect's file explorer for the files; only projects with an offload station are offered. Protect pinned at d79ffaf.
+
+### Changed
+
+- The Files page is Protect's file explorer (decision D14): one line per file with its SD card, station, upload state, frames, positions and size, or tiles, with a search, a column picker and the view remembered; a click opens the file's properties with the counts, the trackers, what could not be read and the way to its SD card's page. The SD card is a filter above the list.
+- Loading a project offers only the projects that have an offload station, since a project without one has no card to read; the page says how many it left out.
+
 ## v0.4.0, 2026-10-17
 
 Protect's shell and words, and the project map. Protect pinned at d79ffaf.

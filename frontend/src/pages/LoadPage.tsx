@@ -14,6 +14,7 @@ import type { MapState } from "@/pages/MapPage";
 interface Project {
   id: string;
   name: string;
+  stations: number;
 }
 
 interface LoadResult {
@@ -46,8 +47,11 @@ export function LoadPage({ signedIn }: { signedIn: boolean }) {
     },
   });
   const current = bundle.data;
+  // only a project with an offload station has a card to read (Tim, 2026-10-17)
+  const withStations = (projects.data ?? []).filter((p) => p.stations > 0);
+  const without = (projects.data ?? []).length - withStations.length;
   const wanted = choice || current?.project_id || "";
-  const chosen = projects.data?.find((p) => p.id === wanted) ?? projects.data?.[0];
+  const chosen = withStations.find((p) => p.id === wanted) ?? withStations[0];
   return (
     <>
       <PageHeader title={t("Load a project")} description={t("Before you leave, while online: the project's devices, keys and map come to this laptop.")} />
@@ -80,9 +84,9 @@ export function LoadPage({ signedIn }: { signedIn: boolean }) {
                 value={chosen?.id ?? ""}
                 onChange={(event) => setChoice(event.target.value)}
               >
-                {projects.data.map((project) => (
+                {withStations.map((project) => (
                   <option key={project.id} value={project.id}>
-                    {project.name}
+                    {t("{{name}} ({{count}} stations)", { name: project.name, count: project.stations })}
                   </option>
                 ))}
               </select>
@@ -90,6 +94,12 @@ export function LoadPage({ signedIn }: { signedIn: boolean }) {
                 {load.isPending ? t("Loading the project") : t("Load the project")}
               </Button>
             </div>
+          )}
+          {signedIn && projects.data && withStations.length === 0 && (
+            <Callout kind="warning">{t("None of your projects has an offload station yet; make one on Protect's Offload page first.")}</Callout>
+          )}
+          {signedIn && without > 0 && withStations.length > 0 && (
+            <p className="text-xs text-muted-foreground">{t("{{count}} projects without an offload station are not offered.", { count: without })}</p>
           )}
           {load.isError && <Callout kind="error">{load.error.message}</Callout>}
           {result && (

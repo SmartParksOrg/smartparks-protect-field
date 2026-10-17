@@ -2,6 +2,7 @@
 in. `PUT /api/setup/server` probes the server before keeping it; `POST /api/session` signs in
 with Protect's own login and keeps the token, never the password."""
 
+import asyncio
 from typing import Any
 
 import httpx
@@ -105,12 +106,16 @@ async def end_session(request: Request) -> SetupRead:
 class ProjectRead(BaseModel):
     id: str
     name: str
+    stations: int = Field(
+        default=0, description="Offload stations the project has; none means nothing to load"
+    )
 
 
 @router.get("/projects", response_model=list[ProjectRead])
 async def list_projects(request: Request) -> list[ProjectRead]:
-    """The projects the signed-in account may read, from the server, to pick one for the map
-    and, in phase 2, the bundle."""
+    """The projects the signed-in account may read, from the server, each with how many offload
+    stations it has (the Offload page's overview), so the Load page offers only projects with a
+    station (Tim, 2026-10-17): a project without one has no card to read."""
     store = _store(request)
     settings = store.load()
     if settings.server_url is None or not settings.signed_in:
@@ -132,4 +137,24 @@ async def list_projects(request: Request) -> list[ProjectRead]:
         raise HTTPException(502, f"The server answered {response.status_code} for the projects")
     body = response.json()
     items = body.get("items", body) if isinstance(body, dict) else body
-    return [ProjectRead(id=str(p["id"]), name=str(p["name"])) for p in items]
+    projects = [ProjectRead(id=str(p["id"]), name=str(p["name"])) for p in items]
+    try:
+        async with httpx.AsyncClient(
+            base_url=settings.server_url, timeout=httpx.Timeout(30.0), transport=_transport(request)
+        ) as http:
+            overviews = await asyncio.gather(
+                *(
+                    http.get(
+                        f"/api/v1/projects/{project.id}/offload",
+                        headers={"Authorization": f"Bearer {settings.token}"},
+                    )
+                    for project in projects
+                ),
+                return_exceptions=True,
+            )
+    except httpx.HTTPError as exc:
+        raise HTTPException(502, f"No answer from the server: {exc.__class__.__name__}") from None
+    for project, overview in zip(projects, overviews, strict=True):
+        if isinstance(overview, httpx.Response) and overview.status_code == 200:
+            project.stations = len(overview.json().get("stations") or [])
+    return projects

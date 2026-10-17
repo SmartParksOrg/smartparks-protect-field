@@ -14,4 +14,6 @@ export const queryKeys = {
   measurements: (deviceId: string, metric: string, since: string | null) => ["trackers", deviceId, "measurements", metric, since] as const,
   card: (id: string) => ["cards", id] as const,
   cardPositions: (id: string) => ["cards", id, "positions"] as const,
+  files: ["files"] as const,
+  file: (id: string) => ["files", id] as const,
 };

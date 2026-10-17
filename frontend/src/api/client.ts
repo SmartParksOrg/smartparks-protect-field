@@ -181,3 +181,32 @@ export interface Measurement {
   time: string;
   value: number | boolean | string | null;
 }
+
+export interface FileRow {
+  id: string;
+  card_id: string;
+  card_name: string;
+  station_name: string | null;
+  station_eui: string | null;
+  imported_at: string;
+  name: string;
+  folder: string;
+  size: number;
+  lines: number;
+  frames: number;
+  errors: number;
+  upload_status: string;
+  upload_answer: string | null;
+  uploaded_at: string | null;
+  decoded: number;
+  repeated: number;
+  refused: number;
+  unknown: number;
+  positions: number;
+  measurements: number;
+}
+
+export interface FileDetail extends FileRow {
+  trackers: { device_id: string; device_name: string; frames: number; decoded: number; positions: number }[];
+  failures: { line: number; dev_addr: string | null; device_name: string | null; status: string; code: string | null; reason: string | null }[];
+}

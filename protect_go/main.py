@@ -17,6 +17,7 @@ from protect_go.config import get_settings
 from protect_go.decoding import decoders
 from protect_go.routers.bundle import router as bundle_router
 from protect_go.routers.cards import router as cards_router
+from protect_go.routers.files import router as files_router
 from protect_go.routers.map import router as map_router
 from protect_go.routers.setup import router as setup_router
 from protect_go.routers.trackers import router as trackers_router
@@ -47,6 +48,7 @@ def create_app() -> FastAPI:
     app.include_router(map_router)
     app.include_router(bundle_router)
     app.include_router(cards_router)
+    app.include_router(files_router)
     app.include_router(uploads_router)
     app.include_router(trackers_router)
 

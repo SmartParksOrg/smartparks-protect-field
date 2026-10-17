@@ -96,13 +96,29 @@ async def test_a_server_that_is_not_protect_is_refused(app):
 
 
 async def test_the_projects_come_from_the_server(app):
+    """The account's projects, each with its offload stations counted from the server's Offload
+    overview, so the Load page offers only those with a station (Tim, 2026-10-17)."""
+
     def server(request: httpx.Request) -> httpx.Response:
         if request.url.path == "/api/v1/projects":
             assert request.headers["Authorization"] == f"Bearer {TOKEN}"
             return httpx.Response(
                 200,
-                json={"items": [{"id": "p1", "name": "LP0", "role": "project_admin"}], "total": 1},
+                json={
+                    "items": [
+                        {"id": "p1", "name": "LP0", "role": "project_admin"},
+                        {"id": "p2", "name": "Cows", "role": "project_viewer"},
+                    ],
+                    "total": 2,
+                },
             )
+        if request.url.path == "/api/v1/projects/p1/offload":
+            return httpx.Response(
+                200,
+                json={"window_days": 30, "stations": [{"device_id": "d2"}, {"device_id": "d3"}]},
+            )
+        if request.url.path == "/api/v1/projects/p2/offload":
+            return httpx.Response(200, json={"window_days": 30, "stations": []})
         return protect_server(request)
 
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
@@ -113,4 +129,8 @@ async def test_the_projects_come_from_the_server(app):
         await client.post("/api/session", json={"email": "ranger@example.org", "password": "right"})
         app.state.http_transport = httpx.MockTransport(server)
         projects = await client.get("/api/projects")
-        assert projects.status_code == 200 and projects.json() == [{"id": "p1", "name": "LP0"}]
+        assert projects.status_code == 200
+        assert projects.json() == [
+            {"id": "p1", "name": "LP0", "stations": 2},
+            {"id": "p2", "name": "Cows", "stations": 0},
+        ]

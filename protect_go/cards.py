@@ -642,6 +642,51 @@ class CardStore:
             ).fetchall()
         return [dict(row) for row in rows]
 
+    # --- the files, one row each, as a file explorer shows them (F2, Tim 2026-10-17)
+
+    def files(self) -> list[dict[str, Any]]:
+        """Every file read, newest batch first, with its outcome counts and its upload state."""
+        with self._connect() as db:
+            rows = db.execute(
+                "SELECT f.id, f.card_id, c.name AS card_name, c.station_name, c.station_eui, "
+                "c.imported_at, f.name, f.folder, f.size, f.lines, f.frames, f.errors, "
+                "f.upload_status, f.upload_answer, f.uploaded_at, "
+                "COALESCE(SUM(fr.status = 'decoded'), 0) AS decoded, "
+                "COALESCE(SUM(fr.status = 'repeated'), 0) AS repeated, "
+                "COALESCE(SUM(fr.status = 'refused'), 0) AS refused, "
+                "COALESCE(SUM(fr.status = 'unknown_address'), 0) AS unknown, "
+                "COALESCE(SUM(fr.positions), 0) AS positions, "
+                "COALESCE(SUM(fr.measurements), 0) AS measurements "
+                "FROM card_files f JOIN cards c ON c.id = f.card_id "
+                "LEFT JOIN frames fr ON fr.file_id = f.id "
+                "GROUP BY f.id ORDER BY c.imported_at DESC, f.folder, f.name LIMIT ?",
+                (LIST_LIMIT * 100,),
+            ).fetchall()
+        return [dict(row) for row in rows]
+
+    def file_detail(self, file_id: str) -> dict[str, Any] | None:
+        """One file's properties: the counts, the trackers it carried and the frames not read."""
+        rows = [f for f in self.files() if f["id"] == file_id]
+        if not rows:
+            return None
+        detail = rows[0]
+        with self._connect() as db:
+            trackers = db.execute(
+                "SELECT device_id, device_name, COUNT(*) AS frames, "
+                "SUM(status = 'decoded') AS decoded, SUM(positions) AS positions "
+                "FROM frames WHERE file_id = ? AND device_id IS NOT NULL "
+                "GROUP BY device_id, device_name ORDER BY device_name",
+                (file_id,),
+            ).fetchall()
+            failures = db.execute(
+                "SELECT line, dev_addr, device_name, status, code, reason FROM frames "
+                "WHERE file_id = ? AND status NOT IN ('decoded', 'repeated') ORDER BY line LIMIT ?",
+                (file_id, FAILURES_LIMIT),
+            ).fetchall()
+        detail["trackers"] = [dict(row) for row in trackers]
+        detail["failures"] = [dict(row) for row in failures]
+        return detail
+
     # --- the upload (F4)
 
     def pending_files(self, card_id: str | None = None) -> list[dict[str, Any]]:
