@@ -11,8 +11,10 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
+from protect_field.bundle import BundleStore
 from protect_field.config import get_settings
 from protect_field.decoding import decoders
+from protect_field.routers.bundle import router as bundle_router
 from protect_field.routers.map import router as map_router
 from protect_field.routers.setup import router as setup_router
 from protect_field.store import Store
@@ -34,9 +36,11 @@ def create_app() -> FastAPI:
     settings.data_dir.mkdir(parents=True, exist_ok=True)
     app = FastAPI(title="Smart Parks Protect Field", version=__version__, docs_url="/api/docs")
     app.state.store = Store(settings.data_dir)
+    app.state.bundle_store = BundleStore(settings.data_dir, settings.key_store)
     app.state.http_transport = None  # the tests hand in a mock transport
     app.include_router(setup_router)
     app.include_router(map_router)
+    app.include_router(bundle_router)
 
     @app.get("/api/health", response_model=Health)
     async def health() -> Health:

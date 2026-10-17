@@ -7,6 +7,7 @@ they want a database and a broker this program does not have (DEVELOPERS.md, the
 
 from functools import lru_cache
 from pathlib import Path
+from typing import Literal
 
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -23,6 +24,12 @@ class Settings(BaseSettings):
     )
     host: str = "127.0.0.1"
     port: int = 18090
+    key_store: Literal["auto", "file"] = Field(
+        default="auto",
+        description="Where the key that protects the bundle lives: the operating system's "
+        "keychain when there is one (auto), else a file in the data folder readable by the "
+        "owner alone; `file` forces the file (the tests, a headless machine)",
+    )
 
 
 @lru_cache

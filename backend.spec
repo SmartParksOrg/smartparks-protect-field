@@ -33,6 +33,8 @@ hiddenimports += collect_submodules("pydantic_settings")
 hiddenimports += collect_submodules("shared.station_files")
 hiddenimports += collect_submodules("shared.connectivity.adapters.lp0_station")
 hiddenimports += collect_submodules("shared.device_drivers.opencollar")
+hiddenimports += collect_submodules("shared.station_decode")
+hiddenimports += collect_submodules("keyring")  # the keychain backends per system
 
 a = Analysis(
     [str(root / "protect_field" / "__main__.py")],

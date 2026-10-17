@@ -57,3 +57,20 @@ export interface Setup {
   signed_in: boolean;
   token_expires_at: string | null;
 }
+
+export interface Bundle {
+  present: boolean;
+  project_id: string | null;
+  project_name: string | null;
+  generated_at: string | null;
+  fetched_at: string | null;
+  protect_version: string | null;
+  server_url: string | null;
+  devices: number;
+  stations: number;
+  entities: number;
+  trackers_with_keys: number;
+  credentials_included: boolean;
+  stale: boolean;
+  key_kept_in: string | null;
+}

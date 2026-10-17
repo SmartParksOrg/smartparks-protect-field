@@ -19,7 +19,7 @@ Smart Parks Protect Field reads the SD card of a RangerEdge offload station wher
 
 - One Python package (`protect_field`) instead of a uv workspace; `src = ["."]` for ruff.
 - No database server: the local store (phase 2) is SQLite, through SQLAlchemy since `shared` brings it.
-- No authentication: the program runs on one person's computer and listens on 127.0.0.1. The bundle on disk is encrypted with a key the user gives (phase 2).
+- No authentication: the program runs on one person's computer and listens on 127.0.0.1. The bundle on disk is encrypted with a key in the laptop's keychain, or a key file where there is none (decision D11).
 - Settings carry the prefix `FIELD_` (`protect_field/config.py`, `.env.example`).
 - The pre-commit hook has no Ansible paths and refuses the `data/` folder and a LoRaWAN session key given a value in code, with the firmware's synthetic fixture allowed.
 - The docs check has no MCP half. The documentation site is published from `main` by the pages job, as Protect's is, at https://smartparksorg.github.io/smartparks-protect-field/.
@@ -66,6 +66,10 @@ The desktop AddaxAI ships an Electron shell with a PyInstaller-frozen Python bac
 - `.github/workflows/build-installers.yml`: on a published release, and by hand for debug builds kept 14 days. Windows signs when `WINDOWS_CERT_PFX_BASE64` and `WINDOWS_CERT_PFX_PASSWORD` are set, macOS signs and notarises when `MACOS_CERTIFICATE`, `MACOS_CERTIFICATE_PWD`, `APPLE_ID`, `APPLE_APP_SPECIFIC_PASSWORD` and `APPLE_TEAM_ID` are; without them the build warns and the installer is unsigned (`REQUIRE_SIGNING` in the workflow turns that into an error once the certificates exist; AddaxAI hard-fails, Field cannot yet). Every build starts the frozen backend and checks that health names the decoders before packaging.
 - Updates (decision D8): `hooks/useLatestRelease.ts` asks `api.github.com/repos/SmartParksOrg/smartparks-protect-field/releases?per_page=1` once per start (the newest release of any kind, so a pre-release counts), compares with `lib/version.ts`, and `UpdateNotice` shows the newer version with its notes and a button to the user page; the menu's Check for updates shows the result either way. A dev build (`v0.0.0-dev`) never nags. Automatic download and install (electron-updater) waits for signed builds.
 - Releasing: tag `vX.Y.Z` on `main` with `VERSION` written, publish a GitHub release with notes written for users (the notice shows them verbatim), and the workflow attaches the installers. The docs' download links point at `releases/latest/download/<name>`, so they never change.
+
+## The bundle (decisions D2 and D11)
+
+`protect_field/bundle.py`: `BundleStore` keeps the whole bundle Protect gave (`GET /projects/{id}/field-bundle`) in `bundle.enc`, Fernet-encrypted, with the fetch time in the envelope; `load()` gives it back whole, `summary()` the counts the pages show (never a key), stale after seven days. The key comes from `protect_field/secrets.py`: the operating system's keychain through `keyring` (service "Smart Parks Protect Field"), made on first use; where no keychain answers (no backend, a locked keychain, a denied prompt, this WSL machine), a key file `bundle.key` in the data folder with mode 600; `FIELD_KEY_STORE=file` forces the file (the tests, a headless machine). `routers/bundle.py`: `GET /api/bundle`, `DELETE /api/bundle`, `POST /api/bundle/fetch {project_id, project_name}`, which fetches the bundle (401 when the sign-in expired, 502 with the server's words, a shape other than `format_version` 1 refused), keeps it, then calls the map fetch and returns both states. `pages/LoadPage.tsx` is the one button before leaving; the Map page points to it. `backend.spec` collects `keyring`'s backends so the frozen build finds the right one per system.
 
 ## The offline map (decision D4)
 

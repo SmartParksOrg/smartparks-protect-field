@@ -1,14 +1,12 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router";
 
-import { api, send } from "@/api/client";
+import { api } from "@/api/client";
 import { queryKeys } from "@/api/queryKeys";
 import { Callout } from "@/components/common/Callout";
 import { OfflineMap } from "@/components/OfflineMap";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
 export interface MapState {
   present: boolean;
@@ -25,37 +23,12 @@ export interface MapState {
   server_state: string | null;
 }
 
-interface Project {
-  id: string;
-  name: string;
-}
-
-/** The map of the project's area (decision D4): fetched from the server while online, drawn
- * offline from then on. Without one yet, the page lists the account's projects and fetches the
- * map of the chosen one; a server that has not cut it yet is asked to, and the page says so. */
-export function MapPage({ signedIn }: { signedIn: boolean }) {
+/** The map of the project's area (decision D4): fetched with the project on the Load page
+ * while online, drawn offline from then on. */
+export function MapPage() {
   const { t } = useTranslation();
-  const queryClient = useQueryClient();
   const map = useQuery({ queryKey: queryKeys.map, queryFn: () => api<MapState>("/api/map") });
-  const projects = useQuery({
-    queryKey: queryKeys.projects,
-    queryFn: () => api<Project[]>("/api/projects"),
-    enabled: signedIn,
-  });
-  const [choice, setChoice] = useState("");
-  const [notice, setNotice] = useState<string | null>(null);
-  const fetchMap = useMutation({
-    mutationFn: (project: Project) =>
-      send<MapState>("POST", "/api/map/fetch", { project_id: project.id, project_name: project.name }),
-    onSuccess: (state) => {
-      queryClient.setQueryData(queryKeys.map, state);
-      setNotice(state.server_state);
-    },
-  });
   const state = map.data;
-  // the picker starts on the project whose map is on the laptop, else the first
-  const wanted = choice || state?.project_id || "";
-  const chosen = projects.data?.find((p) => p.id === wanted) ?? projects.data?.[0];
   const dark = document.documentElement.classList.contains("dark");
   return (
     <main className="mx-auto flex min-h-dvh max-w-4xl flex-col gap-4 p-4">
@@ -78,49 +51,14 @@ export function MapPage({ signedIn }: { signedIn: boolean }) {
           </p>
         </>
       )}
-      <Card>
-        <CardHeader>
-          <CardTitle>{state?.present ? t("A fresh map") : t("No map on this laptop yet")}</CardTitle>
-          <CardDescription>
-            {t("While you are online, fetch the map of the project's area from the server. It is then drawn here without a connection.")}
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="flex flex-col gap-3 text-sm">
-          {!signedIn && (
-            <Callout kind="info">
-              {t("Sign in first; the map comes from the server you are signed in to.")}{" "}
-              <Link className="underline underline-offset-4" to="/sign-in">
-                {t("Sign in")}
-              </Link>
-            </Callout>
-          )}
-          {signedIn && projects.isError && <Callout kind="error">{projects.error.message}</Callout>}
-          {signedIn && projects.data && (
-            <div className="flex flex-wrap items-center gap-2">
-              <label className="sr-only" htmlFor="project">
-                {t("Project")}
-              </label>
-              <select
-                id="project"
-                className="h-9 rounded-md border border-input bg-transparent px-3 text-sm"
-                value={chosen?.id ?? ""}
-                onChange={(event) => setChoice(event.target.value)}
-              >
-                {projects.data.map((project) => (
-                  <option key={project.id} value={project.id}>
-                    {project.name}
-                  </option>
-                ))}
-              </select>
-              <Button type="button" size="sm" disabled={!chosen || fetchMap.isPending} onClick={() => chosen && fetchMap.mutate(chosen)}>
-                {fetchMap.isPending ? t("Fetching the map") : t("Fetch the map")}
-              </Button>
-            </div>
-          )}
-          {notice && <Callout kind="info">{notice}</Callout>}
-          {fetchMap.isError && <Callout kind="error">{fetchMap.error.message}</Callout>}
-        </CardContent>
-      </Card>
+      {!state?.present && (
+        <Callout kind="info">
+          {t("No map on this laptop yet. Load the project while you are online; the map comes with it.")}{" "}
+          <Link className="underline underline-offset-4" to="/load">
+            {t("Load a project")}
+          </Link>
+        </Callout>
+      )}
     </main>
   );
 }

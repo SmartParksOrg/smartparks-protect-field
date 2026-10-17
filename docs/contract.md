@@ -13,7 +13,7 @@ When Field is online, a user who is a member of a project asks Protect for the p
 - `stations`: the offload stations with `station_eui` and a GeoJSON point where they stand, so a card is routed by the EUI in its file names;
 - `area`: the project's bounding box (`west`, `south`, `east`, `north`) from its features, entity places and device places, or null when the project has none yet; `map`: the state of the offline map cut for it (below), once one was asked for.
 
-Protect writes every download to its audit log with how many devices, stations and keys it carried. The bundle is encrypted on disk with a key the user gives Field. It expires; Field says when a bundle is older than a week and asks for a fresh one when online.
+Protect writes every download to its audit log with how many devices, stations and keys it carried. Field keeps the bundle encrypted on disk with a key from the laptop's keychain, or a key file where there is none (decision D11), and says when it is older than a week.
 
 ## Down: the offline map
 

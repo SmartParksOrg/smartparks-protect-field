@@ -3,7 +3,8 @@ import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router";
 
-import { api, send, type Health, type Setup } from "@/api/client";
+import { api, send, type Bundle, type Health, type Setup } from "@/api/client";
+import { Callout } from "@/components/common/Callout";
 import { queryKeys } from "@/api/queryKeys";
 import { UpdateNotice } from "@/components/UpdateNotice";
 import { Button } from "@/components/ui/button";
@@ -17,6 +18,7 @@ export function HomePage({ setup }: { setup: Setup }) {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
   const health = useQuery({ queryKey: queryKeys.health, queryFn: () => api<Health>("/api/health") });
+  const bundle = useQuery({ queryKey: queryKeys.bundle, queryFn: () => api<Bundle>("/api/bundle") });
   const [checkAsked, setCheckAsked] = useState(false);
   useEffect(() => shell()?.onMenuCommand((id) => id === "check-updates" && setCheckAsked(true)), []);
   const signOut = useMutation({
@@ -56,6 +58,30 @@ export function HomePage({ setup }: { setup: Setup }) {
           <Button asChild variant="secondary" size="sm">
             <Link to="/map">{t("Map")}</Link>
           </Button>
+        </CardContent>
+      </Card>
+      <Card>
+        <CardHeader>
+          <CardTitle>{bundle.data?.present ? t("Project on this laptop") : t("No project on this laptop yet")}</CardTitle>
+          <CardDescription>
+            {bundle.data?.present
+              ? t("{{project}}: {{devices}} devices, {{stations}} stations, keys for {{keys}} trackers; fetched {{when}}.", {
+                  project: bundle.data.project_name,
+                  devices: bundle.data.devices,
+                  stations: bundle.data.stations,
+                  keys: bundle.data.trackers_with_keys,
+                  when: new Date(bundle.data.fetched_at ?? "").toLocaleString(),
+                })
+              : t("Load a project while you are online: its devices, keys and map come to this laptop for the field.")}
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="flex flex-col gap-2">
+          {bundle.data?.stale && <Callout kind="warning">{t("This bundle is older than a week; load the project again while you are online.")}</Callout>}
+          <div>
+            <Button asChild size="sm">
+              <Link to="/load">{bundle.data?.present ? t("Load again") : t("Load a project")}</Link>
+            </Button>
+          </div>
         </CardContent>
       </Card>
       <Card>

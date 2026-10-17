@@ -17,10 +17,10 @@ Living plan for building Smart Parks Protect Field, the companion of Smart Parks
 
 | Field | Value |
 | --- | --- |
-| Active phase | Phase 2 begun with F0, the offline map, on 2026-10-17 (Protect's P3 the same day); phase 1b (installed like AddaxAI, D6 to D10) built on 2026-10-17: the shell, the frozen backend, the installers' workflow, the setup, the update notice, the user page; v0.1.0 released the same day (I8); I9 (certificates) waits for Tim. Phase 1 (the Protect side) P1, P2 and P4 done in Protect (8c0a6b6), P3 open. Phase 2 (a card read offline) next |
+| Active phase | Phase 2: F0 (the offline map) and F1 (the bundle, D11) built on 2026-10-17 (Protect's P3 the same day); phase 1b (installed like AddaxAI, D6 to D10) built on 2026-10-17: the shell, the frozen backend, the installers' workflow, the setup, the update notice, the user page; v0.1.0 released the same day (I8); I9 (certificates) waits for Tim. Phase 1 (the Protect side) P1, P2 and P4 done in Protect (8c0a6b6), P3 open. Phase 2 (a card read offline) next |
 | Latest release | v0.1.0 (2026-10-17): the installers, the setup, the update notice |
 | Last session | 2026-10-17 (Claude and Tim): the design chosen (ADR 0001, D1 to D5), the repository created with Protect's conventions, hooks, CI, docs and frontend tooling mirrored, the Python package with the server skeleton and the proof that Protect's decoding runs here, the frontend skeleton with its first screen, the documentation site; Protect pinned at 2755c92. Committed as 9391087, pushed to `SmartParksOrg/smartparks-protect-field` (private); the first CI run failed on the audit's export of the git package, fixed in ad9bafa, CI green since |
-| Next item | F1 and F2 here (the bundle loaded, a card read and decoded through `shared.station_decode`); Tim tries the v0.1.0 installer and, after the next release, the map of the LP0 project on dev |
+| Next item | F2: a card read and decoded through `shared.station_decode` with the bundle's keys, into a SQLite store; then F3 the pages; Tim tries the v0.1.0 installer and, after the next release, the Load page against dev |
 | Blockers | No code-signing certificates (Windows Authenticode, Apple Developer ID), so the installers are unsigned and users click through SmartScreen and Gatekeeper as the user page explains; I9 is Tim's. A real LP0 v5 card does not exist yet (Protect's O8 waits for the firmware developer); until then the cards are synthetic, built with `build_uplink` as Protect's demo script builds them |
 
 ## What we are building
@@ -44,6 +44,7 @@ Design principles, from Protect's: devices are hardware and entities are what yo
 | D8 | Updates as AddaxAI does them: a check of GitHub's releases list at start, a notice with the notes and a download button, the new installer over the old | `hooks/useLatestRelease.ts`, `UpdateNotice.tsx`, the menu's Check for updates; quiet without a connection or on a dev build | Tim (2026-10-17): Field will be updated frequently, so it must check automatically. electron-updater (download and install in place) needs signed builds on macOS; it follows the certificates |
 | D9 | Field is offered from Protect's Offload page: the installer for the visitor's system, the server address, and "Open Field" through the `protect-field://connect?server=` link the app registers | The shell registers the scheme (electron-builder `protocols`, `setAsDefaultProtocolClient`), the route `/setup?server=…` prefills the setup page; Protect's card is decision D332 there | Tim (2026-10-17): the install must be initiated from within Protect on the Offload page |
 | D10 | macOS on Apple Silicon alone, as AddaxAI; Windows 64-bit; Debian and Ubuntu | One backend per architecture is frozen; an Intel dmg would need an Intel runner, which GitHub is retiring | Keeps one macOS build; added when a user asks |
+| D11 | The bundle is protected at rest by a key in the laptop's keychain, not by a second password | `protect_field/secrets.py`: a Fernet key in the operating system's keychain (Windows Credential Manager, macOS Keychain, a Secret Service on Linux) through the `keyring` package, made on first use; where no keychain answers, a key file in the data folder readable by the owner alone, and the page says which protects the bundle. `bundle.enc` holds the whole bundle encrypted; the summary the pages show never holds a key | Claude (2026-10-17), with Tim's go-ahead to continue: most users are not technical and the laptop's login is already a password; a second one would be forgotten or written down. The plan's earlier wording (a password the user gives) is superseded |
 
 ## Definition of done
 
@@ -89,7 +90,7 @@ Every item, every phase:
 
 ### Phase 2: a card read offline
 
-- [ ] F1. The local store: SQLite in the data folder; a bundle loaded from a file or fetched from a Protect server the user signs in to, encrypted on disk with a key the user gives; the bundle's age shown and a fresh one asked for when online
+- [x] F1. The bundle (2026-10-17): the Load page picks the project and `POST /api/bundle/fetch` fetches the field bundle and then the map in one go; `bundle.enc` in the data folder, encrypted with the keychain key (D11); the first screen shows what is on the laptop and warns after a week; `GET /api/bundle`, `DELETE /api/bundle`. The SQLite store for the cards comes with F2
 - [ ] F2. The card: a folder or zip dropped in, routed to the station by its EUI from the file names, parsed with P1, every frame opened and read through `shared.station_decode` (Protect's P6, pinned at d79ffaf on 2026-10-17) with the tracker's credentials from the bundle; the result (positions, measurements, states, events) stored per card; a frame that fails kept with its reason
 - [x] F0. The offline map (D4; 2026-10-17): `POST /api/map/fetch` gets the project's PMTiles from Protect's `GET /projects/{id}/field-bundle/map` (asking for it when the server has none), `GET /api/map/tiles.pmtiles` serves it with range requests, the Map page draws it with Protomaps' style and the sprites and glyphs shipped in `public/map/`; `GET /api/projects` for the picker
 - [ ] F3. The pages: the cards read with their status; per tracker a map of its positions on the offline map (F0) and a table of its measurements, bounded by a window; per station what it collected
@@ -143,3 +144,8 @@ Every item, every phase:
 
 - Protect's P6 (d79ffaf): `shared.station_decode` opens a station frame with the tracker's keys, refuses it with the trace's codes and words, and has the driver read the records; the pipeline calls it and a test decodes a frame both ways. Field pinned at it; `protect_field/decoding.py` imports it and the proof test reads a stored stream through it. F2 reads a card with these two calls.
 - Next: F1 and F2.
+
+### 2026-10-17, the bundle (Claude and Tim)
+
+- F1: the Load page and `POST /api/bundle/fetch` (the bundle, then the map, one button), `BundleStore` with `bundle.enc` encrypted under a key from the keychain or a key file (D11), the summary without keys on the first screen with the week-old warning, `DELETE /api/bundle`. The Map page lost its own picker; the Load page does both. Tests: a mock server, the file on disk holding no key or address in the clear, the key file mode 600, a stale envelope, another key reading nothing.
+- Next: F2.

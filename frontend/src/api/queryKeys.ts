@@ -5,4 +5,5 @@ export const queryKeys = {
   latestRelease: ["latest-release"] as const,
   map: ["map"] as const,
   projects: ["projects"] as const,
+  bundle: ["bundle"] as const,
 };

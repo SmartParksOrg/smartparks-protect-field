@@ -2,7 +2,7 @@
 
 Protect Field is a program for your own laptop. It reads the SD card of an offload station where there is no connection, with the same decoding code the Protect server uses, and hands the card's files to Protect when you are online again. Protect stays the record; Field is a reader with a queue.
 
-Status (2026-10-17): the installers, the first-run setup, the update notice and the offline map are built. Reading a card and the upload queue are phase 2 of the plan and marked *planned* below.
+Status (2026-10-17): the installers, the first-run setup, the update notice, loading a project and the offline map are built. Reading a card and the upload queue are phase 2 of the plan and marked *planned* below.
 
 ## Where it runs
 
@@ -38,9 +38,15 @@ Pick your system, download the file, and follow the steps. The download links ar
 
 To change the server later, choose **Another server** on the first screen.
 
+## Loading a project
+
+Open **Load a project** from the first screen while you are online, choose the project and press **Load the project**. Field fetches the project's devices, entities and stations, the LP0 keys your account is allowed to see, and the map of the area, and keeps them on the laptop. The keys are encrypted with a key in your laptop's keychain, so your login is the password; on a laptop without a keychain a key file only your account can read stands in, and the page says which. The first screen shows what is on the laptop and warns when it is older than a week: load the project again while you are online, since devices and keys change.
+
+If your Protect account may not see the LP0 keys of a tracker (its device page does not show them to you), the bundle holds no keys for it and Field will show that tracker's frames undecoded. Ask a project administrator.
+
 ## The map
 
-Open **Map** from the first screen while you are online, choose the project and press **Fetch the map**. Field asks the server for the map of the project's area; the first time, the server has to cut it first, which takes a few minutes, and Field says so: try again a little later. Asking the server to cut a map takes an analyst's or administrator's account; a viewer fetches the map once it exists, or asks one of them to prepare it from the Offload page. Once fetched, the map is drawn on the laptop without any connection, down to street level around the stations, with place names in Latin script. It is OpenStreetMap's map as Protomaps builds it, not satellite imagery, which cannot be taken offline. Fetch it again now and then: the server renews its copy once a month, and a project whose area grew needs a new one.
+The map comes with the project. The first time, the server has to cut it first, which takes a few minutes, and Field says so: open **Map** a little later, or load the project again. Asking the server to cut a map takes an analyst's or administrator's account; a viewer fetches the map once it exists, or asks one of them to prepare it from the Offload page. Once fetched, the map is drawn on the laptop without any connection, down to street level around the stations, with place names in Latin script. It is OpenStreetMap's map as Protomaps builds it, not satellite imagery, which cannot be taken offline. Load the project again now and then: the server renews its map once a month, and a project whose area grew needs a new one.
 
 ## The cycle
 
