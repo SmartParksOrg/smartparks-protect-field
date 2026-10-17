@@ -3,6 +3,8 @@ import { render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router";
 
 import type { Setup } from "@/api/client";
+
+vi.mock("@/components/OverviewMap", () => ({ OverviewMap: () => <div data-testid="overview-map" /> }));
 import { OverviewPage } from "@/pages/OverviewPage";
 
 const SETUP: Setup = {

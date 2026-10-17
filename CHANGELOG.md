@@ -6,6 +6,12 @@ All notable changes to Smart Parks Protect Go. The format follows Keep a Changel
 
 Nothing yet.
 
+## v0.10.4, 2026-10-17
+
+### Added
+
+- A small map on the Overview with the offload stations, drawn as Protect draws them, and the last known position of every tracker the app knows, each in its colour; a click on it opens the Data explorer (Tim, 2026-10-17).
+
 ## v0.10.3, 2026-10-17
 
 ### Changed

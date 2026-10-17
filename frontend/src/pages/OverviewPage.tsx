@@ -6,12 +6,15 @@ import { api, type Bundle, type Card, type Health, type Setup, type Uploads } fr
 import { queryKeys } from "@/api/queryKeys";
 import { Callout } from "@/components/common/Callout";
 import { Page, PageHeader } from "@/components/common/PageHeader";
+import { OverviewMap } from "@/components/OverviewMap";
 import { UpdateNotice } from "@/components/UpdateNotice";
 import { Button } from "@/components/ui/button";
 import { Card as Panel, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
 /** The first page: the server and the account, the project on the laptop, the files read and
- * what waits to go up, the versions, and the update notice. Every card leads to its page. */
+ * what waits to go up, the versions, the update notice, and a small map with the offload
+ * stations and every tracker's last known position (Tim, 2026-10-17). Every card leads to its
+ * page. */
 export function OverviewPage({ setup }: { setup: Setup }) {
   const { t } = useTranslation();
   const health = useQuery({ queryKey: queryKeys.health, queryFn: () => api<Health>("/api/health") });
@@ -26,6 +29,15 @@ export function OverviewPage({ setup }: { setup: Setup }) {
       <Page>
         {health.data && <UpdateNotice currentVersion={health.data.version} />}
         <div className="grid gap-4 md:grid-cols-2">
+          <Panel className="md:col-span-2">
+            <CardHeader>
+              <CardTitle>{t("Where things are")}</CardTitle>
+              <CardDescription>{t("The offload stations and the last known position of every tracker on this laptop. Click the map for the Data explorer.")}</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <OverviewMap />
+            </CardContent>
+          </Panel>
           <Panel>
             <CardHeader>
               <CardTitle>{bundle.data?.present ? t("Project on this laptop") : t("No project on this laptop yet")}</CardTitle>
