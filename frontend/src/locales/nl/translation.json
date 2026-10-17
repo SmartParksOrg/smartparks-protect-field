@@ -247,5 +247,8 @@
   "Online, signed in to {{server}}": "Online, aangemeld bij {{server}}",
   "Online, not signed in to {{server}}": "Online, niet aangemeld bij {{server}}",
   "Esc leaves full screen": "Esc verlaat volledig scherm",
-  "Leave": "Verlaten"
+  "Leave": "Verlaten",
+  "Checking for updates": "Controleren op updates",
+  "Show": "Tonen",
+  "Dismiss": "Sluiten"
 }

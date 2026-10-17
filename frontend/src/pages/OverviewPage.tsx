@@ -1,5 +1,4 @@
 import { useQuery } from "@tanstack/react-query";
-import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router";
 
@@ -10,7 +9,6 @@ import { Page, PageHeader } from "@/components/common/PageHeader";
 import { UpdateNotice } from "@/components/UpdateNotice";
 import { Button } from "@/components/ui/button";
 import { Card as Panel, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { shell } from "@/lib/shell";
 
 /** The first page: the server and the account, the project on the laptop, the files read and
  * what waits to go up, the versions, and the update notice. Every card leads to its page. */
@@ -20,15 +18,13 @@ export function OverviewPage({ setup }: { setup: Setup }) {
   const bundle = useQuery({ queryKey: queryKeys.bundle, queryFn: () => api<Bundle>("/api/bundle") });
   const uploads = useQuery({ queryKey: queryKeys.uploads, queryFn: () => api<Uploads>("/api/uploads") });
   const files = useQuery({ queryKey: queryKeys.cards, queryFn: () => api<Card[]>("/api/cards") });
-  const [checkAsked, setCheckAsked] = useState(false);
-  useEffect(() => shell()?.onMenuCommand((id) => id === "check-updates" && setCheckAsked(true)), []);
   const waiting = uploads.data ? uploads.data.pending + uploads.data.failed : 0;
   const expires = setup.token_expires_at ? new Date(setup.token_expires_at) : null;
   return (
     <>
       <PageHeader title={t("Overview")} description={t("The project on this laptop, the files read, and the server the app works with.")} />
       <Page>
-        {health.data && <UpdateNotice currentVersion={health.data.version} forceShow={checkAsked} />}
+        {health.data && <UpdateNotice currentVersion={health.data.version} />}
         <div className="grid gap-4 md:grid-cols-2">
           <Panel>
             <CardHeader>

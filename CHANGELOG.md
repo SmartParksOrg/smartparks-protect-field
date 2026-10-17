@@ -6,6 +6,13 @@ All notable changes to Smart Parks Protect Go. The format follows Keep a Changel
 
 Nothing yet.
 
+## v0.8.2, 2026-10-17
+
+### Changed
+
+- "Check for updates…" in the menu answers on whatever page is open: a note at the top says that the check runs, then that the app is up to date, that a newer version exists with the way to it, or that the check failed (Tim, 2026-10-17: nothing came back, not even "up to date").
+- A release is published only once its installers are attached (decision D19): the workflow builds on the pushed tag and takes the release out of draft at the end. An installed app that checked while the files were still being built got "Cannot find latest.yml" (Tim, 2026-10-17).
+
 ## v0.8.1, 2026-10-17
 
 ### Changed

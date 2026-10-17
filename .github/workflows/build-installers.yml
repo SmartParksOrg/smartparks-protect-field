@@ -1,16 +1,21 @@
 name: Build installers
 
-# AddaxAI's release shape: publishing a release on GitHub builds the three installers and
-# attaches them to it, with `latest.yml` and the blockmap beside the Windows installer so an
-# installed app updates itself from the release (decision D17); a manual run builds debug
-# installers kept as workflow artifacts for 14 days. The version comes from the tag into VERSION and electron/package.json. Signing and
-# notarisation happen when the secrets are present; without them the build says so and the
-# installer is unsigned (users then click through SmartScreen or Gatekeeper, see the user page).
-# Once Smart Parks holds certificates, set REQUIRE_SIGNING to "1" below so a release can never
-# ship unsigned.
+# AddaxAI's release shape, with one change (decision D19): a pushed `v*` tag builds the three
+# installers and attaches them to the tag's release, with `latest.yml` and the blockmap beside
+# the Windows installer so an installed app updates itself from the release (decision D17), and
+# the release is published only at the end, once every file is there. Until then it is a draft,
+# which the updater and the download links do not see: a release published before its files
+# existed sent an installed app a 404 for `latest.yml` (Tim, 2026-10-17). Releasing is: write
+# the notes into a draft release (`gh release create vX.Y.Z --draft --notes-file …`), then push
+# the tag; the `prepare` job makes a bare draft when none exists. A manual run builds debug
+# installers kept as workflow artifacts for 14 days. The version comes from the tag into VERSION
+# and electron/package.json. Signing and notarisation happen when the secrets are present;
+# without them the build says so and the installer is unsigned (users then click through
+# SmartScreen or Gatekeeper, see the user page). Once Smart Parks holds certificates, set
+# REQUIRE_SIGNING to "1" below so a release can never ship unsigned.
 on:
-  release:
-    types: [published]
+  push:
+    tags: ["v*"]
   workflow_dispatch:
 
 permissions:
@@ -21,8 +26,27 @@ env:
   REQUIRE_SIGNING: "0"
 
 jobs:
+  prepare:
+    name: The draft release
+    runs-on: ubuntu-22.04
+    if: github.ref_type == 'tag'
+    steps:
+      - name: A draft release for the tag, when none exists yet
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          if gh release view "$GITHUB_REF_NAME" > /dev/null 2>&1; then
+            echo "Release $GITHUB_REF_NAME exists; the installers go on it."
+          else
+            gh release create "$GITHUB_REF_NAME" --draft --title "Protect Go $GITHUB_REF_NAME" --notes "Protect Go $GITHUB_REF_NAME. See CHANGELOG.md."
+            echo "Draft release $GITHUB_REF_NAME made."
+          fi
+
   build:
     name: Build (${{ matrix.label }})
+    needs: [prepare]
+    if: always() && (needs.prepare.result == 'success' || needs.prepare.result == 'skipped')
     runs-on: ${{ matrix.runs-on }}
     strategy:
       fail-fast: false
@@ -71,8 +95,8 @@ jobs:
       # the About line of a debug build says what it is.
       - name: Sync the version from the tag
         run: |
-          if [ "${{ github.event_name }}" = "release" ]; then
-            TAG="${{ github.event.release.tag_name }}"
+          if [ "${{ github.ref_type }}" = "tag" ]; then
+            TAG="${{ github.ref_name }}"
           else
             TAG="$(git describe --tags --exact-match HEAD 2>/dev/null || true)"
           fi
@@ -124,7 +148,7 @@ jobs:
           if [ "${{ matrix.os }}" = "macos" ] && [ -n "$MAC_CERT" ]; then have=1; fi
           echo "have=$have" >> "$GITHUB_OUTPUT"
           if [ "$have" = "0" ] && [ "${{ matrix.os }}" != "linux" ]; then
-            if [ "$REQUIRE_SIGNING" = "1" ] && [ "${{ github.event_name }}" = "release" ]; then
+            if [ "$REQUIRE_SIGNING" = "1" ] && [ "${{ github.ref_type }}" = "tag" ]; then
               echo "::error::No signing certificate for ${{ matrix.os }} and REQUIRE_SIGNING is on"
               exit 1
             fi
@@ -164,7 +188,7 @@ jobs:
           APPLE_ID: ${{ secrets.APPLE_ID }}
           APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
-          REQUIRE_NOTARIZATION: ${{ matrix.os == 'macos' && github.event_name == 'release' && env.REQUIRE_SIGNING == '1' && '1' || '0' }}
+          REQUIRE_NOTARIZATION: ${{ matrix.os == 'macos' && github.ref_type == 'tag' && env.REQUIRE_SIGNING == '1' && '1' || '0' }}
         run: |
           npm run build
           npx electron-builder ${{ matrix.electron-builder-args }} --publish never
@@ -182,7 +206,24 @@ jobs:
           if-no-files-found: error
 
       - name: Attach the installers to the release
-        if: github.event_name == 'release'
+        if: github.ref_type == 'tag'
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release upload "${{ github.event.release.tag_name }}" ${{ matrix.artifact-glob }} --clobber
+        run: gh release upload "${{ github.ref_name }}" ${{ matrix.artifact-glob }} --clobber
+
+  publish:
+    name: Publish the release
+    needs: [build]
+    if: github.ref_type == 'tag'
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Every file is there, so the release goes out
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          gh release view "$GITHUB_REF_NAME" --json assets --jq '.assets[].name'
+          for name in ProtectGo-Setup.exe ProtectGo-Setup.exe.blockmap latest.yml ProtectGo-arm64.dmg ProtectGo-amd64.deb; do
+            gh release view "$GITHUB_REF_NAME" --json assets --jq '.assets[].name' | grep -qx "$name" || { echo "::error::$name is missing from the release"; exit 1; }
+          done
+          gh release edit "$GITHUB_REF_NAME" --draft=false --latest

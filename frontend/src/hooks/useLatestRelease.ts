@@ -25,11 +25,12 @@ export interface LatestReleaseState {
   updateAvailable: boolean;
   upToDate: boolean;
   isLoading: boolean;
+  isFetching: boolean;
   failed: boolean;
 }
 
 export function useLatestRelease(currentVersion: string, enabled = true): LatestReleaseState {
-  const { data, isLoading, error } = useQuery({
+  const { data, isLoading, isFetching, error } = useQuery({
     queryKey: queryKeys.latestRelease,
     queryFn: async (): Promise<GitHubRelease> => {
       const response = await fetch(RELEASES_API, { headers: { Accept: "application/vnd.github+json" } });
@@ -54,6 +55,7 @@ export function useLatestRelease(currentVersion: string, enabled = true): Latest
     updateAvailable,
     upToDate,
     isLoading,
+    isFetching,
     failed: error !== null,
   };
 }

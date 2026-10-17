@@ -2,9 +2,10 @@ import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { Navigate, Route, Routes } from "react-router";
 
-import { api, type Setup } from "@/api/client";
+import { api, type Health, type Setup } from "@/api/client";
 import { queryKeys } from "@/api/queryKeys";
 import { FullScreenNotice } from "@/components/FullScreenNotice";
+import { UpdateCheckFeedback } from "@/components/UpdateCheckFeedback";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { BatchPage } from "@/pages/BatchPage";
 import { FilesPage } from "@/pages/FilesPage";
@@ -22,6 +23,7 @@ import { UploadPage } from "@/pages/UploadPage";
 export default function App() {
   const { t } = useTranslation();
   const setup = useQuery({ queryKey: queryKeys.setup, queryFn: () => api<Setup>("/api/setup") });
+  const health = useQuery({ queryKey: queryKeys.health, queryFn: () => api<Health>("/api/health") });
   if (setup.isPending) {
     return <main className="p-4 text-sm text-muted-foreground">{t("Starting")}</main>;
   }
@@ -47,6 +49,7 @@ export default function App() {
   return (
     <>
       <FullScreenNotice />
+      {health.data && <UpdateCheckFeedback currentVersion={health.data.version} />}
       <Routes>
       <Route element={<AppLayout setup={current} />}>
         <Route path="/" element={<OverviewPage setup={current} />} />
