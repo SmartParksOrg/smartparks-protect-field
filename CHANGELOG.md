@@ -4,7 +4,9 @@ All notable changes to Smart Parks Protect Go. The format follows Keep a Changel
 
 ## Unreleased
 
-Nothing yet.
+### Changed
+
+- "Download and install" answers at once: the button says that the check runs, and when the newest release has no installer to fetch yet, because it is still being built, the notice says so instead of staying silent (Tim, 2026-10-17).
 
 ## v0.10.0, 2026-10-17
 

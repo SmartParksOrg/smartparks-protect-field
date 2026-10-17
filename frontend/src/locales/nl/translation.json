@@ -298,5 +298,6 @@
   "{{count}} stations on the map_one": "{{count}} station op de kaart",
   "{{count}} stations on the map_other": "{{count}} stations op de kaart",
   "Command Palette": "Opdrachtenpalet",
-  "Search for a command to run...": "Zoek een opdracht om uit te voeren..."
+  "Search for a command to run...": "Zoek een opdracht om uit te voeren...",
+  "The newest release has no installer to fetch yet; it is still being built. Try again in a few minutes.": "De nieuwste release heeft nog geen installatiebestand om op te halen; het wordt nog gebouwd. Probeer het over een paar minuten opnieuw."
 }

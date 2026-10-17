@@ -79,6 +79,9 @@ function ManualDownload({ installer }: { installer: { name: string; url: string 
 function SelfUpdate({ status, installer }: { status: UpdateStatus; installer: { name: string; url: string } | null }) {
   const { t } = useTranslation();
   const bridge = shell();
+  // the click answers at once (Tim, 2026-10-17: "nothing happens"): the check runs, and a
+  // release whose installer is still being built says so instead of staying silent
+  const [asked, setAsked] = useState(false);
   if (status.state === "downloaded") {
     return (
       <p className="mt-2 flex flex-wrap items-center gap-2">
@@ -109,10 +112,20 @@ function SelfUpdate({ status, installer }: { status: UpdateStatus; installer: { 
   }
   return (
     <p className="mt-2 flex flex-wrap items-center gap-2">
-      <Button type="button" size="sm" disabled={status.state === "checking"} onClick={() => void bridge?.downloadUpdate?.()}>
-        {t("Download and install")}
+      <Button
+        type="button"
+        size="sm"
+        disabled={status.state === "checking"}
+        onClick={() => {
+          setAsked(true);
+          void bridge?.downloadUpdate?.();
+        }}
+      >
+        {status.state === "checking" ? t("Checking") : t("Download and install")}
       </Button>
-      {status.state === "error" ? (
+      {asked && status.state === "none" ? (
+        <span className="text-xs text-muted-foreground">{t("The newest release has no installer to fetch yet; it is still being built. Try again in a few minutes.")}</span>
+      ) : status.state === "error" ? (
         <span className="text-xs text-destructive">
           {t("The update could not be fetched: {{message}}", { message: status.message ?? "" })}{" "}
           <button type="button" className="underline underline-offset-4" onClick={() => openExternal(installer?.url ?? ALL_RELEASES_URL)}>

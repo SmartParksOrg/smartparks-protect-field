@@ -255,6 +255,7 @@
   "The local server does not answer.": "The local server does not answer.",
   "The map came too ({{size}} MB).": "The map came too ({{size}} MB).",
   "The map did not come; fetch it from the Map page later.": "The map did not come; fetch it from the Map page later.",
+  "The newest release has no installer to fetch yet; it is still being built. Try again in a few minutes.": "The newest release has no installer to fetch yet; it is still being built. Try again in a few minutes.",
   "The project on this laptop, the files read, and the server the app works with.": "The project on this laptop, the files read, and the server the app works with.",
   "The Protect server this laptop works with, and your account on it.": "The Protect server this laptop works with, and your account on it.",
   "The same email and password you use for Protect. The password goes to the server and is not kept here.": "The same email and password you use for Protect. The password goes to the server and is not kept here.",
