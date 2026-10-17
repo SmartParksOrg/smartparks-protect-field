@@ -28,8 +28,7 @@ export function SignInPage({ setup }: { setup: Setup }) {
     },
   });
   return (
-    <main className="mx-auto flex min-h-dvh max-w-xl flex-col justify-center gap-4 p-4">
-      <h1 className="text-2xl font-semibold text-primary">{t("Smart Parks Protect Go")}</h1>
+    <div className="mx-auto flex w-full max-w-xl flex-col gap-4 p-4">
       <Card>
         <CardHeader>
           <CardTitle>{t("Sign in to {{server}}", { server: setup.server_url })}</CardTitle>
@@ -65,6 +64,6 @@ export function SignInPage({ setup }: { setup: Setup }) {
           </form>
         </CardContent>
       </Card>
-    </main>
+    </div>
   );
 }

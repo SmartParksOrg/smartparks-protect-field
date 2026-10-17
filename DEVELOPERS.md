@@ -2,7 +2,7 @@
 
 This file describes how the Smart Parks Protect Go codebase works today. The plan for where it is going lives in `PROJECT_PLAN.md`. Conventions live in `CONVENTIONS.md`, mirrored from Protect; the frontend's in `frontend/FRONTEND_CONVENTIONS.md`.
 
-Status: v0.3.0 (2026-10-17) is the last tag, the rename to Protect Go (D12); v0.2.0 the same day was the whole cycle (the offline map D4, the bundle D11, a card read, the upload). Before it v0.1.0 the same day with the repository, the Electron shell, the frozen backend, the installers' workflow, the first-run setup (server, account) and the update notice; phase 2 (a card read offline) next. Protect's `shared` package is pinned at d79ffaf (Protect's `main` of 2026-10-17, decisions up to D332, with `shared.station_files`, `shared.station_decode` and the field bundle and map endpoints). Decisions here at D10.
+Status: v0.4.0 (2026-10-17) is the last tag: Protect's shell and words (D13), the project map and the tracker pages (F3); v0.3.0 the same day was the rename to Protect Go (D12), v0.2.0 the same day was the whole cycle (the offline map D4, the bundle D11, a card read, the upload). Before it v0.1.0 the same day with the repository, the Electron shell, the frozen backend, the installers' workflow, the first-run setup (server, account) and the update notice; phase 2 (a card read offline) next. Protect's `shared` package is pinned at d79ffaf (Protect's `main` of 2026-10-17, decisions up to D332, with `shared.station_files`, `shared.station_decode` and the field bundle and map endpoints). Decisions here at D10.
 
 ## What this program is
 
@@ -43,8 +43,9 @@ protect_go/        the Python package: main.py (the server), config.py (settings
                       decoding.py (Protect's decoding imported in one place), store.py (settings.json),
                       protect.py (the Protect server: probe, sign-in), routers/setup.py
 frontend/             the interface: src/api (client, query keys), src/pages (Setup, SignIn, Home),
-                      src/components (UpdateNotice, common/Callout, ui/ shadcn copies), src/hooks
-                      (useLatestRelease), src/lib (version, shell), src/locales
+                      src/components (layout/ Protect's shell, UpdateNotice, OfflineMap, common/, ui/ shadcn
+                      copies), src/hooks (useLatestRelease, useTheme, useMediaQuery), src/lib (version,
+                      shell, windows, palette, theme), src/stores (layout), src/locales
 electron/             the desktop shell: src/main.ts, src/preload.ts, build/ (icon, entitlements,
                       notarize.js, installer.nsh), package.json with the electron-builder block
 backend.spec          PyInstaller: the frozen backend in dist/backend/
@@ -74,6 +75,14 @@ The desktop AddaxAI ships an Electron shell with a PyInstaller-frozen Python bac
 ## A card read (decision D2, phase 2 F2)
 
 `protect_go/cards.py`: `CardStore` owns `field.db` (SQLite, WAL, foreign keys) with `cards`, `card_files`, `frames` and `records`. `import_card(name, files, bundle)` takes what was dropped as `(name, bytes)` pairs: a `.zip` goes through `unpack_card_zip`, a `.jsonl` is a member with the folder from its name, the rest is skipped by name; each member is kept under `cards/<card id>/<folder>/<name>` and parsed with `parse_station_jsonl`; each frame is routed by the LP0 address in its clear header to the bundle's tracker (`trackers_of`: the devices with an `lp0` address, their keys as `Credentials` when the bundle carries them), a frame whose digest was decoded before is `repeated`, else `unwrap_station_frame` and `decode_station_frame` with the device's driver from Protect's registry; a `FrameRefused` or the driver's `ApplicationError` is a `refused` frame with the code and words; an address nobody has is `unknown_address`; a line that is not a frame is `line_error`. Records go in under Protect's canonical key (device, time, kind, the metric or fingerprint) with `INSERT OR IGNORE`, so the counts are new records. The station's reception time counts only when plausible (2020 to tomorrow), as Protect's D324. `card_detail` adds the files, the trackers with their span and the first 100 failures; `positions` is bounded at 5000. `routers/cards.py` is the API (multipart `POST /api/cards`, 409 without a bundle, 422 without a station file). In the interface, `CardsPage` has the drop zone (a folder through `webkitdirectory`, a zip, or dragged files; the relative path travels as the file name) and the list; `CardPage` the counts, the trackers, the positions on `OfflineMap` (which now takes `points` and draws a track per tracker and its fixes), the failures and the files.
+
+## The shell and the pages (decision D13)
+
+`components/layout/AppLayout.tsx`, `Sidebar.tsx`, `navigation.ts` and `ThemeSwitch.tsx` are Protect's, cut down: no project switcher, search, permissions or server pages; the sidebar's sections are the project's pages (Overview, Load a project, Map, Files, Upload, the last three once a project is on the laptop) and the settings (Server, Account); the top bar has the landscape logo with "Protect Go", the loaded project's name, the theme switch and a connection dot (green when signed in). `hooks/useTheme.ts` keeps the theme in the browser (`protect-go-theme`), `stores/layout.ts` the hidden sidebar (`protect-go-layout`). Every page uses `PageHeader` and `Page` from `components/common/PageHeader.tsx`; the map page takes the full height with `flex-1`. `App.tsx` shows the setup page alone until a server is known, then the shell with the routes `/`, `/load`, `/map`, `/files`, `/files/{id}`, `/trackers/{id}`, `/upload`, `/setup`, `/sign-in`; `/cards` redirects to `/files`. The words: the SD card's files are "files" in the interface and the documents, never "cards" (in Dutch "kaart" is the map); the API keeps `/api/cards` and the store its `cards` table.
+
+## The project map and the trackers (phase 2 F3)
+
+`CardStore.trackers()` (every device in the records with its counts, span and newest position), `positions(... since, until)` (bounded at 20000), `metrics(device_id)` and `measurements(device_id, metric, since, until, limit)`; `routers/trackers.py` serves them. `pages/MapPage.tsx` draws every tracker's positions with `OfflineMap` (which takes a `colour` per point, data-driven line and circle colours, a popup on a click and a `className` so it fills the page), a tracker and a window from `lib/windows.ts` (the window counts back from the newest record, since a card is read days after its last fix), a legend from `lib/palette.ts` (Protect's series palette) linking to the tracker pages. `pages/TrackerPage.tsx`: the track, the metrics table and one metric's values.
 
 ## The upload (decision D2, phase 2 F4)
 

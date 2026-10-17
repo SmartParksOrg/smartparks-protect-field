@@ -7,14 +7,16 @@ import { api, type CardDetail, type Position } from "@/api/client";
 import { queryKeys } from "@/api/queryKeys";
 import { Callout } from "@/components/common/Callout";
 import { OfflineMap, type MapPoint } from "@/components/OfflineMap";
+import { Page, PageHeader } from "@/components/common/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Card as Panel, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import type { MapState } from "@/pages/MapPage";
 
-/** One card (phase 2 F2): its counts, its trackers with their span, its positions on the
- * offline map, its files, and every frame that was not read with the reason, so a person at
- * the station knows at once whether the card is good and whose keys are missing. */
-export function CardPage() {
+/** One SD card's files as read (phase 2 F2): the counts, the trackers with their span, the
+ * positions on the offline map, the files, and every frame that was not read with the reason,
+ * so a person at the station knows at once whether the card is good and whose keys are
+ * missing. */
+export function BatchPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { cardId = "" } = useParams();
@@ -26,7 +28,7 @@ export function CardPage() {
   const map = useQuery({ queryKey: queryKeys.map, queryFn: () => api<MapState>("/api/map") });
   const remove = useMutation({
     mutationFn: () => fetch(`/api/cards/${cardId}`, { method: "DELETE" }),
-    onSuccess: () => void navigate("/cards", { replace: true }),
+    onSuccess: () => void navigate("/files", { replace: true }),
   });
   const names = useMemo(() => new Map((card.data?.trackers ?? []).map((tr) => [tr.device_id, tr.device_name])), [card.data]);
   const points: MapPoint[] = useMemo(
@@ -43,19 +45,23 @@ export function CardPage() {
   const dark = document.documentElement.classList.contains("dark");
   const detail = card.data;
   return (
-    <main className="mx-auto flex min-h-dvh max-w-4xl flex-col gap-4 p-4">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <h1 className="text-2xl font-semibold text-primary">{detail?.name ?? t("Card")}</h1>
-        <Button asChild variant="ghost" size="sm">
-          <Link to="/cards">{t("All cards")}</Link>
-        </Button>
-      </div>
+    <>
+      <PageHeader
+        title={detail?.name ?? t("Files")}
+        description={detail ? (detail.station_name ?? detail.station_eui ?? t("Unknown station")) : undefined}
+        actions={
+          <Button asChild variant="ghost" size="sm">
+            <Link to="/files">{t("All files")}</Link>
+          </Button>
+        }
+      />
+      <Page>
       {card.isError && <Callout kind="error">{card.error.message}</Callout>}
       {detail && (
         <>
           <Panel>
             <CardHeader>
-              <CardTitle>{detail.station_name ?? detail.station_eui ?? t("Unknown station")}</CardTitle>
+              <CardTitle>{t("What the files brought")}</CardTitle>
               <CardDescription>
                 {t("Read on {{when}}: {{files}} files, {{frames}} frames; {{decoded}} decoded, {{repeated}} repeats, {{refused}} refused, {{unknown}} of unknown trackers, {{errors}} unreadable lines. New records: {{positions}} positions, {{measurements}} measurements, {{states}} states, {{events}} events.", {
                   when: new Date(detail.imported_at).toLocaleString(),
@@ -88,7 +94,7 @@ export function CardPage() {
               <CardTitle>{t("Trackers")}</CardTitle>
             </CardHeader>
             <CardContent className="overflow-x-auto">
-              {detail.trackers.length === 0 && <p className="text-sm text-muted-foreground">{t("No tracker of the project on this card.")}</p>}
+              {detail.trackers.length === 0 && <p className="text-sm text-muted-foreground">{t("No tracker of the project in these files.")}</p>}
               {detail.trackers.length > 0 && (
                 <table className="w-full text-sm">
                   <thead className="text-left text-muted-foreground">
@@ -104,7 +110,11 @@ export function CardPage() {
                   <tbody>
                     {detail.trackers.map((tr) => (
                       <tr key={tr.device_id} className="border-t">
-                        <td className="py-1 pr-3">{tr.device_name}</td>
+                        <td className="py-1 pr-3">
+                          <Link className="underline underline-offset-4" to={`/trackers/${tr.device_id}`}>
+                            {tr.device_name}
+                          </Link>
+                        </td>
                         <td className="py-1 pr-3 text-right tabular-nums">{tr.frames}</td>
                         <td className="py-1 pr-3 text-right tabular-nums">{tr.decoded}</td>
                         <td className="py-1 pr-3 text-right tabular-nums">{tr.refused}</td>
@@ -183,11 +193,12 @@ export function CardPage() {
           </Panel>
           <div>
             <Button type="button" variant="outline" size="sm" onClick={() => remove.mutate()} disabled={remove.isPending}>
-              {t("Remove this card from the laptop")}
+              {t("Remove these files from the laptop")}
             </Button>
           </div>
         </>
       )}
-    </main>
+      </Page>
+    </>
   );
 }

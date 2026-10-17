@@ -156,3 +156,28 @@ export interface UploadRun {
   stopped: string | null;
   state: Uploads;
 }
+
+export interface Tracker {
+  device_id: string;
+  device_name: string;
+  entity_id: string | null;
+  positions: number;
+  measurements: number;
+  first_time: string | null;
+  last_time: string | null;
+  last_lat: number | null;
+  last_lon: number | null;
+}
+
+export interface Metric {
+  metric: string;
+  count: number;
+  first_time: string;
+  last_time: string;
+  latest: number | boolean | string | null;
+}
+
+export interface Measurement {
+  time: string;
+  value: number | boolean | string | null;
+}

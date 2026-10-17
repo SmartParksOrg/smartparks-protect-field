@@ -214,3 +214,35 @@ def test_a_bundle_without_keys_reads_frames_as_refused(tmp_path):
     assert (
         failure["code"] == "CREDENTIALS_MISSING" and "SP100001 has no LP0 keys" in failure["reason"]
     )
+
+
+async def test_the_trackers_their_positions_and_measurements_across_files(app, tmp_path):
+    BundleStore(tmp_path / "data", "file").save(BUNDLE)
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        assert (await client.get("/api/trackers")).json() == []
+        read = await client.post(
+            "/api/cards", files=[("files", ("card.zip", card_zip(), "application/zip"))]
+        )
+        assert read.status_code == 201, read.text
+        (tracker,) = (await client.get("/api/trackers")).json()
+        assert tracker["device_name"] == "SP100001" and tracker["positions"] == 3
+        assert tracker["last_lat"] is not None and tracker["first_time"] <= tracker["last_time"]
+        everything = (await client.get("/api/positions")).json()
+        assert len(everything) == 3 and everything[0]["time"] >= everything[-1]["time"]
+        windowed = (
+            await client.get(
+                "/api/positions", params={"device_id": "d1", "since": tracker["last_time"]}
+            )
+        ).json()
+        assert len(windowed) == 1
+        metrics = (await client.get("/api/trackers/d1/metrics")).json()
+        assert isinstance(metrics, list)
+        if metrics:
+            first = metrics[0]
+            values = (
+                await client.get(
+                    "/api/trackers/d1/measurements", params={"metric": first["metric"]}
+                )
+            ).json()
+            assert len(values) == first["count"] and values[0]["value"] == first["latest"]
+        assert (await client.get("/api/trackers/nobody/metrics")).status_code == 404

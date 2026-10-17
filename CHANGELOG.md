@@ -6,6 +6,19 @@ All notable changes to Smart Parks Protect Go. The format follows Keep a Changel
 
 Nothing yet.
 
+## v0.4.0, 2026-10-17
+
+Protect's shell and words, and the project map. Protect pinned at d79ffaf.
+
+### Added
+
+- The project map (decision D4, phase 2 F3): every tracker's track from the files on the laptop in its own colour over the offline map, a tracker and a time window to choose, a click on a fix for who and when. A page per tracker with its track, the metrics it reported with their newest values, and one metric's values as a table.
+
+### Changed
+
+- The app wears Protect's shell (decision D13): the same sidebar and drawer, top bar with the logo, page headers, theme switch and language choice, so the pages look and navigate as Protect's do.
+- The SD card's files are called files, never cards: the Files page, "Read SD card files", "Files on this laptop"; in Dutch "bestanden", so the map ("kaart") is the only map.
+
 ## v0.3.0, 2026-10-17
 
 ### Changed

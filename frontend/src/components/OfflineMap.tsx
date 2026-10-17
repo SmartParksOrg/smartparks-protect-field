@@ -16,6 +16,7 @@ export interface MapPoint {
   lon: number;
   time: string;
   label: string;
+  colour?: string;
 }
 
 /** The positions as GeoJSON: a line per label in time order, and the points. */
@@ -32,14 +33,14 @@ function pointsToGeoJson(points: MapPoint[]): GeoJSON.FeatureCollection {
     if (ordered.length > 1) {
       features.push({
         type: "Feature",
-        properties: { label, kind: "track" },
+        properties: { label, kind: "track", colour: ordered[0].colour ?? "#52735E" },
         geometry: { type: "LineString", coordinates: ordered.map((p) => [p.lon, p.lat]) },
       });
     }
     for (const p of ordered) {
       features.push({
         type: "Feature",
-        properties: { label, kind: "fix", time: p.time },
+        properties: { label, kind: "fix", time: p.time, colour: p.colour ?? "#52735E" },
         geometry: { type: "Point", coordinates: [p.lon, p.lat] },
       });
     }
@@ -52,7 +53,17 @@ let protocolRegistered = false;
 /** The offline map (decision D4): MapLibre over the project's PMTiles file served by the local
  * backend with range requests, drawn with Protomaps' basemap style whose sprites and glyphs
  * ship inside the app (`public/map/`), so nothing is fetched from the internet. */
-export function OfflineMap({ bounds, dark, points = [] }: { bounds: MapBounds; dark: boolean; points?: MapPoint[] }) {
+export function OfflineMap({
+  bounds,
+  dark,
+  points = [],
+  className = "h-[60vh] min-h-80 w-full rounded-md border",
+}: {
+  bounds: MapBounds;
+  dark: boolean;
+  points?: MapPoint[];
+  className?: string;
+}) {
   const container = useRef<HTMLDivElement>(null);
   const mapRef = useRef<InstanceType<typeof maplibregl.Map> | null>(null);
   useEffect(() => {
@@ -91,7 +102,7 @@ export function OfflineMap({ bounds, dark, points = [] }: { bounds: MapBounds; d
         type: "line",
         source: "positions",
         filter: ["==", ["get", "kind"], "track"],
-        paint: { "line-color": "#52735E", "line-width": 2, "line-opacity": 0.8 },
+        paint: { "line-color": ["get", "colour"], "line-width": 2, "line-opacity": 0.8 },
       });
       map.addLayer({
         id: "fixes",
@@ -100,11 +111,24 @@ export function OfflineMap({ bounds, dark, points = [] }: { bounds: MapBounds; d
         filter: ["==", ["get", "kind"], "fix"],
         paint: {
           "circle-radius": 4,
-          "circle-color": "#52735E",
+          "circle-color": ["get", "colour"],
           "circle-stroke-color": "#ffffff",
           "circle-stroke-width": 1.5,
         },
       });
+      // a fix says who and when, as Protect's map does on a click
+      map.on("click", "fixes", (event) => {
+        const feature = event.features?.[0];
+        if (!feature || feature.geometry.type !== "Point") return;
+        const [lon, lat] = feature.geometry.coordinates;
+        const when = new Date(String(feature.properties?.time)).toLocaleString();
+        new maplibregl.Popup({ closeButton: false })
+          .setLngLat([lon, lat])
+          .setHTML(`<strong>${String(feature.properties?.label)}</strong><br>${when}<br><span style="color:#6b7280">${lat.toFixed(5)}, ${lon.toFixed(5)}</span>`)
+          .addTo(map);
+      });
+      map.on("mouseenter", "fixes", () => (map.getCanvas().style.cursor = "pointer"));
+      map.on("mouseleave", "fixes", () => (map.getCanvas().style.cursor = ""));
       mapRef.current = map;
     });
     return () => {
@@ -121,5 +145,5 @@ export function OfflineMap({ bounds, dark, points = [] }: { bounds: MapBounds; d
       (source as { setData: (data: GeoJSON.FeatureCollection) => void }).setData(pointsToGeoJson(points));
     }
   }, [points]);
-  return <div ref={container} className="z-0 h-[60vh] min-h-80 w-full rounded-md border" />;
+  return <div ref={container} className={`z-0 ${className}`} />;
 }

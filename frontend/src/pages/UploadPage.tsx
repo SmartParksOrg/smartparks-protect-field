@@ -6,6 +6,7 @@ import { Link } from "react-router";
 import { api, send, type UploadRun, type Uploads } from "@/api/client";
 import { queryKeys } from "@/api/queryKeys";
 import { Callout } from "@/components/common/Callout";
+import { Page, PageHeader } from "@/components/common/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Card as Panel, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
@@ -27,13 +28,9 @@ export function UploadPage({ signedIn }: { signedIn: boolean }) {
   });
   const state = uploads.data;
   return (
-    <main className="mx-auto flex min-h-dvh max-w-4xl flex-col gap-4 p-4">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <h1 className="text-2xl font-semibold text-primary">{t("Upload to Protect")}</h1>
-        <Button asChild variant="ghost" size="sm">
-          <Link to="/">{t("Back")}</Link>
-        </Button>
-      </div>
+    <>
+      <PageHeader title={t("Upload to Protect")} description={t("When you are online: the files you read go to the server as they were on the card.")} />
+      <Page>
       <Panel>
         <CardHeader>
           <CardTitle>
@@ -141,6 +138,7 @@ export function UploadPage({ signedIn }: { signedIn: boolean }) {
           )}
         </CardContent>
       </Panel>
-    </main>
+      </Page>
+    </>
   );
 }

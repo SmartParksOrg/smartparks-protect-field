@@ -8,6 +8,10 @@ export const queryKeys = {
   bundle: ["bundle"] as const,
   cards: ["cards"] as const,
   uploads: ["uploads"] as const,
+  trackers: ["trackers"] as const,
+  positions: (deviceId: string, since: string | null) => ["positions", deviceId, since] as const,
+  metrics: (deviceId: string) => ["trackers", deviceId, "metrics"] as const,
+  measurements: (deviceId: string, metric: string, since: string | null) => ["trackers", deviceId, "measurements", metric, since] as const,
   card: (id: string) => ["cards", id] as const,
   cardPositions: (id: string) => ["cards", id, "positions"] as const,
 };

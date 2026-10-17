@@ -28,8 +28,7 @@ export function SetupPage({ current }: { current?: Setup }) {
     },
   });
   return (
-    <main className="mx-auto flex min-h-dvh max-w-xl flex-col justify-center gap-4 p-4">
-      <h1 className="text-2xl font-semibold text-primary">{t("Smart Parks Protect Go")}</h1>
+    <div className="mx-auto flex w-full max-w-xl flex-col gap-4 p-4">
       <Card>
         <CardHeader>
           <CardTitle>{t("Which Protect server does this laptop work with?")}</CardTitle>
@@ -72,6 +71,6 @@ export function SetupPage({ current }: { current?: Setup }) {
           </form>
         </CardContent>
       </Card>
-    </main>
+    </div>
   );
 }

@@ -40,7 +40,7 @@ def sha256(data: bytes) -> str:
 
 EARLIEST_RECEPTION = datetime(2020, 1, 1, tzinfo=UTC)
 LIST_LIMIT = 200
-POSITIONS_LIMIT = 5000
+POSITIONS_LIMIT = 20000
 FAILURES_LIMIT = 100
 
 SCHEMA = """
@@ -610,9 +610,16 @@ class CardStore:
         return summary
 
     def positions(
-        self, card_id: str | None, device_id: str | None, limit: int = POSITIONS_LIMIT
+        self,
+        card_id: str | None,
+        device_id: str | None,
+        limit: int = POSITIONS_LIMIT,
+        *,
+        since: str | None = None,
+        until: str | None = None,
     ) -> list[dict[str, Any]]:
-        """Positions of a card or a device, newest first, bounded."""
+        """Positions of a batch of files, a device or everything, within a window, newest first,
+        bounded."""
         clauses, params = ["kind = 'position'"], []
         if card_id:
             clauses.append("card_id = ?")
@@ -620,6 +627,12 @@ class CardStore:
         if device_id:
             clauses.append("device_id = ?")
             params.append(device_id)
+        if since:
+            clauses.append("time >= ?")
+            params.append(since)
+        if until:
+            clauses.append("time <= ?")
+            params.append(until)
         with self._connect() as db:
             rows = db.execute(
                 "SELECT device_id, entity_id, time, lat, lon FROM records "
@@ -682,6 +695,100 @@ class CardStore:
                 (LIST_LIMIT,),
             ).fetchall()
         return [dict(row) for row in rows]
+
+    # --- the trackers across every batch of files (F3)
+
+    def trackers(self) -> list[dict[str, Any]]:
+        """Every tracker that appears in the records: its name, entity, how many positions and
+        measurements, the span of its positions and its newest position."""
+        with self._connect() as db:
+            names = {
+                row["device_id"]: row["device_name"]
+                for row in db.execute(
+                    "SELECT device_id, MAX(device_name) AS device_name FROM frames "
+                    "WHERE device_id IS NOT NULL GROUP BY device_id"
+                ).fetchall()
+            }
+            rows = db.execute(
+                "SELECT device_id, entity_id, "
+                "SUM(kind = 'position') AS positions, SUM(kind = 'measurement') AS measurements, "
+                "MIN(CASE WHEN kind = 'position' THEN time END) AS first_time, "
+                "MAX(CASE WHEN kind = 'position' THEN time END) AS last_time "
+                "FROM records GROUP BY device_id, entity_id ORDER BY device_id"
+            ).fetchall()
+            result = []
+            for row in rows:
+                last = db.execute(
+                    "SELECT time, lat, lon FROM records WHERE device_id = ? AND kind = 'position' "
+                    "ORDER BY time DESC LIMIT 1",
+                    (row["device_id"],),
+                ).fetchone()
+                result.append(
+                    {
+                        **dict(row),
+                        "device_name": names.get(row["device_id"], row["device_id"]),
+                        "last_lat": last["lat"] if last else None,
+                        "last_lon": last["lon"] if last else None,
+                    }
+                )
+        return result
+
+    def metrics(self, device_id: str) -> list[dict[str, Any]]:
+        """The metrics a tracker reported, each with its count, span and newest value."""
+        with self._connect() as db:
+            rows = db.execute(
+                "SELECT metric, COUNT(*) AS count, MIN(time) AS first_time, MAX(time) AS last_time "
+                "FROM records WHERE device_id = ? AND kind = 'measurement' GROUP BY metric "
+                "ORDER BY metric",
+                (device_id,),
+            ).fetchall()
+            result = []
+            for row in rows:
+                last = db.execute(
+                    "SELECT value, data FROM records WHERE device_id = ? AND kind = 'measurement' "
+                    "AND metric = ? ORDER BY time DESC LIMIT 1",
+                    (device_id, row["metric"]),
+                ).fetchone()
+                latest = (
+                    last["value"]
+                    if last and last["value"] is not None
+                    else (json.loads(last["data"]).get("value") if last else None)
+                )
+                result.append({**dict(row), "latest": latest})
+        return result
+
+    def measurements(
+        self,
+        device_id: str,
+        metric: str,
+        *,
+        since: str | None = None,
+        until: str | None = None,
+        limit: int = POSITIONS_LIMIT,
+    ) -> list[dict[str, Any]]:
+        clauses = ["device_id = ?", "kind = 'measurement'", "metric = ?"]
+        params: list[Any] = [device_id, metric]
+        if since:
+            clauses.append("time >= ?")
+            params.append(since)
+        if until:
+            clauses.append("time <= ?")
+            params.append(until)
+        with self._connect() as db:
+            rows = db.execute(
+                f"SELECT time, value, data FROM records WHERE {' AND '.join(clauses)} "
+                "ORDER BY time DESC LIMIT ?",
+                (*params, limit),
+            ).fetchall()
+        return [
+            {
+                "time": row["time"],
+                "value": row["value"]
+                if row["value"] is not None
+                else json.loads(row["data"]).get("value"),
+            }
+            for row in rows
+        ]
 
     def delete_card(self, card_id: str) -> bool:
         with self._connect() as db:

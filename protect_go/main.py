@@ -19,6 +19,7 @@ from protect_go.routers.bundle import router as bundle_router
 from protect_go.routers.cards import router as cards_router
 from protect_go.routers.map import router as map_router
 from protect_go.routers.setup import router as setup_router
+from protect_go.routers.trackers import router as trackers_router
 from protect_go.routers.uploads import router as uploads_router
 from protect_go.store import Store
 from protect_go.version import ROOT, __version__, protect_revision
@@ -47,6 +48,7 @@ def create_app() -> FastAPI:
     app.include_router(bundle_router)
     app.include_router(cards_router)
     app.include_router(uploads_router)
+    app.include_router(trackers_router)
 
     @app.get("/api/health", response_model=Health)
     async def health() -> Health:

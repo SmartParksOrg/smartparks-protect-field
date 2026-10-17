@@ -6,12 +6,15 @@ import { Link } from "react-router";
 import { api, type Bundle, type Card } from "@/api/client";
 import { queryKeys } from "@/api/queryKeys";
 import { Callout } from "@/components/common/Callout";
+import { Page, PageHeader } from "@/components/common/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Card as Panel, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
-/** The cards read on this laptop (phase 2 F2): drop a card's folders or a zip of them, and the
- * list of what was read, each a link to its detail. Reading needs the loaded project's keys. */
-export function CardsPage() {
+/** The SD card files read on this laptop (phase 2 F2; "files", not "cards", since Tim,
+ * 2026-10-17: in Dutch "kaart" is the map): drop a card's LOG folders or a zip of them, and the
+ * list of what was read, each batch a link to its detail. Reading needs the loaded project's
+ * keys. */
+export function FilesPage() {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
   const cards = useQuery({ queryKey: queryKeys.cards, queryFn: () => api<Card[]>("/api/cards") });
@@ -45,16 +48,12 @@ export function CardsPage() {
   };
   const canRead = bundle.data?.present === true;
   return (
-    <main className="mx-auto flex min-h-dvh max-w-4xl flex-col gap-4 p-4">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <h1 className="text-2xl font-semibold text-primary">{t("Cards")}</h1>
-        <Button asChild variant="ghost" size="sm">
-          <Link to="/">{t("Back")}</Link>
-        </Button>
-      </div>
+    <>
+      <PageHeader title={t("Files")} description={t("The files of the offload stations' SD cards, read on this laptop with the project's keys.")} />
+      <Page>
       {!canRead && bundle.data && (
         <Callout kind="info">
-          {t("Load a project first; a card is read with the project's keys.")}{" "}
+          {t("Load a project first; the files are read with the project's keys.")}{" "}
           <Link className="underline underline-offset-4" to="/load">
             {t("Load a project")}
           </Link>
@@ -62,7 +61,7 @@ export function CardsPage() {
       )}
       <div
         role="region"
-        aria-label={t("Drop a card here")}
+        aria-label={t("Drop the files here")}
         onDragOver={(event) => {
           event.preventDefault();
           setDragging(true);
@@ -77,7 +76,7 @@ export function CardsPage() {
           dragging ? "border-primary bg-accent" : "border-border"
         }`}
       >
-        <p className="font-medium">{t("Read a card")}</p>
+        <p className="font-medium">{t("Read SD card files")}</p>
         <p className="text-muted-foreground">
           {t("Drop the card's LOG folders or a zip of them here, or pick them below. The files are read with the project's keys and kept for the upload.")}
         </p>
@@ -100,7 +99,7 @@ export function CardsPage() {
           onChange={(event) => onFiles(event.target.files)}
         />
         <input ref={zipInput} type="file" accept=".zip,.jsonl" multiple className="hidden" aria-label={t("A zip of the card")} onChange={(event) => onFiles(event.target.files)} />
-        {read.isPending && <p className="text-muted-foreground">{t("Reading the card")}</p>}
+        {read.isPending && <p className="text-muted-foreground">{t("Reading the files")}</p>}
         {read.isError && <Callout kind="error">{read.error.message}</Callout>}
         {last && (
           <Callout kind="success">
@@ -113,7 +112,7 @@ export function CardsPage() {
               unknown: last.unknown,
               repeated: last.repeated,
             })}{" "}
-            <Link className="underline underline-offset-4" to={`/cards/${last.id}`}>
+            <Link className="underline underline-offset-4" to={`/files/${last.id}`}>
               {t("Open")}
             </Link>
           </Callout>
@@ -121,16 +120,16 @@ export function CardsPage() {
       </div>
       <Panel>
         <CardHeader>
-          <CardTitle>{t("Cards on this laptop")}</CardTitle>
-          <CardDescription>{t("Newest first. Open one for its files, its trackers and what could not be read.")}</CardDescription>
+          <CardTitle>{t("Files on this laptop")}</CardTitle>
+          <CardDescription>{t("Each row is one SD card read, newest first. Open one for its files, its trackers and what could not be read.")}</CardDescription>
         </CardHeader>
         <CardContent className="overflow-x-auto">
-          {cards.data && cards.data.length === 0 && <p className="text-sm text-muted-foreground">{t("No card read yet.")}</p>}
+          {cards.data && cards.data.length === 0 && <p className="text-sm text-muted-foreground">{t("No files read yet.")}</p>}
           {cards.data && cards.data.length > 0 && (
             <table className="w-full text-sm">
               <thead className="text-left text-muted-foreground">
                 <tr>
-                  <th className="py-1 pr-3 font-medium">{t("Card")}</th>
+                  <th className="py-1 pr-3 font-medium">{t("SD card")}</th>
                   <th className="py-1 pr-3 font-medium">{t("Station")}</th>
                   <th className="py-1 pr-3 text-right font-medium">{t("Files")}</th>
                   <th className="py-1 pr-3 text-right font-medium">{t("Frames")}</th>
@@ -143,7 +142,7 @@ export function CardsPage() {
                 {cards.data.map((card) => (
                   <tr key={card.id} className="border-t">
                     <td className="py-1 pr-3">
-                      <Link className="underline underline-offset-4" to={`/cards/${card.id}`}>
+                      <Link className="underline underline-offset-4" to={`/files/${card.id}`}>
                         {card.name}
                       </Link>
                     </td>
@@ -160,6 +159,7 @@ export function CardsPage() {
           )}
         </CardContent>
       </Panel>
-    </main>
+      </Page>
+    </>
   );
 }

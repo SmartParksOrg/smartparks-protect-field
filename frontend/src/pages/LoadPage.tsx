@@ -6,6 +6,7 @@ import { Link } from "react-router";
 import { api, send, type Bundle } from "@/api/client";
 import { queryKeys } from "@/api/queryKeys";
 import { Callout } from "@/components/common/Callout";
+import { Page, PageHeader } from "@/components/common/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import type { MapState } from "@/pages/MapPage";
@@ -48,13 +49,9 @@ export function LoadPage({ signedIn }: { signedIn: boolean }) {
   const wanted = choice || current?.project_id || "";
   const chosen = projects.data?.find((p) => p.id === wanted) ?? projects.data?.[0];
   return (
-    <main className="mx-auto flex min-h-dvh max-w-xl flex-col gap-4 p-4">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <h1 className="text-2xl font-semibold text-primary">{t("Load a project")}</h1>
-        <Button asChild variant="ghost" size="sm">
-          <Link to="/">{t("Back")}</Link>
-        </Button>
-      </div>
+    <>
+      <PageHeader title={t("Load a project")} description={t("Before you leave, while online: the project's devices, keys and map come to this laptop.")} />
+      <Page>
       <Card>
         <CardHeader>
           <CardTitle>{t("Before you leave, while online")}</CardTitle>
@@ -141,6 +138,7 @@ export function LoadPage({ signedIn }: { signedIn: boolean }) {
           </CardContent>
         </Card>
       )}
-    </main>
+      </Page>
+    </>
   );
 }
