@@ -290,3 +290,25 @@ async def test_every_file_is_a_row_with_its_counts_and_its_properties(app, tmp_p
             "PAYLOAD_DECODE_FAILED",
         ] or [f["code"] for f in detail["failures"]] == ["PAYLOAD_DECODE_FAILED", "LINE_UNREADABLE"]
         assert (await client.get("/api/files/nothing")).status_code == 404
+
+
+async def test_the_records_rows_merge_the_fix_and_the_measurements_of_a_moment(app, tmp_path):
+    """Decision D25: the Data explorer's rows, one per tracker and moment, with the offered
+    metrics beside them."""
+    BundleStore(tmp_path / "data", "file").save(BUNDLE)
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        await client.post(
+            "/api/cards", files=[("files", ("card.zip", card_zip(), "application/zip"))]
+        )
+        rows = (await client.get("/api/records", params={"device_id": ["d1"]})).json()
+        assert rows and all(r["device_id"] == "d1" and r["device_name"] == "SP100001" for r in rows)
+        assert rows[0]["time"] >= rows[-1]["time"]
+        with_fix = [r for r in rows if r["lat"] is not None]
+        assert len(with_fix) == 3
+        assert all(isinstance(r["values"], dict) for r in rows)
+        metrics = (await client.get("/api/records/metrics", params={"device_id": ["d1"]})).json()
+        assert all(set(m) == {"key", "count"} for m in metrics)
+        nothing = (await client.get("/api/records", params={"device_id": ["nobody"]})).json()
+        assert nothing == []
+        stations = (await client.get("/api/bundle/stations")).json()
+        assert stations and stations[0]["station_eui"] == STATION

@@ -88,6 +88,37 @@ async def metric_definitions(request: Request) -> list[dict[str, Any]]:
     return rows
 
 
+class StationRead(BaseModel):
+    device_id: str
+    name: str
+    station_eui: str
+    lat: float | None = None
+    lon: float | None = None
+
+
+@router.get("/bundle/stations", response_model=list[StationRead])
+async def stations(request: Request) -> list[dict[str, Any]]:
+    """The offload stations of the bundle with where they stand, for the explorer's map."""
+    loaded = _bundle_store(request).load()
+    if loaded is None:
+        return []
+    bundle, _fetched = loaded
+    out: list[dict[str, Any]] = []
+    for s in bundle.get("stations", []):
+        geometry = s.get("geometry") or {}
+        coordinates = geometry.get("coordinates") if geometry.get("type") == "Point" else None
+        out.append(
+            {
+                "device_id": str(s["device_id"]),
+                "name": str(s.get("entity_name") or s.get("device_name") or s["station_eui"]),
+                "station_eui": str(s["station_eui"]),
+                "lon": coordinates[0] if coordinates else None,
+                "lat": coordinates[1] if coordinates else None,
+            }
+        )
+    return out
+
+
 @router.post("/bundle/fetch", response_model=LoadResult)
 async def load_project(body: LoadRequest, request: Request) -> LoadResult:
     """Fetch the project's bundle and keep it, then its map; the server's own words when

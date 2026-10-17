@@ -6,6 +6,12 @@ All notable changes to Smart Parks Protect Go. The format follows Keep a Changel
 
 Nothing yet.
 
+## v0.10.0, 2026-10-17
+
+### Changed
+
+- The Data explorer is Protect's Explore page in small (decision D25): the selection strip with the trackers, the period and the metrics, the tabs table, chart and map, the records table in a drawer under the chart and the map, and Protect's map controls on the offline tiles (zoom, north, fit the tracks, the Layers panel with the trackers and the base map's look, the stations as markers, the time slider). Every tracker and measurement is on until narrowed; the measurement chips and the newest-values table of v0.9.0 are gone (Tim, 2026-10-17: too complex, and the same experience as Protect wanted).
+
 ## v0.9.5, 2026-10-17
 
 ### Fixed

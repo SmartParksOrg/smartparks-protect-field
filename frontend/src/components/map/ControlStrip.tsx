@@ -1,0 +1,135 @@
+import { useTranslation } from "react-i18next";
+import type { LucideIcon } from "lucide-react";
+import type { ReactNode } from "react";
+
+import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+
+/**
+ * The map's control strip (phase 19, decision D137): one column of square icon buttons,
+ * rendered into a MapLibre control host top right (the tools), bottom right (zoom, north and
+ * Locate, decision D173) or straight into the page top left (Layers and Feed, decision D174). One style for every control: the card
+ * colour, a tooltip with the name, the active one filled, a count badge where a control has one.
+ */
+export interface StripButton {
+  kind?: "button";
+  key: string;
+  icon: LucideIcon;
+  label: string;
+  active?: boolean;
+  disabled?: boolean;
+  /** A small count on the button, for example the number of tracks on. */
+  badge?: number;
+  /** The one filled button when not active as well (the Layers button, decision D174). */
+  emphasis?: boolean;
+  onClick: () => void;
+}
+
+export interface StripMenu {
+  kind: "menu";
+  key: string;
+  icon: LucideIcon;
+  label: string;
+  value: string;
+  options: { value: string; label: string }[];
+  onChange: (value: string) => void;
+}
+
+export type StripItem = StripButton | StripMenu;
+
+const BUTTON = "size-9 rounded-md border bg-card shadow-sm";
+
+function StripButtonView({ item }: { item: StripButton }) {
+  const Icon = item.icon;
+  return (
+    <span className="relative">
+      <Button
+        type="button"
+        variant={item.active || item.emphasis ? "default" : "outline"}
+        size="icon"
+        className={item.active || item.emphasis ? "size-9 rounded-md shadow-sm" : BUTTON}
+        aria-label={item.label}
+        aria-pressed={item.active}
+        title={item.label}
+        disabled={item.disabled}
+        onClick={item.onClick}
+      >
+        <Icon className="size-4" />
+      </Button>
+      {item.badge != null && item.badge > 0 && (
+        <span className="pointer-events-none absolute -top-1 -right-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-brand-sand px-1 text-[10px] font-semibold leading-none text-foreground">
+          {item.badge}
+        </span>
+      )}
+    </span>
+  );
+}
+
+function StripMenuView({ item }: { item: StripMenu }) {
+  const Icon = item.icon;
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button
+          type="button"
+          variant="outline"
+          size="icon"
+          className={BUTTON}
+          aria-label={item.label}
+          title={item.label}
+        >
+          <Icon className="size-4" />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent side="left" align="start">
+        <DropdownMenuRadioGroup
+          value={item.value}
+          onValueChange={item.onChange}
+        >
+          {item.options.map((o) => (
+            <DropdownMenuRadioItem key={o.value} value={o.value}>
+              {o.label}
+            </DropdownMenuRadioItem>
+          ))}
+        </DropdownMenuRadioGroup>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
+
+export function ControlStrip({
+  items,
+  children,
+  label,
+  className = "flex flex-col gap-1.5",
+}: {
+  items: StripItem[];
+  children?: ReactNode;
+  label?: string;
+  className?: string;
+}) {
+  const { t } = useTranslation();
+  return (
+    <div
+      className={className}
+      role="toolbar"
+      aria-label={label ?? t("Map tools")}
+      aria-orientation="vertical"
+    >
+      {items.map((item) =>
+        item.kind === "menu" ? (
+          <StripMenuView key={item.key} item={item} />
+        ) : (
+          <StripButtonView key={item.key} item={item} />
+        ),
+      )}
+      {children}
+    </div>
+  );
+}

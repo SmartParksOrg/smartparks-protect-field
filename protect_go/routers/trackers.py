@@ -3,12 +3,12 @@ a window and bounded, each tracker with its span and newest position, and a trac
 and measurements. What Protect's map and explorer show of a project, here from the files on the
 laptop."""
 
-from typing import Any
+from typing import Annotated, Any
 
-from fastapi import APIRouter, HTTPException, Request
+from fastapi import APIRouter, HTTPException, Query, Request
 from pydantic import BaseModel
 
-from protect_go.cards import POSITIONS_LIMIT, CardStore
+from protect_go.cards import POSITIONS_LIMIT, RECORDS_LIMIT, CardStore
 
 router = APIRouter(prefix="/api")
 
@@ -69,6 +69,47 @@ def positions(
     return _cards(request).positions(
         None, device_id, min(limit, POSITIONS_LIMIT), since=since, until=until
     )
+
+
+class RecordRead(BaseModel):
+    time: str
+    device_id: str
+    device_name: str
+    entity_id: str | None
+    lat: float | None
+    lon: float | None
+    values: dict[str, Any]
+
+
+class OfferedMetricRead(BaseModel):
+    key: str
+    count: int
+
+
+@router.get("/records", response_model=list[RecordRead])
+def records(
+    request: Request,
+    device_id: Annotated[list[str] | None, Query()] = None,
+    since: str | None = None,
+    until: str | None = None,
+    limit: int = RECORDS_LIMIT,
+) -> list[dict[str, Any]]:
+    """The Data explorer's rows (decision D25): one per tracker and moment with the fix and
+    the measurements of that moment, newest first, at most `limit` (50,000)."""
+    return _cards(request).records(
+        device_id or None, since=since, until=until, limit=min(limit, RECORDS_LIMIT)
+    )
+
+
+@router.get("/records/metrics", response_model=list[OfferedMetricRead])
+def offered_metrics(
+    request: Request,
+    device_id: Annotated[list[str] | None, Query()] = None,
+    since: str | None = None,
+    until: str | None = None,
+) -> list[dict[str, Any]]:
+    """The metrics the chosen trackers reported in the window, with counts."""
+    return _cards(request).offered_metrics(device_id or None, since=since, until=until)
 
 
 @router.get("/trackers/{device_id}/metrics", response_model=list[MetricRead])

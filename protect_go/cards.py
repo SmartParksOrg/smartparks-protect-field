@@ -8,6 +8,7 @@ The records are deduplicated the way Protect does it (ADR 0008): one key per dev
 record type, with the metric or the fingerprint, so a frame the station stored twice counts once.
 """
 
+import contextlib
 import hashlib
 import json
 import sqlite3
@@ -40,6 +41,7 @@ def sha256(data: bytes) -> str:
 
 EARLIEST_RECEPTION = datetime(2020, 1, 1, tzinfo=UTC)
 LIST_LIMIT = 200
+RECORDS_LIMIT = 50_000
 POSITIONS_LIMIT = 20000
 FAILURES_LIMIT = 100
 
@@ -608,6 +610,94 @@ class CardStore:
         ]
         summary["failures"] = [dict(row) for row in failures]
         return summary
+
+    def records(
+        self,
+        device_ids: list[str] | None,
+        *,
+        since: str | None = None,
+        until: str | None = None,
+        limit: int = RECORDS_LIMIT,
+    ) -> list[dict[str, Any]]:
+        """The rows of the Data explorer (decision D25), as Protect's records: one row per
+        tracker and moment with the fix, when there was one, and every measurement of that
+        moment as a column; newest first, bounded."""
+        clauses, params = ["kind IN ('position', 'measurement')"], []
+        if device_ids:
+            clauses.append(f"device_id IN ({','.join('?' * len(device_ids))})")
+            params.extend(device_ids)
+        if since:
+            clauses.append("time >= ?")
+            params.append(since)
+        if until:
+            clauses.append("time <= ?")
+            params.append(until)
+        with self._connect() as db:
+            names = {
+                row["device_id"]: row["device_name"]
+                for row in db.execute(
+                    "SELECT device_id, MAX(device_name) AS device_name FROM frames "
+                    "WHERE device_id IS NOT NULL GROUP BY device_id"
+                ).fetchall()
+            }
+            rows = db.execute(
+                "SELECT device_id, entity_id, kind, time, lat, lon, metric, value, data "
+                f"FROM records WHERE {' AND '.join(clauses)} ORDER BY time DESC",
+                params,
+            ).fetchall()
+        merged: dict[tuple[str, str], dict[str, Any]] = {}
+        for row in rows:
+            key = (str(row["device_id"]), str(row["time"]))
+            entry = merged.get(key)
+            if entry is None:
+                if len(merged) >= limit:
+                    break
+                entry = {
+                    "time": row["time"],
+                    "device_id": row["device_id"],
+                    "device_name": names.get(row["device_id"]) or row["device_id"],
+                    "entity_id": row["entity_id"],
+                    "lat": None,
+                    "lon": None,
+                    "values": {},
+                }
+                merged[key] = entry
+            if row["kind"] == "position":
+                entry["lat"], entry["lon"] = row["lat"], row["lon"]
+            elif row["metric"]:
+                value: Any = row["value"]
+                if value is None:
+                    with contextlib.suppress(ValueError, TypeError):
+                        value = json.loads(row["data"]).get("value")
+                entry["values"][str(row["metric"])] = value
+        return list(merged.values())
+
+    def offered_metrics(
+        self,
+        device_ids: list[str] | None,
+        *,
+        since: str | None = None,
+        until: str | None = None,
+    ) -> list[dict[str, Any]]:
+        """The metrics the chosen trackers reported in the window, with counts, for the
+        explorer's picker (as Protect's analytics metrics)."""
+        clauses, params = ["kind = 'measurement'", "metric IS NOT NULL"], []
+        if device_ids:
+            clauses.append(f"device_id IN ({','.join('?' * len(device_ids))})")
+            params.extend(device_ids)
+        if since:
+            clauses.append("time >= ?")
+            params.append(since)
+        if until:
+            clauses.append("time <= ?")
+            params.append(until)
+        with self._connect() as db:
+            rows = db.execute(
+                "SELECT metric, COUNT(*) AS count FROM records "
+                f"WHERE {' AND '.join(clauses)} GROUP BY metric ORDER BY count DESC",
+                params,
+            ).fetchall()
+        return [{"key": row["metric"], "count": int(row["count"])} for row in rows]
 
     def positions(
         self,
