@@ -9,14 +9,17 @@ import { Page, PageHeader } from "@/components/common/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatTime } from "@/lib/format";
+import { LoadSection } from "@/pages/LoadPage";
 import { SetupPage } from "@/pages/SetupPage";
 import { SignInPage } from "@/pages/SignInPage";
 
 /** The Server page under Settings (decision D18; Tim, 2026-10-17: the page showed the form as
  * if nothing were connected, and the account is the server's, not a thing of its own): the
  * connected server with its version, whether it answers right now and when that was last
- * checked, and the account on that server, signed in until when or the sign-in form. "Another
- * server" and "Sign in as someone else" bring the forms back. */
+ * checked, the account on that server, signed in until when or the sign-in form, and the
+ * project loaded from it (a project belongs to the server, so its loading lives here and not
+ * in the sidebar; Tim, 2026-10-17). "Another server" and "Sign in as someone else" bring the
+ * forms back. */
 export function ServerPage({ current }: { current: Setup }) {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
@@ -38,7 +41,7 @@ export function ServerPage({ current }: { current: Setup }) {
   const state = connection.data;
   return (
     <>
-      <PageHeader title={t("Server")} description={t("The Protect server this laptop works with, and your account on it.")} />
+      <PageHeader title={t("Server")} description={t("The Protect server this laptop works with, your account on it, and the project loaded from it.")} />
       <Page>
         <div className="mx-auto flex w-full max-w-xl flex-col gap-4">
           {changingServer ? (
@@ -108,6 +111,8 @@ export function ServerPage({ current }: { current: Setup }) {
               </CardContent>
             </Card>
           )}
+          <h2 className="mt-2 text-base font-semibold">{t("Project")}</h2>
+          <LoadSection signedIn={current.signed_in} />
         </div>
       </Page>
     </>

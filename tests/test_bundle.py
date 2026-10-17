@@ -12,7 +12,7 @@ from httpx import ASGITransport, AsyncClient
 from protect_go.bundle import BundleStore
 from protect_go.config import get_settings
 from protect_go.main import create_app
-from tests.test_setup import TOKEN, protect_server
+from tests.test_setup import LONG_TOKEN, TOKEN, protect_server
 
 PROJECT = "29fff2c4-1c20-476d-bb78-5de07b642e4b"
 APP_KEY = "101112131415161718191A1B1C1D1E1F"
@@ -100,7 +100,7 @@ BUNDLE = {
 
 def server(request: httpx.Request) -> httpx.Response:
     if request.url.path == f"/api/v1/projects/{PROJECT}/field-bundle":
-        assert request.headers["Authorization"] == f"Bearer {TOKEN}"
+        assert request.headers["Authorization"] in (f"Bearer {TOKEN}", f"Bearer {LONG_TOKEN}")
         return httpx.Response(200, json=BUNDLE)
     if request.url.path == f"/api/v1/projects/{PROJECT}/field-bundle/map":
         return (

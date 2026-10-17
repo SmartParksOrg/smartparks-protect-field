@@ -28,6 +28,20 @@ interface LoadResult {
  * where there is none; the page says which. */
 export function LoadPage({ signedIn }: { signedIn: boolean }) {
   const { t } = useTranslation();
+  return (
+    <>
+      <PageHeader title={t("Load a project")} description={t("Before you leave, while online: the project's devices, keys and map come to this laptop.")} />
+      <Page>
+        <LoadSection signedIn={signedIn} />
+      </Page>
+    </>
+  );
+}
+
+/** The project's loading as the Server page shows it (Tim, 2026-10-17: a project belongs to
+ * the server, so it is set up there, under the server and the account). */
+export function LoadSection({ signedIn }: { signedIn: boolean }) {
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
   const bundle = useQuery({ queryKey: queryKeys.bundle, queryFn: () => api<Bundle>("/api/bundle") });
   const projects = useQuery({
@@ -54,8 +68,6 @@ export function LoadPage({ signedIn }: { signedIn: boolean }) {
   const chosen = withStations.find((p) => p.id === wanted) ?? withStations[0];
   return (
     <>
-      <PageHeader title={t("Load a project")} description={t("Before you leave, while online: the project's devices, keys and map come to this laptop.")} />
-      <Page>
       <Card>
         <CardHeader>
           <CardTitle>{t("Before you leave, while online")}</CardTitle>
@@ -148,7 +160,6 @@ export function LoadPage({ signedIn }: { signedIn: boolean }) {
           </CardContent>
         </Card>
       )}
-      </Page>
     </>
   );
 }

@@ -86,9 +86,34 @@ async def sign_in(
             if me.status_code != 200:
                 raise ProtectError(502, f"The server answered {me.status_code} for the account")
             account_email = str(me.json().get("email") or email)
+            # the login's token lasts an hour; the same account can mint a one-time code and
+            # exchange it for the weeks-long token the Offload page's handoff gives (Protect's
+            # D333), so a password sign-in holds as long as a handoff (Tim, 2026-10-17: the
+            # sign-in block was back on the Server page after an hour). An older server
+            # without the endpoints leaves the hour's token.
+            token = await _lengthen(http, token)
     except httpx.HTTPError as exc:
         raise ProtectError(502, f"No answer from {server_url}: {exc.__class__.__name__}") from None
     return token, account_email, token_expiry(token)
+
+
+async def _lengthen(http: httpx.AsyncClient, token: str) -> str:
+    try:
+        minted = await http.post(
+            "/api/v1/auth/go-handoff", headers={"Authorization": f"Bearer {token}"}
+        )
+        if minted.status_code != 200:
+            return token
+        code = str(minted.json().get("code") or "")
+        if not code:
+            return token
+        exchanged = await http.post("/api/v1/auth/go-handoff/exchange", json={"code": code})
+        if exchanged.status_code != 200:
+            return token
+        longer = str(exchanged.json().get("access_token") or "")
+        return longer or token
+    except (httpx.HTTPError, ValueError):
+        return token
 
 
 async def exchange_handoff(

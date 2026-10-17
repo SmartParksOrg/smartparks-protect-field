@@ -10,7 +10,6 @@ import { AppLayout } from "@/components/layout/AppLayout";
 import { BatchPage } from "@/pages/BatchPage";
 import { ExplorePage } from "@/pages/ExplorePage";
 import { FilesPage } from "@/pages/FilesPage";
-import { LoadPage } from "@/pages/LoadPage";
 import { OverviewPage } from "@/pages/OverviewPage";
 import { ServerPage } from "@/pages/ServerPage";
 import { SetupPage } from "@/pages/SetupPage";
@@ -56,7 +55,7 @@ export default function App() {
       <Routes>
       <Route element={<AppLayout setup={current} />}>
         <Route path="/" element={<OverviewPage setup={current} />} />
-        <Route path="/load" element={<LoadPage signedIn={current.signed_in} />} />
+        <Route path="/load" element={<ServerPage current={current} />} />
         <Route path="/explore" element={<ExplorePage />} />
         <Route path="/map" element={<Navigate to="/explore" replace />} />
         <Route path="/files" element={<FilesPage />} />

@@ -68,7 +68,7 @@ export function TrackersPage() {
         {devices.data && devices.data.length === 0 && (
           <Callout kind="info">
             {t("Load a project first; its devices come with the bundle.")}{" "}
-            <Link className="underline underline-offset-4" to="/load">
+            <Link className="underline underline-offset-4" to="/setup">
               {t("Load a project")}
             </Link>
           </Callout>

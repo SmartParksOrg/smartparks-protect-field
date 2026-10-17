@@ -12,7 +12,7 @@ from pmtiles.writer import Writer
 
 from protect_go.config import get_settings
 from protect_go.main import create_app
-from tests.test_setup import TOKEN, protect_server
+from tests.test_setup import LONG_TOKEN, TOKEN, protect_server
 
 PROJECT = "11111111-1111-1111-1111-111111111111"
 
@@ -72,7 +72,7 @@ async def test_the_map_is_asked_for_then_fetched_then_served_in_ranges(app, tmp_
 
     def server(request: httpx.Request) -> httpx.Response:
         if request.url.path == f"/api/v1/projects/{PROJECT}/field-bundle/map":
-            assert request.headers["Authorization"] == f"Bearer {TOKEN}"
+            assert request.headers["Authorization"] in (f"Bearer {TOKEN}", f"Bearer {LONG_TOKEN}")
             if request.method == "POST":
                 if state.get("forbid"):
                     return httpx.Response(

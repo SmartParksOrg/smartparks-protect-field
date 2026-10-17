@@ -9,7 +9,7 @@ test("shows the project's pages once a project is on the laptop", () => {
       <Sidebar email={null} hasBundle={false} />
     </MemoryRouter>,
   );
-  expect(screen.getByRole("link", { name: "Load a project" })).toHaveAttribute("href", "/load");
+  expect(screen.getByRole("link", { name: "Server" })).toHaveAttribute("href", "/setup");
   expect(screen.queryByRole("link", { name: "Files" })).not.toBeInTheDocument();
   expect(screen.getByText("Not signed in")).toBeInTheDocument();
   rerender(

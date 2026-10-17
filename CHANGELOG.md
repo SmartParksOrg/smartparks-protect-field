@@ -6,6 +6,13 @@ All notable changes to Smart Parks Protect Go. The format follows Keep a Changel
 
 Nothing yet.
 
+## v0.12.1, 2026-10-17
+
+### Changed
+
+- A sign-in with email and password now holds for weeks, as one from the Offload page does: the app exchanges the hour's token for the longer one through Protect's handoff endpoints right after the login. The Server page no longer shows the sign-in block an hour after you signed in (Tim, 2026-10-17).
+- The project's loading moved onto the Server page, under the server and the account; "Load a project" left the sidebar, since a project belongs to a server (Tim, 2026-10-17).
+
 ## v0.12.0, 2026-10-17
 
 ### Added

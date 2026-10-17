@@ -16,6 +16,11 @@ TOKEN = (
     "eyJzdWIiOiJhYmMiLCJhdWQiOlsiZmFzdGFwaS11c2VyczphdXRoIl0sImV4cCI6NDEwMjQ0NDgwMH0."
     "c2ln"
 )  # exp 2100-01-01; the signature is not checked by Protect Go, Protect made the token
+LONG_TOKEN = (
+    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9."
+    "eyJzdWIiOiJhYmMiLCJhdWQiOlsiZmFzdGFwaS11c2VyczphdXRoIl0sImV4cCI6NDEzMzk4MDgwMH0."
+    "c2ln"
+)  # exp 2101-01-01: the weeks-long token the handoff exchange answers
 
 
 def protect_server(request: httpx.Request) -> httpx.Response:
@@ -27,8 +32,19 @@ def protect_server(request: httpx.Request) -> httpx.Response:
             return httpx.Response(200, json={"access_token": TOKEN, "token_type": "bearer"})
         return httpx.Response(400, json={"detail": "LOGIN_BAD_CREDENTIALS"})
     if request.url.path == "/api/v1/users/me":
-        assert request.headers["Authorization"] == f"Bearer {TOKEN}"
+        assert request.headers["Authorization"] in (f"Bearer {TOKEN}", f"Bearer {LONG_TOKEN}")
         return httpx.Response(200, json={"email": "ranger@example.org"})
+    # a password sign-in lengthens its hour's token through the handoff (Protect's D333)
+    if request.url.path == "/api/v1/auth/go-handoff":
+        assert request.headers["Authorization"] in (f"Bearer {TOKEN}", f"Bearer {LONG_TOKEN}")
+        return httpx.Response(
+            200, json={"code": "minted_for_the_same_account_0001", "expires_in": 120}
+        )
+    if request.url.path == "/api/v1/auth/go-handoff/exchange":
+        body = json.loads(request.content)
+        if body.get("code") == "minted_for_the_same_account_0001":
+            return httpx.Response(200, json={"access_token": LONG_TOKEN, "token_type": "bearer"})
+        return httpx.Response(404, json={"detail": "Unknown or used code"})
     return httpx.Response(404)
 
 
@@ -64,10 +80,11 @@ async def test_server_then_sign_in_keeps_the_token_and_never_the_password(app, t
         )
         assert signed.status_code == 200, signed.text
         assert signed.json()["signed_in"] is True and signed.json()["email"] == "ranger@example.org"
-        assert signed.json()["token_expires_at"].startswith("2100-01-01")
+        # the hour's token was lengthened through the handoff: the kept one is the long one
+        assert signed.json()["token_expires_at"].startswith("2101-01-01")
 
         on_disk = json.loads((tmp_path / "data" / "settings.json").read_text())
-        assert on_disk["token"] == TOKEN and "password" not in json.dumps(on_disk)
+        assert on_disk["token"] == LONG_TOKEN and "password" not in json.dumps(on_disk)
         assert "right" not in json.dumps(on_disk)
         assert oct((tmp_path / "data" / "settings.json").stat().st_mode)[-3:] == "600"
 
@@ -101,7 +118,7 @@ async def test_the_projects_come_from_the_server(app):
 
     def server(request: httpx.Request) -> httpx.Response:
         if request.url.path == "/api/v1/projects":
-            assert request.headers["Authorization"] == f"Bearer {TOKEN}"
+            assert request.headers["Authorization"] in (f"Bearer {TOKEN}", f"Bearer {LONG_TOKEN}")
             return httpx.Response(
                 200,
                 json={

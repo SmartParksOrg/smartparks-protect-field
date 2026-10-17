@@ -85,7 +85,7 @@ export function FilesPage() {
       {!canRead && bundle.data && (
         <Callout kind="info">
           {t("Load a project first; the files are read with the project's keys.")}{" "}
-          <Link className="underline underline-offset-4" to="/load">
+          <Link className="underline underline-offset-4" to="/setup">
             {t("Load a project")}
           </Link>
         </Callout>

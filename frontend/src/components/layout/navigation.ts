@@ -1,7 +1,7 @@
 /** The sidebar's sections, after Protect's (decision D13): the project's pages first, then the
  * settings. The labels are marked for extraction and translated where they are shown. */
 import type { LucideIcon } from "lucide-react";
-import { CloudUpload, Compass, FolderOpen, Home, PackageOpen, Radio, RadioTower, Server } from "lucide-react";
+import { CloudUpload, Compass, FolderOpen, Home, Radio, RadioTower, Server } from "lucide-react";
 
 import { t } from "@/lib/i18nMark";
 
@@ -33,9 +33,8 @@ export const sections: NavSection[] = [
   {
     label: t("Settings"),
     items: [
+      // a project is the server's, so its loading sits on the Server page (Tim, 2026-10-17)
       { label: t("Server"), icon: Server, to: "/setup" },
-      // a project is the server's, so its loading sits with the server (Tim, 2026-10-17)
-      { label: t("Load a project"), icon: PackageOpen, to: "/load" },
     ],
   },
 ];

@@ -68,7 +68,7 @@ export function OverviewPage({ setup }: { setup: Setup }) {
               {bundle.data?.stale && <Callout kind="warning">{t("This bundle is older than a week; load the project again while you are online.")}</Callout>}
               <div className="flex flex-wrap gap-2">
                 <Button asChild size="sm">
-                  <Link to="/load">{bundle.data?.present ? t("Load again") : t("Load a project")}</Link>
+                  <Link to="/setup">{bundle.data?.present ? t("Load again") : t("Load a project")}</Link>
                 </Button>
                 {bundle.data?.present && (
                   <Button asChild variant="secondary" size="sm">

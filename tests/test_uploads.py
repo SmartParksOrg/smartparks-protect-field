@@ -11,7 +11,7 @@ from protect_go.config import get_settings
 from protect_go.main import create_app
 from tests.test_bundle import BUNDLE
 from tests.test_cards import STATION, card_zip
-from tests.test_setup import TOKEN, protect_server
+from tests.test_setup import LONG_TOKEN, TOKEN, protect_server
 
 
 @pytest.fixture
@@ -42,7 +42,7 @@ async def test_each_file_goes_up_once_and_the_answer_is_kept(app, tmp_path):
 
     def server(request: httpx.Request) -> httpx.Response:
         if request.url.path == "/api/v1/devices/d2/offload-files":
-            assert request.headers["Authorization"] == f"Bearer {TOKEN}"
+            assert request.headers["Authorization"] in (f"Bearer {TOKEN}", f"Bearer {LONG_TOKEN}")
             if state["expired"]:
                 return httpx.Response(401, json={"detail": "Unauthorized"})
             body = request.content

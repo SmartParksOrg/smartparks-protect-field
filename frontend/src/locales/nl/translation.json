@@ -208,7 +208,6 @@
   "The update could not be fetched: {{message}}": "De update kon niet worden opgehaald: {{message}}",
   "Download it by hand": "Met de hand downloaden",
   "The app fetches the new version and installs it when you say so; your bundles and cards are kept.": "De app haalt de nieuwe versie op en installeert ze wanneer jij dat zegt; je bundels en kaartbestanden blijven bewaard.",
-  "The Protect server this laptop works with, and your account on it.": "De Protect-server waarmee deze laptop werkt, en je account erop.",
   "Protect {{version}}. The app downloads the project's bundle from it and uploads the files to it.": "Protect {{version}}. De app downloadt er de bundel van het project van en uploadt er de bestanden naartoe.",
   "The app downloads the project's bundle from it and uploads the files to it.": "De app downloadt er de bundel van het project van en uploadt er de bestanden naartoe.",
   "Connection": "Verbinding",
@@ -374,5 +373,6 @@
   "CSV, long": "CSV, lang",
   "Download": "Downloaden",
   "GeoJSON": "GeoJSON",
-  "GPX": "GPX"
+  "GPX": "GPX",
+  "The Protect server this laptop works with, your account on it, and the project loaded from it.": "De Protect-server waarmee deze laptop werkt, je account erop en het project dat ervan geladen is."
 }
