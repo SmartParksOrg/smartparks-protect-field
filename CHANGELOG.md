@@ -6,6 +6,12 @@ All notable changes to Smart Parks Protect Go. The format follows Keep a Changel
 
 Nothing yet.
 
+## v0.8.1, 2026-10-17
+
+### Changed
+
+- The full screen note is a short pill at the top centre, away from the connection dot, and fades after a few seconds; the pointer at the top edge brings it back (Tim, 2026-10-17).
+
 ## v0.8.0, 2026-10-17
 
 ### Changed

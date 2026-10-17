@@ -213,8 +213,6 @@
   "{{count}} projects without an offload station are not offered._one": "{{count}} project zonder offloadstation wordt niet aangeboden.",
   "{{count}} projects without an offload station are not offered._other": "{{count}} projecten zonder offloadstation worden niet aangeboden.",
   "Signing in from Protect": "Aanmelden vanuit Protect",
-  "Full screen. Esc or F11 leaves it.": "Volledig scherm. Esc of F11 verlaat het.",
-  "Leave full screen": "Volledig scherm verlaten",
   "The SD card or the folder it was copied to": "De SD-kaart of de map waarnaar ze is gekopieerd",
   "SD cards in this computer": "SD-kaarten in deze computer",
   "No station files on it": "Geen stationsbestanden erop",
@@ -247,5 +245,7 @@
   "Sign in as someone else": "Aanmelden als iemand anders",
   "{{server}} does not answer": "{{server}} antwoordt niet",
   "Online, signed in to {{server}}": "Online, aangemeld bij {{server}}",
-  "Online, not signed in to {{server}}": "Online, niet aangemeld bij {{server}}"
+  "Online, not signed in to {{server}}": "Online, niet aangemeld bij {{server}}",
+  "Esc leaves full screen": "Esc verlaat volledig scherm",
+  "Leave": "Verlaten"
 }
