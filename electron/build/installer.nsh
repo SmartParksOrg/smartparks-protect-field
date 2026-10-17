@@ -1,15 +1,23 @@
-; Protect Go's NSIS hooks, after AddaxAI's: the data folder is the user's, so the
-; uninstaller asks before removing it and keeps it by default. The data folder
-; (%USERPROFILE%\ProtectGo) is never inside the install folder, so an update, which runs
-; the old uninstaller first, cannot touch a card or a bundle.
+; Protect Go's NSIS hooks, after AddaxAI's: the data folder is the user's. An update runs the
+; old uninstaller first and never asks about it (Tim, 2026-10-17: a question with "Yes" as the
+; way to lose everything had no place in an update; decision D24); a silent uninstall removes
+; nothing; a real uninstall asks whether to keep the data, and keeping it is the default and
+; the "Yes". The data folder (%USERPROFILE%\ProtectGo) is never inside the install folder, so
+; no uninstall can touch a card or a bundle by accident.
 
 !macro customUnInstall
-  MessageBox MB_YESNO|MB_ICONQUESTION|MB_DEFBUTTON2 \
-    "Also remove your Protect Go data (the bundles and the cards you read, under $PROFILE\ProtectGo)?$\r$\n$\r$\nChoose No to keep it for a later install." \
-    IDYES removeData IDNO keepData
-  removeData:
+  ${if} ${isUpdated}
+    Goto dataKept
+  ${endif}
+  ${if} ${Silent}
+    Goto dataKept
+  ${endif}
+  MessageBox MB_YESNO|MB_ICONQUESTION|MB_DEFBUTTON1 \
+    "Keep your Protect Go data?$\r$\n$\r$\nThe bundles and the files you read are under $PROFILE\ProtectGo.$\r$\n$\r$\nYes keeps them for a later install. No removes them for good." \
+    IDYES dataKept IDNO dataRemoved
+  dataRemoved:
     RMDir /r "$PROFILE\ProtectGo"
-  keepData:
+  dataKept:
 !macroend
 
 ; An update keeps a window on the screen (Tim, 2026-10-17; decision D22): the app starts the
