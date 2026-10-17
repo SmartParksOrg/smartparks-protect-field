@@ -6,6 +6,12 @@ All notable changes to Smart Parks Protect Go. The format follows Keep a Changel
 
 Nothing yet.
 
+## v0.9.4, 2026-10-17
+
+### Fixed
+
+- After an update the window could keep showing the previous version's pages while the app reported the new version: the pages came from the window's cache (decision D23). The interface is served uncached now and the window empties its cache before it loads (Tim, 2026-10-17: "Open the SD card" still there on v0.9.3).
+
 ## v0.9.3, 2026-10-17
 
 v0.9.1 and v0.9.2 were tagged but their Windows installer did not build (a variable declared twice in the installer script); this release carries both.

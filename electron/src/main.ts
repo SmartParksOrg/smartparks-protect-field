@@ -12,7 +12,7 @@ import fs from "node:fs";
 import http from "node:http";
 import os from "node:os";
 import path from "node:path";
-import { app, BrowserWindow, dialog, ipcMain, Menu, shell } from "electron";
+import { app, BrowserWindow, dialog, ipcMain, Menu, session, shell } from "electron";
 import { autoUpdater, type NsisUpdater } from "electron-updater";
 
 const BACKEND_PORT = Number(process.env.PROTECT_GO_PORT ?? 18090);
@@ -357,6 +357,9 @@ async function startAndLoad(): Promise<void> {
     return;
   }
   if (!mainWindow) return;
+  // the window's cache is emptied before the interface loads (decision D23): after an update
+  // it held the old version's pages, and the new backend's index.html never got asked for
+  await session.defaultSession.clearCache();
   await mainWindow.loadURL(`${BACKEND_URL}${pendingRoute}`);
   pendingRoute = "";
 }

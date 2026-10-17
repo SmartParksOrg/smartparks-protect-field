@@ -79,11 +79,15 @@ def create_app() -> FastAPI:
 
         @app.get("/{path:path}", include_in_schema=False)
         async def interface(path: str) -> FileResponse:
-            """The built interface; every unknown path is the app, which routes it itself."""
+            """The built interface; every unknown path is the app, which routes it itself.
+            `index.html` and the other unhashed files are never cached (decision D23): after an
+            update the window kept showing the old interface from Chromium's heuristic cache,
+            while the shell and the backend were already the new version."""
             candidate = DIST / path
+            headers = {"Cache-Control": "no-cache"}
             if path and candidate.is_file():
-                return FileResponse(candidate)
-            return FileResponse(DIST / "index.html")
+                return FileResponse(candidate, headers=headers)
+            return FileResponse(DIST / "index.html", headers=headers)
 
     return app
 
