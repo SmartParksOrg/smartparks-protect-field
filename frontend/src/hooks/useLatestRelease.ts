@@ -1,6 +1,7 @@
 /** The newest release on GitHub against the running version, the way AddaxAI's update check
- * does it (decision D8): one request at start, shared by the notice and the menu's "Check for
- * updates"; a failure is quiet, so the app works without a connection. The newest release of any
+ * does it (decision D8): one request at start, again every quarter hour and when the window
+ * regains focus, shared by the notice and the menu's "Check for updates"; a failure is quiet,
+ * so the app works without a connection. The newest release of any
  * kind is taken, not `/releases/latest`, which hides pre-releases. */
 import { useQuery } from "@tanstack/react-query";
 
@@ -40,7 +41,11 @@ export function useLatestRelease(currentVersion: string, enabled = true): Latest
       return releases[0];
     },
     enabled,
-    staleTime: 60 * 60 * 1000,
+    // a release made while the app runs shows within the quarter hour (Tim, 2026-10-17: the
+    // start's answer stood for an hour and named the version before the newest)
+    staleTime: 15 * 60 * 1000,
+    refetchInterval: 15 * 60 * 1000,
+    refetchOnWindowFocus: true,
     retry: false,
   });
   const latest = data ? data.tag_name.replace(/^v/, "") : null;

@@ -4,7 +4,9 @@ All notable changes to Smart Parks Protect Go. The format follows Keep a Changel
 
 ## Unreleased
 
-Nothing yet.
+### Changed
+
+- The release check repeats every quarter hour and when the window regains focus, so a release made while the app runs shows soon; the start's answer stood for an hour (Tim, 2026-10-17).
 
 ## v0.8.2, 2026-10-17
 
