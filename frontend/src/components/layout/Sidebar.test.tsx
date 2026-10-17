@@ -18,6 +18,6 @@ test("shows the project's pages once a project is on the laptop", () => {
     </MemoryRouter>,
   );
   expect(screen.getByRole("link", { name: "Files" })).toHaveAttribute("href", "/files");
-  expect(screen.getByRole("link", { name: "Map" })).toHaveAttribute("href", "/map");
+  expect(screen.getByRole("link", { name: "Data explorer" })).toHaveAttribute("href", "/explore");
   expect(screen.getByRole("button", { name: "Sign out" })).toBeInTheDocument();
 });

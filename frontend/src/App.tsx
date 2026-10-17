@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
-import { Navigate, Route, Routes } from "react-router";
+import { Navigate, Route, Routes, useParams } from "react-router";
 
 import { api, type Health, type Setup } from "@/api/client";
 import { queryKeys } from "@/api/queryKeys";
@@ -8,13 +8,12 @@ import { FullScreenNotice } from "@/components/FullScreenNotice";
 import { UpdateCheckFeedback } from "@/components/UpdateCheckFeedback";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { BatchPage } from "@/pages/BatchPage";
+import { ExplorePage } from "@/pages/ExplorePage";
 import { FilesPage } from "@/pages/FilesPage";
 import { LoadPage } from "@/pages/LoadPage";
-import { MapPage } from "@/pages/MapPage";
 import { OverviewPage } from "@/pages/OverviewPage";
 import { ServerPage } from "@/pages/ServerPage";
 import { SetupPage } from "@/pages/SetupPage";
-import { TrackerPage } from "@/pages/TrackerPage";
 import { UploadPage } from "@/pages/UploadPage";
 
 /** The setup gates the app (decision D7): with no server known, the setup page stands alone;
@@ -54,10 +53,11 @@ export default function App() {
       <Route element={<AppLayout setup={current} />}>
         <Route path="/" element={<OverviewPage setup={current} />} />
         <Route path="/load" element={<LoadPage signedIn={current.signed_in} />} />
-        <Route path="/map" element={<MapPage />} />
+        <Route path="/explore" element={<ExplorePage />} />
+        <Route path="/map" element={<Navigate to="/explore" replace />} />
         <Route path="/files" element={<FilesPage />} />
         <Route path="/files/:cardId" element={<BatchPage />} />
-        <Route path="/trackers/:deviceId" element={<TrackerPage />} />
+        <Route path="/trackers/:deviceId" element={<TrackerRedirect />} />
         <Route path="/upload" element={<UploadPage signedIn={current.signed_in} />} />
         <Route path="/setup" element={<ServerPage current={current} />} />
         <Route path="/sign-in" element={<ServerPage current={current} />} />
@@ -67,4 +67,10 @@ export default function App() {
       </Routes>
     </>
   );
+}
+
+/** The old tracker page's address opens the Data explorer with that tracker chosen. */
+function TrackerRedirect() {
+  const { deviceId = "" } = useParams();
+  return <Navigate to={`/explore?tracker=${encodeURIComponent(deviceId)}`} replace />;
 }

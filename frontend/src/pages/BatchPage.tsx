@@ -4,13 +4,13 @@ import { useTranslation } from "react-i18next";
 import { Link, useNavigate, useParams } from "react-router";
 
 import { api, type CardDetail, type Position } from "@/api/client";
+import type { MapState } from "@/api/client";
 import { queryKeys } from "@/api/queryKeys";
 import { Callout } from "@/components/common/Callout";
 import { OfflineMap, type MapPoint } from "@/components/OfflineMap";
 import { Page, PageHeader } from "@/components/common/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Card as Panel, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import type { MapState } from "@/pages/MapPage";
 
 /** One SD card's files as read (phase 2 F2): the counts, the trackers with their span, the
  * positions on the offline map, the files, and every frame that was not read with the reason,
@@ -111,7 +111,7 @@ export function BatchPage() {
                     {detail.trackers.map((tr) => (
                       <tr key={tr.device_id} className="border-t">
                         <td className="py-1 pr-3">
-                          <Link className="underline underline-offset-4" to={`/trackers/${tr.device_id}`}>
+                          <Link className="underline underline-offset-4" to={`/explore?tracker=${tr.device_id}`}>
                             {tr.device_name}
                           </Link>
                         </td>

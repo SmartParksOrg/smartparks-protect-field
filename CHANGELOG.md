@@ -6,6 +6,12 @@ All notable changes to Smart Parks Protect Go. The format follows Keep a Changel
 
 Nothing yet.
 
+## v0.9.0, 2026-10-17
+
+### Added
+
+- The Data explorer (decision D21): the data that came with the files, explored as in Protect: the trackers as chips in their colours, the time window and the measurements to choose, the tracks on the offline map, one graph per measurement with a line per tracker, and the newest values. It takes the place of the Map and the tracker pages, whose addresses lead to it. The Files page's "Open the SD card" is gone; "Explore the data" and "What was read" stand there (Tim, 2026-10-17).
+
 ## v0.8.5, 2026-10-17
 
 ### Fixed

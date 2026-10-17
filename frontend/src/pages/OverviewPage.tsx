@@ -49,7 +49,7 @@ export function OverviewPage({ setup }: { setup: Setup }) {
                 </Button>
                 {bundle.data?.present && (
                   <Button asChild variant="secondary" size="sm">
-                    <Link to="/map">{t("Map")}</Link>
+                    <Link to="/explore">{t("Data explorer")}</Link>
                   </Button>
                 )}
               </div>

@@ -228,3 +228,19 @@ export interface Volume {
   size: number;
   stations: { eui: string; name: string | null }[];
 }
+
+/** The offline map on the laptop (decision D4). */
+export interface MapState {
+  present: boolean;
+  project_id: string | null;
+  project_name: string | null;
+  build: string | null;
+  size_bytes: number | null;
+  downloaded_at: string | null;
+  west: number | null;
+  south: number | null;
+  east: number | null;
+  north: number | null;
+  max_zoom: number | null;
+  server_state: string | null;
+}

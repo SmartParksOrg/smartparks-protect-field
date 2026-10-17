@@ -41,7 +41,7 @@ test("lists one line per file, filters by SD card and opens a file's properties"
   expect(screen.getAllByText("server had it").length).toBeGreaterThan(0);
   fireEvent.click(screen.getAllByText("0016C001F0500101_1791795031.jsonl")[0]);
   await waitFor(() => expect(screen.getByRole("dialog")).toBeInTheDocument());
-  expect(await screen.findByRole("link", { name: "SP100001" })).toHaveAttribute("href", "/trackers/d1");
+  expect(await screen.findByRole("link", { name: "SP100001" })).toHaveAttribute("href", "/explore?tracker=d1");
   expect(screen.getByRole("link", { name: "Open the SD card" })).toHaveAttribute("href", "/files/c1");
 });
 

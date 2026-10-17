@@ -168,8 +168,11 @@ export function FilesPage() {
               unknown: last.unknown,
               repeated: last.repeated,
             })}{" "}
+            <Link className="underline underline-offset-4" to="/explore">
+              {t("Explore the data")}
+            </Link>{" "}
             <Link className="underline underline-offset-4" to={`/files/${last.id}`}>
-              {t("Open")}
+              {t("What was read")}
             </Link>
           </Callout>
         )}
@@ -187,9 +190,12 @@ export function FilesPage() {
             ))}
           </select>
         </label>
+        <Button asChild variant="outline" size="sm">
+          <Link to="/explore">{t("Explore the data")}</Link>
+        </Button>
         {filter && (
           <Button asChild variant="ghost" size="sm">
-            <Link to={`/files/${filter}`}>{t("Open the SD card")}</Link>
+            <Link to={`/files/${filter}`}>{t("What was read")}</Link>
           </Button>
         )}
       </div>

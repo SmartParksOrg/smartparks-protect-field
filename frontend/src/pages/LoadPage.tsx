@@ -4,12 +4,12 @@ import { useTranslation } from "react-i18next";
 import { Link } from "react-router";
 
 import { api, send, type Bundle } from "@/api/client";
+import type { MapState } from "@/api/client";
 import { queryKeys } from "@/api/queryKeys";
 import { Callout } from "@/components/common/Callout";
 import { Page, PageHeader } from "@/components/common/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import type { MapState } from "@/pages/MapPage";
 
 interface Project {
   id: string;
