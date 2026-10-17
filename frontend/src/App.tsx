@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
-import { Navigate, Route, Routes, useParams } from "react-router";
+import { Navigate, Route, Routes } from "react-router";
 
 import { api, type Health, type Setup } from "@/api/client";
 import { queryKeys } from "@/api/queryKeys";
@@ -14,6 +14,10 @@ import { LoadPage } from "@/pages/LoadPage";
 import { OverviewPage } from "@/pages/OverviewPage";
 import { ServerPage } from "@/pages/ServerPage";
 import { SetupPage } from "@/pages/SetupPage";
+import { StationPage } from "@/pages/StationPage";
+import { StationsPage } from "@/pages/StationsPage";
+import { TrackerPage } from "@/pages/TrackerPage";
+import { TrackersPage } from "@/pages/TrackersPage";
 import { UploadPage } from "@/pages/UploadPage";
 
 /** The setup gates the app (decision D7): with no server known, the setup page stands alone;
@@ -57,7 +61,10 @@ export default function App() {
         <Route path="/map" element={<Navigate to="/explore" replace />} />
         <Route path="/files" element={<FilesPage />} />
         <Route path="/files/:cardId" element={<BatchPage />} />
-        <Route path="/trackers/:deviceId" element={<TrackerRedirect />} />
+        <Route path="/trackers" element={<TrackersPage />} />
+        <Route path="/trackers/:deviceId" element={<TrackerPage />} />
+        <Route path="/stations" element={<StationsPage />} />
+        <Route path="/stations/:key" element={<StationPage />} />
         <Route path="/upload" element={<UploadPage signedIn={current.signed_in} />} />
         <Route path="/setup" element={<ServerPage current={current} />} />
         <Route path="/sign-in" element={<ServerPage current={current} />} />
@@ -67,10 +74,4 @@ export default function App() {
       </Routes>
     </>
   );
-}
-
-/** The old tracker page's address opens the Data explorer with that tracker chosen. */
-function TrackerRedirect() {
-  const { deviceId = "" } = useParams();
-  return <Navigate to={`/explore?tracker=${encodeURIComponent(deviceId)}`} replace />;
 }

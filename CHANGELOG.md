@@ -6,11 +6,12 @@ All notable changes to Smart Parks Protect Go. The format follows Keep a Changel
 
 Nothing yet.
 
-## v0.10.4, 2026-10-17
+## v0.11.0, 2026-10-17
 
 ### Added
 
-- A small map on the Overview with the offload stations, drawn as Protect draws them, and the last known position of every tracker the app knows, each in its colour; a click on it opens the Data explorer (Tim, 2026-10-17).
+- A small map on the Overview with the offload stations, drawn as Protect draws them, and the last known position of every tracker the app knows, each in its colour; a click on a station or a tracker opens its page (Tim, 2026-10-17).
+- Pages for the trackers and the offload stations (Tim, 2026-10-17): **Trackers** in the navigation lists every tracker the app knows, from the bundle and from the files, and a tracker's page shows what the bundle says of it, its last known position on the map, what the files brought and its measurements with their newest values, with the way to the Data explorer; **Offload stations** lists every station with where it stands and what its files brought, and a station's page shows its place, its counts, the batches read from it and its files. Every station and tracker name in the app, on the maps, in the files, the uploads and the explorer's layers, leads to its page, and the pages lead on to the explorer, the files and the upload.
 
 ## v0.10.3, 2026-10-17
 

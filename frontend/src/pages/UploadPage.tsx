@@ -117,7 +117,15 @@ export function UploadPage({ signedIn }: { signedIn: boolean }) {
                       </Link>
                       {card.last_problem && <p className="text-xs text-muted-foreground">{card.last_problem}</p>}
                     </td>
-                    <td className="py-1 pr-3">{card.station_name ?? card.station_eui ?? t("unknown")}</td>
+                    <td className="py-1 pr-3">
+                      {card.station_eui ? (
+                        <Link className="underline-offset-4 hover:underline" to={`/stations/${encodeURIComponent(card.station_device_id ?? card.station_eui)}`}>
+                          {card.station_name ?? card.station_eui}
+                        </Link>
+                      ) : (
+                        t("unknown")
+                      )}
+                    </td>
                     <td className="py-1 pr-3 text-right tabular-nums">{card.files}</td>
                     <td className="py-1 pr-3 text-right tabular-nums">{card.pending}</td>
                     <td className="py-1 pr-3 text-right tabular-nums">{card.uploaded}</td>

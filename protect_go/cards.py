@@ -699,6 +699,25 @@ class CardStore:
             ).fetchall()
         return [{"key": row["metric"], "count": int(row["count"])} for row in rows]
 
+    def stations(self) -> list[dict[str, Any]]:
+        """Every offload station whose files were read, by EUI: the batches and files read,
+        the frames and what became of them, the files still to upload, and the last read."""
+        with self._connect() as db:
+            rows = db.execute(
+                "SELECT c.station_eui, MAX(c.station_device_id) AS station_device_id, "
+                "MAX(c.station_name) AS station_name, "
+                "COUNT(DISTINCT c.id) AS cards, COUNT(DISTINCT f.id) AS files, "
+                "COALESCE(SUM(f.frames), 0) AS frames, "
+                "COALESCE(SUM(f.upload_status = 'pending'), 0) AS pending, "
+                "COALESCE(SUM(f.upload_status = 'failed'), 0) AS failed, "
+                "COALESCE(SUM(f.upload_status = 'uploaded'), 0) AS uploaded, "
+                "COALESCE(SUM(f.upload_status = 'duplicate'), 0) AS duplicate, "
+                "MAX(c.imported_at) AS last_read "
+                "FROM cards c LEFT JOIN card_files f ON f.card_id = c.id "
+                "WHERE c.station_eui IS NOT NULL GROUP BY c.station_eui ORDER BY c.station_eui"
+            ).fetchall()
+        return [dict(row) for row in rows]
+
     def positions(
         self,
         card_id: str | None,

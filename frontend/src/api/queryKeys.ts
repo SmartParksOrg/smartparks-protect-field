@@ -9,6 +9,8 @@ export const queryKeys = {
   bundle: ["bundle"] as const,
   metricDefinitions: ["bundle", "metrics"] as const,
   stations: ["bundle", "stations"] as const,
+  devices: ["bundle", "devices"] as const,
+  stationStats: ["stations"] as const,
   records: (query: string) => ["records", query] as const,
   offeredMetrics: (query: string) => ["records", "metrics", query] as const,
   cards: ["cards"] as const,

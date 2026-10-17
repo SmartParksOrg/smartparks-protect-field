@@ -139,6 +139,24 @@ export async function ensureStationLayers(map: MapLibreMap): Promise<void> {
   });
 }
 
+/** Bind the station marker click; the returned function unbinds it. */
+export function bindStationClicks(map: MapLibreMap, onClick: (deviceId: string) => void): () => void {
+  const onMarker = (e: MapLayerMouseEvent) => {
+    const id = e.features?.[0]?.properties?.device_id;
+    if (typeof id === "string") onClick(id);
+  };
+  const enter = () => (map.getCanvas().style.cursor = "pointer");
+  const leave = () => (map.getCanvas().style.cursor = "");
+  map.on("click", "station-markers", onMarker);
+  map.on("mouseenter", "station-markers", enter);
+  map.on("mouseleave", "station-markers", leave);
+  return () => {
+    map.off("click", "station-markers", onMarker);
+    map.off("mouseenter", "station-markers", enter);
+    map.off("mouseleave", "station-markers", leave);
+  };
+}
+
 export function setStations(map: MapLibreMap, stations: StationMarker[]): void {
   const source = map.getSource(STATION_SOURCE) as GeoJSONSource | undefined;
   if (!source) return;

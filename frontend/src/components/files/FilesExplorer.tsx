@@ -26,12 +26,12 @@ type View = "list" | "tiles";
  * counts, the trackers, what could not be read and the way to its SD card's page live. A filter
  * narrows the list to one SD card.
  */
-export function FilesExplorer({ cardId }: { cardId: string | null }) {
+export function FilesExplorer({ cardId, stationEui = null }: { cardId: string | null; stationEui?: string | null }) {
   const { t } = useTranslation();
   const [view, setView] = usePreference<View>("files_view", "list");
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const files = useQuery({ queryKey: queryKeys.files, queryFn: () => api<FileRow[]>("/api/files") });
-  const rows = (files.data ?? []).filter((f) => !cardId || f.card_id === cardId);
+  const rows = (files.data ?? []).filter((f) => (!cardId || f.card_id === cardId) && (!stationEui || (f.station_eui ?? "").toUpperCase() === stationEui.toUpperCase()));
   const selected = files.data?.find((f) => f.id === selectedId) ?? null;
 
   const menu = (f: FileRow) => (
@@ -65,7 +65,18 @@ export function FilesExplorer({ cardId }: { cardId: string | null }) {
   const columns: ColumnDef<FileRow, unknown>[] = [
     { header: t("Name"), accessorKey: "name", cell: ({ row }) => name(row.original) },
     { header: t("SD card"), accessorKey: "card_name", cell: ({ row }) => <span className="truncate">{row.original.card_name}</span> },
-    { header: t("Station"), accessorKey: "station_name", cell: ({ row }) => row.original.station_name ?? row.original.station_eui ?? "" },
+    {
+      header: t("Station"),
+      accessorKey: "station_name",
+      cell: ({ row }) =>
+        row.original.station_eui ? (
+          <Link className="underline-offset-4 hover:underline" to={`/stations/${encodeURIComponent(row.original.station_eui)}`} onClick={(e) => e.stopPropagation()}>
+            {row.original.station_name ?? row.original.station_eui}
+          </Link>
+        ) : (
+          <span className="text-muted-foreground">{t("unknown")}</span>
+        ),
+    },
     { header: t("Upload"), accessorKey: "upload_status", cell: ({ row }) => statusWords(row.original) },
     {
       header: t("Frames"),

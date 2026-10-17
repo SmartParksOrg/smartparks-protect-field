@@ -32,10 +32,21 @@ export function OverviewPage({ setup }: { setup: Setup }) {
           <Panel className="md:col-span-2">
             <CardHeader>
               <CardTitle>{t("Where things are")}</CardTitle>
-              <CardDescription>{t("The offload stations and the last known position of every tracker on this laptop. Click the map for the Data explorer.")}</CardDescription>
+              <CardDescription>{t("The offload stations and the last known position of every tracker on this laptop. A click on one opens its page.")}</CardDescription>
             </CardHeader>
-            <CardContent>
+            <CardContent className="flex flex-col gap-3">
               <OverviewMap />
+              <div className="flex flex-wrap gap-2">
+                <Button asChild variant="outline" size="sm">
+                  <Link to="/explore">{t("Data explorer")}</Link>
+                </Button>
+                <Button asChild variant="ghost" size="sm">
+                  <Link to="/trackers">{t("Trackers")}</Link>
+                </Button>
+                <Button asChild variant="ghost" size="sm">
+                  <Link to="/stations">{t("Offload stations")}</Link>
+                </Button>
+              </div>
             </CardContent>
           </Panel>
           <Panel>

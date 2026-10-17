@@ -59,6 +59,10 @@ Open **Load a project** under Settings, next to Server, while you are online, ch
 
 If your Protect account may not see the LP0 keys of a tracker (its device page does not show them to you), the bundle holds no keys for it and the app will show that tracker's frames undecoded. Ask a project administrator.
 
+## Trackers and offload stations
+
+**Trackers** lists every tracker the app knows, from the project's bundle and from the files you read, with what this laptop holds of each; **Offload stations** lists every station with where it stands and what its SD card files brought. A click on a name, here or anywhere it appears, on the Overview's map, in the files, in the upload, opens the tracker's or the station's page: what the bundle says of it, its place or last known position on a small map, the counts, the measurements with their newest values, and the ways on to the Data explorer, the files and the upload.
+
 ## The Data explorer
 
 The pages look and navigate as Protect's do: the navigation on the left, or behind the menu button on a small screen, the theme switch at the top right, and the language at the foot of the navigation. The map comes with the project. The first time, the server has to cut it first, which takes a few minutes, and the app says so: open **Map** a little later, or load the project again. Asking the server to cut a map takes an analyst's or administrator's account; a viewer fetches the map once it exists, or asks one of them to prepare it from the Offload page. Once fetched, the map is drawn on the laptop without any connection, down to street level around the stations, with place names in Latin script. It is OpenStreetMap's map as Protomaps builds it, not satellite imagery, which cannot be taken offline. Load the project again now and then: the server renews its map once a month, and a project whose area grew needs a new one.

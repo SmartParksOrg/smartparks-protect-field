@@ -312,3 +312,23 @@ async def test_the_records_rows_merge_the_fix_and_the_measurements_of_a_moment(a
         assert nothing == []
         stations = (await client.get("/api/bundle/stations")).json()
         assert stations and stations[0]["station_eui"] == STATION
+
+
+async def test_the_stations_and_the_devices_for_their_pages(app, tmp_path):
+    """The Offload stations and Trackers pages: what the files brought per station, and the
+    bundle's devices without a key."""
+    BundleStore(tmp_path / "data", "file").save(BUNDLE)
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        assert (await client.get("/api/stations")).json() == []
+        await client.post(
+            "/api/cards", files=[("files", ("card.zip", card_zip(), "application/zip"))]
+        )
+        (station,) = (await client.get("/api/stations")).json()
+        assert station["station_eui"] == STATION and station["station_name"] == "Station 1"
+        assert station["cards"] == 1 and station["files"] == 2 and station["pending"] == 2
+        assert station["frames"] == 4 and station["last_read"]
+        devices = (await client.get("/api/bundle/devices")).json()
+        assert devices and all("app_s_key" not in d and "nwk_s_key" not in d for d in devices)
+        tracker = next(d for d in devices if d["name"] == "SP100001")
+        assert tracker["has_address"] is True and tracker["has_keys"] is True
+        assert any(d["is_station"] for d in devices)

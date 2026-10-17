@@ -96,6 +96,53 @@ class StationRead(BaseModel):
     lon: float | None = None
 
 
+class DeviceRead(BaseModel):
+    id: str
+    name: str
+    serial_number: str | None = None
+    dev_eui: str | None = None
+    device_type_label: str | None = None
+    driver_key: str | None = None
+    status: str | None = None
+    firmware_version: str | None = None
+    entity_id: str | None = None
+    entity_name: str | None = None
+    is_station: bool = False
+    has_address: bool = False
+    has_keys: bool = False
+
+
+@router.get("/bundle/devices", response_model=list[DeviceRead])
+async def devices(request: Request) -> list[dict[str, Any]]:
+    """The project's devices as the bundle knows them, never a key: what the Trackers and the
+    Offload stations pages list beside what the files brought."""
+    loaded = _bundle_store(request).load()
+    if loaded is None:
+        return []
+    bundle, _fetched = loaded
+    out: list[dict[str, Any]] = []
+    for d in bundle.get("devices", []):
+        lp0 = d.get("lp0") or {}
+        out.append(
+            {
+                "id": str(d["id"]),
+                "name": str(d["name"]),
+                "serial_number": d.get("serial_number"),
+                "dev_eui": d.get("dev_eui"),
+                "device_type_label": d.get("device_type_label"),
+                "driver_key": d.get("driver_key"),
+                "status": d.get("status"),
+                "firmware_version": d.get("firmware_version"),
+                "entity_id": str(d["entity_id"]) if d.get("entity_id") else None,
+                "entity_name": d.get("entity_name"),
+                "is_station": bool(d.get("is_station")),
+                "has_address": bool(lp0.get("dev_addr")),
+                "has_keys": bool(lp0.get("app_s_key") and lp0.get("nwk_s_key")),
+            }
+        )
+    return out
+
+
 @router.get("/bundle/stations", response_model=list[StationRead])
 async def stations(request: Request) -> list[dict[str, Any]]:
     """The offload stations of the bundle with where they stand, for the explorer's map."""

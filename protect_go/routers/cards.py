@@ -150,6 +150,26 @@ def _station_names(request: Request) -> dict[str, str]:
     }
 
 
+class StationStatsRead(BaseModel):
+    station_eui: str
+    station_device_id: str | None
+    station_name: str | None
+    cards: int
+    files: int
+    frames: int
+    pending: int
+    failed: int
+    uploaded: int
+    duplicate: int
+    last_read: str | None
+
+
+@router.get("/stations", response_model=list[StationStatsRead])
+def list_stations(request: Request) -> list[dict[str, Any]]:
+    """What the files brought per offload station, for the Offload stations page."""
+    return _cards(request).stations()
+
+
 @router.get("/cards/volumes", response_model=list[VolumeRead])
 def list_volumes(request: Request) -> list[dict[str, Any]]:
     """The SD cards in this computer (decision D16): every removable volume with the station

@@ -78,7 +78,7 @@ export function FileDialog({ file, onClose }: { file: FileRow | null; onClose: (
                   <ul className="space-y-0.5">
                     {detail.data.trackers.map((tr) => (
                       <li key={tr.device_id} className="flex items-center justify-between gap-2">
-                        <Link className="underline underline-offset-4" to={`/explore?tracker=${tr.device_id}`} onClick={onClose}>
+                        <Link className="underline underline-offset-4" to={`/trackers/${tr.device_id}`} onClick={onClose}>
                           {tr.device_name}
                         </Link>
                         <span className="text-muted-foreground tabular-nums">{t("{{decoded}} of {{frames}} frames, {{positions}} positions", { decoded: tr.decoded, frames: tr.frames, positions: tr.positions })}</span>
@@ -103,7 +103,7 @@ export function FileDialog({ file, onClose }: { file: FileRow | null; onClose: (
             <DialogFooter className="gap-2 sm:justify-between">
               <Button asChild type="button" variant="outline" size="sm">
                 <Link to={`/files/${f.card_id}`} onClick={onClose}>
-                  {t("Open the SD card")}
+                  {t("What was read")}
                 </Link>
               </Button>
               <Button type="button" onClick={onClose}>

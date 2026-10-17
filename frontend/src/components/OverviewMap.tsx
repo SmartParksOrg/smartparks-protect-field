@@ -1,27 +1,20 @@
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useMemo, useRef } from "react";
 import { useTranslation } from "react-i18next";
-import { Link } from "react-router";
+import { useNavigate } from "react-router";
 
-import { api, type MapState, type Tracker } from "@/api/client";
+import { api, type MapState, type Station, type Tracker } from "@/api/client";
 import { queryKeys } from "@/api/queryKeys";
-import { colourTrackers, ensureStationLayers, ensureTrackLayers, setStations, setTracks, type StationMarker, type TrackLayer } from "@/components/map/trackLayers";
+import { bindStationClicks, bindTrackPointClicks, colourTrackers, ensureStationLayers, ensureTrackLayers, setStations, setTracks, type StationMarker, type TrackLayer } from "@/components/map/trackLayers";
 import { type Flavour, useMap } from "@/components/map/useMap";
 import { useTheme } from "@/hooks/useTheme";
 
-interface Station {
-  device_id: string;
-  name: string;
-  station_eui: string;
-  lat: number | null;
-  lon: number | null;
-}
-
-/** The small map of the Overview (Tim, 2026-10-17): where the offload stations stand, with
- * Protect's marker, and the last known position of every tracker the app knows, each in the
- * colour it has everywhere else; a click on the map opens the Data explorer. Without the
- * project's map on the laptop the panel says so. */
-export function OverviewMap() {
+/** The small map of the Overview and of the entity pages (Tim, 2026-10-17): where the offload
+ * stations stand, with Protect's marker, and the last known position of every tracker the app
+ * knows, each in the colour it has everywhere else; a click on a station or a tracker opens its
+ * page. `trackerIds` and `stationIds` narrow it to an entity's own page. Without the project's
+ * map on the laptop the panel says so. */
+export function OverviewMap({ trackerIds, stationIds, className = "h-56" }: { trackerIds?: string[]; stationIds?: string[]; className?: string } = {}) {
   const { t } = useTranslation();
   const { resolved } = useTheme();
   const flavour: Flavour = resolved === "dark" ? "dark" : "light";
@@ -29,11 +22,17 @@ export function OverviewMap() {
   const trackers = useQuery({ queryKey: queryKeys.trackers, queryFn: () => api<Tracker[]>("/api/trackers") });
   const stationsQuery = useQuery({ queryKey: queryKeys.stations, queryFn: () => api<Station[]>("/api/bundle/stations") });
   const stations = useMemo<StationMarker[]>(
-    () => (stationsQuery.data ?? []).filter((s): s is Station & { lat: number; lon: number } => s.lat !== null && s.lon !== null).map((s) => ({ device_id: s.device_id, name: s.name, lat: s.lat, lon: s.lon })),
-    [stationsQuery.data],
+    () =>
+      (stationsQuery.data ?? [])
+        .filter((s): s is Station & { lat: number; lon: number } => s.lat !== null && s.lon !== null)
+        .filter((s) => !stationIds || stationIds.includes(s.device_id))
+        .map((s) => ({ device_id: s.device_id, name: s.name, lat: s.lat, lon: s.lon })),
+    [stationsQuery.data, stationIds],
   );
-  const all = useMemo(() => trackers.data ?? [], [trackers.data]);
-  const colours = useMemo(() => colourTrackers(all.map((tr) => tr.device_id)), [all]);
+  const everyTracker = useMemo(() => trackers.data ?? [], [trackers.data]);
+  const all = useMemo(() => everyTracker.filter((tr) => !trackerIds || trackerIds.includes(tr.device_id)), [everyTracker, trackerIds]);
+  // the colours follow every tracker's place in the list, so an entity page keeps the colour
+  const colours = useMemo(() => colourTrackers(everyTracker.map((tr) => tr.device_id)), [everyTracker]);
   const last = useMemo(
     () =>
       all
@@ -59,11 +58,11 @@ export function OverviewMap() {
       </p>
     );
   }
-  return <OverviewMapCanvas flavour={flavour} bounds={bounds} stations={stations} last={last} />;
+  return <OverviewMapCanvas flavour={flavour} bounds={bounds} stations={stations} last={last} className={className} />;
 }
 
-function OverviewMapCanvas({ flavour, bounds, stations, last }: { flavour: Flavour; bounds: [number, number, number, number]; stations: StationMarker[]; last: TrackLayer[] }) {
-  const { t } = useTranslation();
+function OverviewMapCanvas({ flavour, bounds, stations, last, className }: { flavour: Flavour; bounds: [number, number, number, number]; stations: StationMarker[]; last: TrackLayer[]; className: string }) {
+  const navigate = useNavigate();
   const container = useRef<HTMLDivElement | null>(null);
   const { mapRef, ready } = useMap(container, flavour, bounds);
   const stationsRef = useRef(stations);
@@ -74,11 +73,20 @@ function OverviewMapCanvas({ flavour, bounds, stations, last }: { flavour: Flavo
     const map = mapRef.current;
     if (!map || !ready) return;
     ensureTrackLayers(map);
-    void ensureStationLayers(map).then(() => setStations(map, stationsRef.current));
+    let unbindStations = () => undefined as void;
+    void ensureStationLayers(map).then(() => {
+      setStations(map, stationsRef.current);
+      unbindStations = bindStationClicks(map, (id) => void navigate(`/stations/${id}`));
+    });
+    const unbindTrackers = bindTrackPointClicks(map, (props) => void navigate(`/trackers/${props.owner_id}`));
     const observer = new ResizeObserver(() => map.resize());
     if (container.current) observer.observe(container.current);
-    return () => observer.disconnect();
-  }, [mapRef, ready]);
+    return () => {
+      observer.disconnect();
+      unbindStations();
+      unbindTrackers();
+    };
+  }, [mapRef, ready, navigate]);
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !ready) return;
@@ -87,9 +95,8 @@ function OverviewMapCanvas({ flavour, bounds, stations, last }: { flavour: Flavo
     map.fitBounds([bounds[0], bounds[1], bounds[2], bounds[3]], { padding: 32, maxZoom: 13, duration: 0 });
   }, [mapRef, ready, last, stations, bounds]);
   return (
-    <div className="relative h-56 w-full overflow-hidden rounded-md border">
+    <div className={`relative w-full overflow-hidden rounded-md border ${className}`}>
       <div ref={container} className="absolute! inset-0" />
-      <Link to="/explore" className="absolute inset-0 z-10" aria-label={t("Open the Data explorer")} title={t("Open the Data explorer")} />
     </div>
   );
 }

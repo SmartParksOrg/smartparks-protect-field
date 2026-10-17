@@ -3,9 +3,10 @@ import type { MapLayerMouseEvent } from "maplibre-gl";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
+import { Link, useNavigate } from "react-router";
 
 import { ControlStrip } from "@/components/map/ControlStrip";
-import { bindTrackPointClicks, ensureStationLayers, ensureTrackLayers, setStations, setTracks, type StationMarker, type TrackLayer, trackPointKey } from "@/components/map/trackLayers";
+import { bindStationClicks, bindTrackPointClicks, ensureStationLayers, ensureTrackLayers, setStations, setTracks, type StationMarker, type TrackLayer, trackPointKey } from "@/components/map/trackLayers";
 import { type Flavour, useMap } from "@/components/map/useMap";
 import { useTheme } from "@/hooks/useTheme";
 import { formatInZone } from "@/lib/analytics";
@@ -46,6 +47,7 @@ export function ExploreMap({
   onPick: (ms: number) => void;
 }) {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const { resolved } = useTheme();
   const flavour: Flavour = resolved === "dark" ? "dark" : "light";
   const container = useRef<HTMLDivElement | null>(null);
@@ -74,8 +76,13 @@ export function ExploreMap({
     const observer = new ResizeObserver(() => map.resize());
     observer.observe(element);
     ensureTrackLayers(map);
-    // the station marker is an image drawn first; the stations land once the layer stands
-    void ensureStationLayers(map).then(() => setStations(map, stationsRef.current));
+    // the station marker is an image drawn first; the stations land once the layer stands,
+    // and a click on one opens the station's page
+    let unbindStations = () => undefined as void;
+    void ensureStationLayers(map).then(() => {
+      setStations(map, stationsRef.current);
+      unbindStations = bindStationClicks(map, (id) => void navigate(`/stations/${id}`));
+    });
     const unbind = bindTrackPointClicks(map, (props) => handlers.current.onPick(Date.parse(props.time)));
     const onMove = (e: MapLayerMouseEvent) => {
       const time = e.features?.[0]?.properties?.time;
@@ -87,6 +94,7 @@ export function ExploreMap({
     return () => {
       observer.disconnect();
       unbind();
+      unbindStations();
       map.off("mousemove", "track-points", onMove);
       map.off("mouseleave", "track-points", onLeave);
     };
@@ -178,7 +186,9 @@ export function ExploreMap({
                     <label className="flex cursor-pointer items-center gap-2">
                       <input type="checkbox" className="accent-primary" checked={on} onChange={() => onHidden(on ? [...hidden, tr.ownerId] : hidden.filter((id) => id !== tr.ownerId))} />
                       <span className="inline-block size-2.5 rounded-full" style={{ background: tr.color }} />
-                      <span className="truncate">{tr.name}</span>
+                      <Link className="truncate underline-offset-4 hover:underline" to={`/trackers/${tr.ownerId}`} onClick={(e) => e.stopPropagation()}>
+                        {tr.name}
+                      </Link>
                       <span className="ml-auto text-xs text-muted-foreground">{tr.times.length}</span>
                     </label>
                   </li>

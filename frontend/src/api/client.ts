@@ -254,3 +254,44 @@ export interface MapState {
   max_zoom: number | null;
   server_state: string | null;
 }
+
+/** An offload station of the bundle with where it stands. */
+export interface Station {
+  device_id: string;
+  name: string;
+  station_eui: string;
+  lat: number | null;
+  lon: number | null;
+}
+
+/** What the files brought per offload station (`GET /api/stations`). */
+export interface StationStats {
+  station_eui: string;
+  station_device_id: string | null;
+  station_name: string | null;
+  cards: number;
+  files: number;
+  frames: number;
+  pending: number;
+  failed: number;
+  uploaded: number;
+  duplicate: number;
+  last_read: string | null;
+}
+
+/** A device as the bundle knows it, never a key (`GET /api/bundle/devices`). */
+export interface BundleDevice {
+  id: string;
+  name: string;
+  serial_number: string | null;
+  dev_eui: string | null;
+  device_type_label: string | null;
+  driver_key: string | null;
+  status: string | null;
+  firmware_version: string | null;
+  entity_id: string | null;
+  entity_name: string | null;
+  is_station: boolean;
+  has_address: boolean;
+  has_keys: boolean;
+}

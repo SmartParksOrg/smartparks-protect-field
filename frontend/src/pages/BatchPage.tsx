@@ -48,7 +48,17 @@ export function BatchPage() {
     <>
       <PageHeader
         title={detail?.name ?? t("Files")}
-        description={detail ? (detail.station_name ?? detail.station_eui ?? t("Unknown station")) : undefined}
+        description={
+          detail ? (
+            detail.station_eui ? (
+              <Link className="underline underline-offset-4" to={`/stations/${encodeURIComponent(detail.station_device_id ?? detail.station_eui)}`}>
+                {detail.station_name ?? detail.station_eui}
+              </Link>
+            ) : (
+              t("Unknown station")
+            )
+          ) : undefined
+        }
         actions={
           <Button asChild variant="ghost" size="sm">
             <Link to="/files">{t("All files")}</Link>
@@ -111,7 +121,7 @@ export function BatchPage() {
                     {detail.trackers.map((tr) => (
                       <tr key={tr.device_id} className="border-t">
                         <td className="py-1 pr-3">
-                          <Link className="underline underline-offset-4" to={`/explore?tracker=${tr.device_id}`}>
+                          <Link className="underline underline-offset-4" to={`/trackers/${tr.device_id}`}>
                             {tr.device_name}
                           </Link>
                         </td>
