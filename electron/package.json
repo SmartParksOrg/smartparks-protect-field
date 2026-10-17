@@ -5,6 +5,7 @@
   "description": "The desktop shell of Smart Parks Protect Field: starts the frozen backend and shows the interface, the way AddaxAI's shell does.",
   "main": "dist/main.js",
   "author": "Smart Parks <protect@smartparks.org>",
+  "homepage": "https://smartparksorg.github.io/smartparks-protect-field/",
   "license": "MIT",
   "scripts": {
     "build": "tsc",
