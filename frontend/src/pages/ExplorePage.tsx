@@ -9,7 +9,7 @@ import { queryKeys } from "@/api/queryKeys";
 import { MultiSelect } from "@/components/analytics/MultiSelect";
 import { EmptyState } from "@/components/common/EmptyState";
 import { Drawer } from "@/components/explore/Drawer";
-import { drawerSpace } from "@/components/explore/drawer";
+import { drawerSpace } from "@/components/explore/drawerSpace";
 import { ExploreChart } from "@/components/explore/ExploreChart";
 import { ExploreMap } from "@/components/explore/ExploreMap";
 import { colourTrackers, type StationMarker } from "@/components/map/trackLayers";

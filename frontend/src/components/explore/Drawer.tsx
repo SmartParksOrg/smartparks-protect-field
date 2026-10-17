@@ -2,7 +2,7 @@ import { ChevronDown, ChevronUp } from "lucide-react";
 import { type ReactNode, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 
-import { drawerSpace, HANDLE } from "@/components/explore/drawer";
+import { drawerSpace, HANDLE } from "@/components/explore/drawerSpace";
 import { Button } from "@/components/ui/button";
 
 const MIN_HEIGHT = 120;
