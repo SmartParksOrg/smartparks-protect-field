@@ -74,3 +74,51 @@ export interface Bundle {
   stale: boolean;
   key_kept_in: string | null;
 }
+
+export interface Card {
+  id: string;
+  name: string;
+  imported_at: string;
+  station_eui: string | null;
+  station_device_id: string | null;
+  station_name: string | null;
+  files: number;
+  lines: number;
+  frames: number;
+  decoded: number;
+  repeated: number;
+  refused: number;
+  unknown: number;
+  line_errors: number;
+  positions: number;
+  measurements: number;
+  states: number;
+  events: number;
+  skipped: string[];
+}
+
+export interface CardDetail extends Card {
+  files_list: { id: string; name: string; folder: string; size: number; station_eui: string | null; lines: number; frames: number; errors: number }[];
+  trackers: {
+    device_id: string;
+    device_name: string;
+    entity_id: string | null;
+    frames: number;
+    decoded: number;
+    refused: number;
+    repeated: number;
+    positions: number;
+    measurements: number;
+    first_time: string | null;
+    last_time: string | null;
+  }[];
+  failures: { line: number; file: string; dev_addr: string | null; device_name: string | null; status: string; code: string | null; reason: string | null }[];
+}
+
+export interface Position {
+  device_id: string;
+  entity_id: string | null;
+  time: string;
+  lat: number;
+  lon: number;
+}

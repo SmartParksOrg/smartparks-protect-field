@@ -2,7 +2,7 @@
 
 Protect Field is a program for your own laptop. It reads the SD card of an offload station where there is no connection, with the same decoding code the Protect server uses, and hands the card's files to Protect when you are online again. Protect stays the record; Field is a reader with a queue.
 
-Status (2026-10-17): the installers, the first-run setup, the update notice, loading a project and the offline map are built. Reading a card and the upload queue are phase 2 of the plan and marked *planned* below.
+Status (2026-10-17): the installers, the first-run setup, the update notice, loading a project, the offline map and reading a card are built. The upload to Protect is next and marked *planned* below.
 
 ## Where it runs
 
@@ -58,7 +58,7 @@ If your Protect account may not see the LP0 keys of a tracker (its device page d
 
 ### 2. At the station, offline: read the card
 
-*Planned.* Take the SD card out of the station, or copy its `LOG_*` folders. Drop the folders or a zip of them on the Cards page. Field names the station by the EUI in the file names, decodes every frame with the tracker's credentials from the bundle, and shows per tracker a map of its positions and a table of its measurements; per station, what it collected and which frames it could not read, with the reason.
+Take the SD card out of the station, or copy its `LOG_*` folders. Open **Cards**, and drop the folders or a zip of them on the page, or pick them with the buttons. Field names the station by the EUI in the file names, reads every frame with the tracker's keys from the project you loaded, and opens the card: how many frames were read, how many were repeats (the station stores a frame again when its receipt was lost), how many it could not read and why, each tracker with the span of its positions, and the positions on the offline map. The frames it could not read are listed by file and line with the same reason the server would give: no keys for that tracker, a tracker the project does not know, a frame that does not verify. The files stay on the laptop exactly as they were on the card, for the upload.
 
 ### 3. Back where there is a connection: upload
 

@@ -4,6 +4,8 @@ import { Navigate, Route, Routes } from "react-router";
 
 import { api, type Setup } from "@/api/client";
 import { queryKeys } from "@/api/queryKeys";
+import { CardPage } from "@/pages/CardPage";
+import { CardsPage } from "@/pages/CardsPage";
 import { HomePage } from "@/pages/HomePage";
 import { LoadPage } from "@/pages/LoadPage";
 import { MapPage } from "@/pages/MapPage";
@@ -33,6 +35,8 @@ export default function App() {
         path="/sign-in"
         element={current.server_url ? <SignInPage setup={current} /> : <Navigate to="/setup" replace />}
       />
+      <Route path="/cards" element={current.server_url ? <CardsPage /> : <Navigate to="/setup" replace />} />
+      <Route path="/cards/:cardId" element={current.server_url ? <CardPage /> : <Navigate to="/setup" replace />} />
       <Route
         path="/load"
         element={current.server_url ? <LoadPage signedIn={current.signed_in} /> : <Navigate to="/setup" replace />}

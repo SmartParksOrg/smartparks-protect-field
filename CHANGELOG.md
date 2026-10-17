@@ -6,6 +6,7 @@ All notable changes to Smart Parks Protect Field. The format follows Keep a Chan
 
 ### Added
 
+- Reading a card: drop a card's LOG folders or a zip of them on the Cards page; every frame is read with the project's keys through Protect's own decode path, the records kept on the laptop, the positions drawn on the offline map, and every frame that could not be read listed with the server's own reason. The files are kept as they were for the upload.
 - Loading a project (decision D11): the Load page fetches the project's field bundle from the Protect server, the devices, entities, stations and the LP0 keys the account may see, and the map with it, in one button; the bundle is kept encrypted on the laptop with a key in the operating system's keychain, or in a key file where there is none, and the first screen says what is on the laptop and warns after a week.
 - Protect pinned at d79ffaf (main of 2026-10-17), which brings `shared.station_decode`, the one decode path of a station frame the server's pipeline and Field share; the proof test opens a frame and reads a stored stream through it.
 - The offline map (decision D4): the Map page fetches the project's PMTiles map from the Protect server while online (asking the server to cut it when it has none yet) and draws it on the laptop without a connection, with Protomaps' basemap style and its sprites and glyphs shipped inside Field; the backend serves the file with range requests. The account's projects are listed for the picker.

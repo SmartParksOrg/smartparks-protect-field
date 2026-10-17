@@ -58,6 +58,9 @@ export function HomePage({ setup }: { setup: Setup }) {
           <Button asChild variant="secondary" size="sm">
             <Link to="/map">{t("Map")}</Link>
           </Button>
+          <Button asChild variant="secondary" size="sm">
+            <Link to="/cards">{t("Cards")}</Link>
+          </Button>
         </CardContent>
       </Card>
       <Card>
