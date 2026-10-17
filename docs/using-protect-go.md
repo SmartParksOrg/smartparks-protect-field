@@ -85,7 +85,7 @@ Take the SD card out of the station and put it in the laptop. Open **Files**: th
 
 The app is updated often. At every start it looks at the newest release and, when there is a newer one, shows it on the first screen with its notes. **Check for updates…** in the menu does the same at any time.
 
-- **Windows:** the app installs the update itself. Press **Download and install**; the download runs in the background, and **Restart to update** closes the app, installs the new version and opens it again. If you close the app with the download finished, it installs on the way out. The first version that does this is v0.7.0; from v0.6.0 or older, run the new setup file once by hand.
+- **Windows:** the app installs the update itself. Press **Download and install**; the download runs in the background, and **Restart to update** closes the app, shows the installer with its progress bar while the files change, and opens the new version by itself. If you close the app with the download finished, it installs on the way out. The first version that does this is v0.7.0; from v0.6.0 or older, run the new setup file once by hand.
 - **macOS:** open the new dmg, drag Protect Go into Applications and choose **Replace**. The app will install updates itself once it is code signed, which macOS demands for that.
 - **Linux:** `sudo apt install ./ProtectGo-amd64.deb` again.
 

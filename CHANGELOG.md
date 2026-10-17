@@ -6,6 +6,12 @@ All notable changes to Smart Parks Protect Go. The format follows Keep a Changel
 
 Nothing yet.
 
+## v0.9.1, 2026-10-17
+
+### Changed
+
+- "Restart to update" keeps a window on the screen (decision D22): the installer shows its progress bar while the files change, closes by itself and starts the new version, so nothing goes dark between the steps (Tim, 2026-10-17). The first update that behaves so is the one after v0.9.1, since the running version decides how the installer is started.
+
 ## v0.9.0, 2026-10-17
 
 ### Added

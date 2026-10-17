@@ -11,3 +11,34 @@
     RMDir /r "$PROFILE\ProtectGo"
   keepData:
 !macroend
+
+; An update keeps a window on the screen (Tim, 2026-10-17; decision D22): the app starts the
+; installer visibly, which skips its license and directory pages when run as an update
+; (electron-builder's own rule) and shows the install page with its progress bar. Once the
+; files are in, the page closes by itself, the finish page is skipped, and the app starts
+; again, so nobody clicks and nothing goes dark between the steps. A first install keeps the
+; finish page with its "Run Protect Go" box.
+
+!macro customInstall
+  ${if} ${isUpdated}
+    SetAutoClose true
+  ${endif}
+!macroend
+
+!macro customFinishPage
+  Function skipFinishPageIfUpdated
+    ${if} ${isUpdated}
+      !insertmacro StartApp
+      Abort
+    ${endif}
+  FunctionEnd
+
+  Function StartAppFromFinishPage
+    !insertmacro StartApp
+  FunctionEnd
+
+  !define MUI_PAGE_CUSTOMFUNCTION_PRE skipFinishPageIfUpdated
+  !define MUI_FINISHPAGE_RUN
+  !define MUI_FINISHPAGE_RUN_FUNCTION "StartAppFromFinishPage"
+  !insertmacro MUI_PAGE_FINISH
+!macroend

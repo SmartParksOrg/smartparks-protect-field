@@ -483,7 +483,9 @@ async function downloadUpdate(): Promise<void> {
 function installUpdate(): void {
   if (updateStatus.state !== "downloaded") return;
   stopBackend();
-  autoUpdater.quitAndInstall(true, true);
+  // not silent: the installer's own window with its progress bar stays on the screen while the
+  // files change, and `build/installer.nsh` closes it and starts the app again (decision D22)
+  autoUpdater.quitAndInstall(false, true);
 }
 
 // --- IPC for the interface (preload.ts)
