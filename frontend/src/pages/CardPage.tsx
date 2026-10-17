@@ -55,7 +55,7 @@ export function CardPage() {
         <>
           <Panel>
             <CardHeader>
-              <CardTitle>{t("Station {{station}}", { station: detail.station_name ?? detail.station_eui ?? t("unknown") })}</CardTitle>
+              <CardTitle>{detail.station_name ?? detail.station_eui ?? t("Unknown station")}</CardTitle>
               <CardDescription>
                 {t("Read on {{when}}: {{files}} files, {{frames}} frames; {{decoded}} decoded, {{repeated}} repeats, {{refused}} refused, {{unknown}} of unknown trackers, {{errors}} unreadable lines. New records: {{positions}} positions, {{measurements}} measurements, {{states}} states, {{events}} events.", {
                   when: new Date(detail.imported_at).toLocaleString(),

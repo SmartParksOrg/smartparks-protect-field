@@ -94,11 +94,11 @@
   "Remove this card from the laptop": "Deze kaart van de laptop verwijderen",
   "Size": "Grootte",
   "Station": "Station",
-  "Station {{station}}": "Station {{station}}",
   "The card's folder": "De map van de kaart",
   "The first {{count}} frames that could not be read, with the reason._one": "Het eerste frame dat niet gelezen kon worden, met de reden.",
   "The first {{count}} frames that could not be read, with the reason._other": "De eerste {{count}} frames die niet gelezen konden worden, met de reden.",
   "Tracker": "Tracker",
   "Trackers": "Trackers",
-  "Unreadable": "Onleesbaar"
+  "Unreadable": "Onleesbaar",
+  "Unknown station": "Onbekend station"
 }
