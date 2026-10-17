@@ -6,6 +6,12 @@ All notable changes to Smart Parks Protect Go. The format follows Keep a Changel
 
 Nothing yet.
 
+## v0.10.2, 2026-10-17
+
+### Changed
+
+- The explorer map's time slider sits on the scale's line at the bottom, between the scale and the control strip, so it covers nothing; the base map selector is gone, the base map follows the theme (Tim, 2026-10-17).
+
 ## v0.10.1, 2026-10-17
 
 ### Changed

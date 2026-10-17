@@ -6,28 +6,18 @@ import { useTranslation } from "react-i18next";
 
 import { ControlStrip } from "@/components/map/ControlStrip";
 import { bindTrackPointClicks, ensureStationLayers, ensureTrackLayers, setStations, setTracks, type StationMarker, type TrackLayer, trackPointKey } from "@/components/map/trackLayers";
-import { FLAVOURS, type Flavour, useMap } from "@/components/map/useMap";
+import { type Flavour, useMap } from "@/components/map/useMap";
 import { useTheme } from "@/hooks/useTheme";
-import { usePreference } from "@/hooks/usePreference";
 import { formatInZone } from "@/lib/analytics";
 import { boundsOfTracks, pointsAt } from "@/lib/explore";
-import { t as mark } from "@/lib/i18nMark";
-
-const FLAVOUR_LABELS: Record<Flavour | "auto", string> = {
-  auto: mark("Follows the theme"),
-  light: mark("Light"),
-  dark: mark("Dark"),
-  white: mark("White"),
-  grayscale: mark("Grayscale"),
-  black: mark("Black"),
-};
 
 /**
  * The map of the Data explorer, Protect's Explore map (its decision D153) on the offline
  * tiles: the tracks of the selection over the period with the offload stations, Protect's
- * control strips (zoom, north and fit bottom right; Layers top left with the trackers to show
- * or hide and the base map's flavour), a time slider that moves the marked moment along the
- * tracks, and the point of every track at that moment ringed. Hovering a track point marks its
+ * control strips (zoom, north, fit and full screen bottom right; Layers top left with the
+ * trackers to show or hide), a time slider on the scale's line that moves the marked moment
+ * along the tracks, and the point of every track at that moment ringed. The base map follows
+ * the theme (Tim, 2026-10-17: a selector for it did not help). Hovering a track point marks its
  * moment in the other views; a click pins it.
  */
 export function ExploreMap({
@@ -57,8 +47,7 @@ export function ExploreMap({
 }) {
   const { t } = useTranslation();
   const { resolved } = useTheme();
-  const [chosenFlavour, setChosenFlavour] = usePreference<Flavour | "auto">("map_flavour", "auto");
-  const flavour: Flavour = chosenFlavour === "auto" ? (resolved === "dark" ? "dark" : "light") : chosenFlavour;
+  const flavour: Flavour = resolved === "dark" ? "dark" : "light";
   const container = useRef<HTMLDivElement | null>(null);
   const frame = useRef<HTMLDivElement | null>(null);
   const initialBounds = useMemo(() => {
@@ -200,21 +189,15 @@ export function ExploreMap({
                 {t("Hide all")}
               </button>
             </div>
-            <p className="mt-3 mb-1 text-xs font-medium text-muted-foreground">{t("Base map")}</p>
-            <select className="h-8 w-full rounded-md border border-input bg-transparent px-2 text-sm" value={chosenFlavour} onChange={(e) => setChosenFlavour(e.target.value as Flavour | "auto")} aria-label={t("Base map")}>
-              {(["auto", ...FLAVOURS] as const).map((f) => (
-                <option key={f} value={f}>
-                  {t(FLAVOUR_LABELS[f])}
-                </option>
-              ))}
-            </select>
-            <p className="mt-2 text-xs text-muted-foreground">{t("{{count}} stations on the map", { count: stations.length })}</p>
+            <p className="mt-3 text-xs text-muted-foreground">{t("{{count}} stations on the map", { count: stations.length })}</p>
           </div>
         )}
       </div>
-      {/* the time slider (Protect's decision D153): its moment is the marked one, released it pins */}
+      {/* the time slider (Protect's decision D153) on the scale's line, between the scale at the
+          left and the control strip at the right, so it covers nothing (Tim, 2026-10-17): its
+          moment is the marked one, released it pins */}
       {Number.isFinite(window.from) && Number.isFinite(window.to) && window.to > window.from && (
-        <div className="absolute right-14 bottom-8 left-3 z-10 flex items-center gap-3 rounded-md border bg-card/95 px-3 py-1.5 text-xs shadow">
+        <div className="absolute right-14 bottom-2 left-[7.25rem] z-10 flex h-8 items-center gap-3 rounded-md border bg-card/95 px-3 text-xs shadow">
           <span className="hidden whitespace-nowrap text-muted-foreground sm:inline">{formatInZone(new Date(window.from).toISOString(), timezone)}</span>
           <input
             type="range"
