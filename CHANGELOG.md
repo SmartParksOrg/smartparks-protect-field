@@ -6,6 +6,12 @@ All notable changes to Smart Parks Protect Go. The format follows Keep a Changel
 
 Nothing yet.
 
+## v0.6.0, 2026-10-17
+
+### Added
+
+- Signed in from Protect's Offload page (decision D15): the `protect-go://connect` link carries a one-time code beside the server, the app exchanges it at `POST /api/v1/auth/go-handoff/exchange` for a token of 30 days and lands on Overview; nothing is typed. Email and password stay as the way in when the app was not opened from that page. Protect's side is its decision D333.
+
 ## v0.5.0, 2026-10-17
 
 Protect's file explorer for the files; only projects with an offload station are offered. Protect pinned at d79ffaf.

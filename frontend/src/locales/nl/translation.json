@@ -215,5 +215,6 @@
   "{{name}} ({{count}} stations)_other": "{{name}} ({{count}} stations)",
   "None of your projects has an offload station yet; make one on Protect's Offload page first.": "Geen van je projecten heeft al een offloadstation; maak er eerst een op de Offload-pagina van Protect.",
   "{{count}} projects without an offload station are not offered._one": "{{count}} project zonder offloadstation wordt niet aangeboden.",
-  "{{count}} projects without an offload station are not offered._other": "{{count}} projecten zonder offloadstation worden niet aangeboden."
+  "{{count}} projects without an offload station are not offered._other": "{{count}} projecten zonder offloadstation worden niet aangeboden.",
+  "Signing in from Protect": "Aanmelden vanuit Protect"
 }

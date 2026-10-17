@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate, useSearchParams } from "react-router";
 
@@ -20,6 +20,23 @@ export function SetupPage({ current }: { current?: Setup }) {
   const queryClient = useQueryClient();
   const [params] = useSearchParams();
   const [server, setServer] = useState(params.get("server") ?? current?.server_url ?? "");
+  const code = params.get("code");
+  // from Protect's Offload page the link carries a one-time code: the server and the sign-in
+  // come without typing (decision D15)
+  const handoff = useMutation({
+    mutationFn: () => send<Setup>("POST", "/api/session/handoff", { server_url: server, code }),
+    onSuccess: (setup) => {
+      queryClient.setQueryData(queryKeys.setup, setup);
+      void navigate("/", { replace: true });
+    },
+  });
+  const started = useRef(false);
+  useEffect(() => {
+    if (code && server && !started.current) {
+      started.current = true;
+      handoff.mutate();
+    }
+  }, [code, server, handoff]);
   const save = useMutation({
     mutationFn: () => send<Setup>("PUT", "/api/setup/server", { server_url: server }),
     onSuccess: (setup) => {
@@ -37,6 +54,8 @@ export function SetupPage({ current }: { current?: Setup }) {
           </CardDescription>
         </CardHeader>
         <CardContent>
+          {code && handoff.isPending && <Callout kind="info">{t("Signing in from Protect")}</Callout>}
+          {code && handoff.isError && <Callout kind="error">{handoff.error.message}</Callout>}
           <form
             className="flex flex-col gap-3"
             onSubmit={(event) => {

@@ -89,3 +89,30 @@ async def sign_in(
     except httpx.HTTPError as exc:
         raise ProtectError(502, f"No answer from {server_url}: {exc.__class__.__name__}") from None
     return token, account_email, token_expiry(token)
+
+
+async def exchange_handoff(
+    server_url: str, code: str, transport: httpx.AsyncBaseTransport | None
+) -> tuple[str, str, datetime]:
+    """Protect's one-time sign-in code from its Offload page (decision D15) for a token that
+    lasts weeks; returns the token, the account's email and when it expires."""
+    try:
+        async with client(server_url, transport) as http:
+            response = await http.post("/api/v1/auth/go-handoff/exchange", json={"code": code})
+            if response.status_code in (400, 404, 410):
+                raise ProtectError(
+                    401,
+                    "The sign-in code is not valid any more; open Protect Go from the Offload "
+                    "page again, or sign in with your email and password",
+                )
+            if response.status_code != 200:
+                raise ProtectError(502, f"The server answered {response.status_code} to the code")
+            body = response.json()
+            token = str(body["access_token"])
+            me = await http.get("/api/v1/users/me", headers={"Authorization": f"Bearer {token}"})
+            if me.status_code != 200:
+                raise ProtectError(502, f"The server answered {me.status_code} for the account")
+            account_email = str(me.json().get("email") or "")
+    except httpx.HTTPError as exc:
+        raise ProtectError(502, f"No answer from {server_url}: {exc.__class__.__name__}") from None
+    return token, account_email, token_expiry(token)

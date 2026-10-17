@@ -134,3 +134,40 @@ async def test_the_projects_come_from_the_server(app):
             {"id": "p1", "name": "LP0", "stations": 2},
             {"id": "p2", "name": "Cows", "stations": 0},
         ]
+
+
+async def test_a_code_from_the_offload_page_signs_in_without_typing(app):
+    """Decision D15: the link from Protect's Offload page carries the server and a one-time
+    code; the app keeps the server and exchanges the code for a token, no password typed."""
+    state = {"used": False}
+
+    def server(request: httpx.Request) -> httpx.Response:
+        if request.url.path == "/api/v1/auth/go-handoff/exchange":
+            body = json.loads(request.content)
+            if body.get("code") != "onetimecode_0123456789abcdef" or state["used"]:
+                return httpx.Response(404, json={"detail": "Unknown or used code"})
+            state["used"] = True
+            return httpx.Response(200, json={"access_token": TOKEN, "token_type": "bearer"})
+        return protect_server(request)
+
+    app.state.http_transport = httpx.MockTransport(server)
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        signed = await client.post(
+            "/api/session/handoff",
+            json={
+                "server_url": "https://dev-protect.example.org",
+                "code": "onetimecode_0123456789abcdef",
+            },
+        )
+        assert signed.status_code == 200, signed.text
+        body = signed.json()
+        assert body["server_url"] == "https://dev-protect.example.org" and body["signed_in"] is True
+        assert body["email"] == "ranger@example.org" and body["protect_version"] == "v2.9.0"
+        again = await client.post(
+            "/api/session/handoff",
+            json={
+                "server_url": "https://dev-protect.example.org",
+                "code": "onetimecode_0123456789abcdef",
+            },
+        )
+        assert again.status_code == 401 and "not valid any more" in again.text

@@ -36,3 +36,7 @@ Protect Go reads a card with `shared.station_files` from Protect's `shared` pack
 ## Versions
 
 Protect Go pins Protect's `shared` package to a commit. The first screen names both the Protect Go version and that commit, so a difference between what Protect Go showed and what Protect decoded can be traced to a version. `scripts/dev.sh bump-protect` moves the pin and reruns the decoding proof.
+
+## Signed in from the Offload page
+
+Protect's Offload page asks `POST /api/v1/auth/go-handoff` (the signed-in person) for a one-time code and opens `protect-go://connect?server=<origin>&code=<code>` (Protect's decision D333, this side's D15). The app posts the code to `POST /api/v1/auth/go-handoff/exchange` `{code}` and receives `{access_token}` with 30 days of life, then reads the account at `GET /api/v1/users/me`. A code is good once, for two minutes; the server answers 404 after that, and the app says to open it from the Offload page again or to sign in with email and password. The exchange is throttled like the login.

@@ -9,7 +9,13 @@ import httpx
 from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel, Field
 
-from protect_go.protect import ProtectError, normalise_server_url, probe_version, sign_in
+from protect_go.protect import (
+    ProtectError,
+    exchange_handoff,
+    normalise_server_url,
+    probe_version,
+    sign_in,
+)
 from protect_go.store import Settings, Store
 
 router = APIRouter(prefix="/api")
@@ -30,6 +36,11 @@ class ServerUpdate(BaseModel):
 class SignIn(BaseModel):
     email: str = Field(min_length=3, max_length=320)
     password: str = Field(min_length=1, max_length=500)
+
+
+class Handoff(BaseModel):
+    server_url: str = Field(min_length=1, max_length=500)
+    code: str = Field(min_length=16, max_length=128, pattern=r"^[A-Za-z0-9_-]+$")
 
 
 def _store(request: Request) -> Store:
@@ -89,6 +100,27 @@ async def create_session(body: SignIn, request: Request) -> SetupRead:
         )
     except ProtectError as exc:
         raise HTTPException(exc.status, exc.message) from None
+    settings.email, settings.token, settings.token_expires_at = email, token, expires
+    store.save(settings)
+    return _read(settings)
+
+
+@router.post("/session/handoff", response_model=SetupRead)
+async def handoff(body: Handoff, request: Request) -> SetupRead:
+    """Signed in from Protect's Offload page (decision D15): the link carried the server and a
+    one-time code; the server is kept once it answers, the code exchanged for a token that
+    lasts weeks, so nobody types the address or the password on the laptop."""
+    store = _store(request)
+    transport = _transport(request)
+    try:
+        url = normalise_server_url(body.server_url)
+        version: dict[str, Any] = await probe_version(url, transport)
+        token, email, expires = await exchange_handoff(url, body.code, transport)
+    except ProtectError as exc:
+        raise HTTPException(exc.status, exc.message) from None
+    settings = store.load()
+    settings.server_url = url
+    settings.protect_version = str(version.get("version"))
     settings.email, settings.token, settings.token_expires_at = email, token, expires
     store.save(settings)
     return _read(settings)

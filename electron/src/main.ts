@@ -55,7 +55,10 @@ export function routeForProtocolUrl(raw: string): string | null {
   if (action !== "connect") return null;
   const server = url.searchParams.get("server") ?? "";
   if (!/^https?:\/\/[^\s/]+/.test(server)) return null;
-  return `/setup?server=${encodeURIComponent(server)}`;
+  const code = url.searchParams.get("code");
+  const query = new URLSearchParams({ server });
+  if (code && /^[A-Za-z0-9_-]{16,128}$/.test(code)) query.set("code", code);
+  return `/setup?${query.toString()}`;
 }
 
 function protocolUrlIn(argv: string[]): string | null {

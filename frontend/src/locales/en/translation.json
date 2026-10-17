@@ -165,6 +165,7 @@
   "Signed in as {{email}}. The sign-in lasts until {{time}}; the app asks for your password again when it needs the server after that.": "Signed in as {{email}}. The sign-in lasts until {{time}}; the app asks for your password again when it needs the server after that.",
   "Signed in to {{server}}": "Signed in to {{server}}",
   "Signing in": "Signing in",
+  "Signing in from Protect": "Signing in from Protect",
   "Size": "Size",
   "Smart Parks Protect Go": "Smart Parks Protect Go",
   "Starting": "Starting",

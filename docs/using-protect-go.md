@@ -33,8 +33,12 @@ Pick your system, download the file, and follow the steps. The download links ar
 
 ## First start: the server and your account
 
-1. **The server.** The app asks which Protect server this laptop works with: the address you open Protect at in your browser, for example `https://dev-protect.smartparks.org`. If you came from Protect's Offload page with "Open the app", the address is filled in. The app checks that the address answers as a Protect server before keeping it.
-2. **Your account.** Sign in with the email and password you use for Protect. The password goes to the server and is not kept on the laptop. The sign-in lasts an hour; when the app needs the server after that, it asks for your password again. You can also sign out.
+The short way: on Protect's Offload page, signed in, press **Open Protect Go**. The app opens connected to that server and signed in as you, for 30 days, and nothing is typed. The link carries a code that is good once, for two minutes; the password never leaves the browser.
+
+When the app did not come from that button, or the code has expired, it asks two things:
+
+1. **The server.** Which Protect server this laptop works with: the address you open Protect at in your browser, for example `https://dev-protect.smartparks.org`. The Offload page shows it with a copy button. The app checks that the address answers as a Protect server before keeping it.
+2. **Your account.** Sign in with the email and password you use for Protect. The password goes to the server and is not kept on the laptop. This sign-in lasts an hour; when the app needs the server after that, it asks for your password again. You can also sign out.
 
 To change the server later, choose **Another server** on the first screen.
 
