@@ -184,9 +184,7 @@ async def test_the_connection_says_whether_the_server_and_the_sign_in_hold(app):
         anonymous = (await client.get("/api/setup/connection")).json()
         assert anonymous["online"] is True and anonymous["account_ok"] is None
         assert anonymous["protect_version"] == "v2.9.0" and anonymous["checked_at"]
-        await client.post(
-            "/api/session", json={"email": "ranger@example.org", "password": "right"}
-        )
+        await client.post("/api/session", json={"email": "ranger@example.org", "password": "right"})
         signed = (await client.get("/api/setup/connection")).json()
         assert signed["online"] is True and signed["account_ok"] is True
 
