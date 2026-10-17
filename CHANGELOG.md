@@ -4,7 +4,9 @@ All notable changes to Smart Parks Protect Field. The format follows Keep a Chan
 
 ## Unreleased
 
-Nothing yet.
+### Added
+
+- The offline map (decision D4): the Map page fetches the project's PMTiles map from the Protect server while online (asking the server to cut it when it has none yet) and draws it on the laptop without a connection, with Protomaps' basemap style and its sprites and glyphs shipped inside Field; the backend serves the file with range requests. The account's projects are listed for the picker.
 
 ## v0.1.0, 2026-10-17
 

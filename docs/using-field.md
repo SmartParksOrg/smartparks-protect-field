@@ -2,7 +2,7 @@
 
 Protect Field is a program for your own laptop. It reads the SD card of an offload station where there is no connection, with the same decoding code the Protect server uses, and hands the card's files to Protect when you are online again. Protect stays the record; Field is a reader with a queue.
 
-Status (2026-10-17): the installers, the first-run setup and the update notice are built. Reading a card, the map and the upload queue are phase 2 of the plan and marked *planned* below.
+Status (2026-10-17): the installers, the first-run setup, the update notice and the offline map are built. Reading a card and the upload queue are phase 2 of the plan and marked *planned* below.
 
 ## Where it runs
 
@@ -38,11 +38,15 @@ Pick your system, download the file, and follow the steps. The download links ar
 
 To change the server later, choose **Another server** on the first screen.
 
+## The map
+
+Open **Map** from the first screen while you are online, choose the project and press **Fetch the map**. Field asks the server for the map of the project's area; the first time, the server has to cut it first, which takes a few minutes, and Field says so: try again a little later. Once fetched, the map is drawn on the laptop without any connection, down to street level around the stations, with place names in Latin script. It is OpenStreetMap's map as Protomaps builds it, not satellite imagery, which cannot be taken offline. Fetch it again now and then: the server renews its copy once a month, and a project whose area grew needs a new one.
+
 ## The cycle
 
 ### 1. Before you leave, online: load the bundle
 
-*Planned.* Choose the project. Field downloads its field bundle: the project's devices and entities, the LP0 credentials of the trackers you are allowed to see, the stations, the area and an offline map of it. The bundle is stored in the data folder. A bundle older than a week is marked stale; load a fresh one whenever you are online.
+*Planned.* Choose the project. Field downloads its field bundle: the project's devices and entities, the LP0 credentials of the trackers you are allowed to see, the stations and the area; the map is fetched as above. The bundle is stored in the data folder. A bundle older than a week is marked stale; load a fresh one whenever you are online.
 
 If your Protect account may not see the LP0 keys of a tracker (its device page does not show them to you), the bundle holds no keys for it and Field shows that tracker's frames undecoded. Ask a project administrator.
 

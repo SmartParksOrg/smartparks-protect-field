@@ -100,3 +100,36 @@ async def end_session(request: Request) -> SetupRead:
     settings.email = settings.token = settings.token_expires_at = None
     store.save(settings)
     return _read(settings)
+
+
+class ProjectRead(BaseModel):
+    id: str
+    name: str
+
+
+@router.get("/projects", response_model=list[ProjectRead])
+async def list_projects(request: Request) -> list[ProjectRead]:
+    """The projects the signed-in account may read, from the server, to pick one for the map
+    and, in phase 2, the bundle."""
+    store = _store(request)
+    settings = store.load()
+    if settings.server_url is None or not settings.signed_in:
+        raise HTTPException(409, "Sign in to the server first")
+    try:
+        async with httpx.AsyncClient(
+            base_url=settings.server_url, timeout=httpx.Timeout(30.0), transport=_transport(request)
+        ) as http:
+            response = await http.get(
+                "/api/v1/projects",
+                params={"page_size": 200},
+                headers={"Authorization": f"Bearer {settings.token}"},
+            )
+    except httpx.HTTPError as exc:
+        raise HTTPException(502, f"No answer from the server: {exc.__class__.__name__}") from None
+    if response.status_code in (401, 403):
+        raise HTTPException(401, "The sign-in has expired")
+    if response.status_code != 200:
+        raise HTTPException(502, f"The server answered {response.status_code} for the projects")
+    body = response.json()
+    items = body.get("items", body) if isinstance(body, dict) else body
+    return [ProjectRead(id=str(p["id"]), name=str(p["name"])) for p in items]

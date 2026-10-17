@@ -1,5 +1,8 @@
 {
+  "{{project}}, map of {{build}}, {{size}} MB, down to zoom {{zoom}}. OpenStreetMap data built by Protomaps.": "{{project}}, map of {{build}}, {{size}} MB, down to zoom {{zoom}}. OpenStreetMap data built by Protomaps.",
+  "A fresh map": "A fresh map",
   "Another server": "Another server",
+  "Back": "Back",
   "Cancel": "Cancel",
   "Checking the local server": "Checking the local server",
   "Checking the server": "Checking the server",
@@ -9,9 +12,14 @@
   "Data folder": "Data folder",
   "Download the new version": "Download the new version",
   "Email": "Email",
+  "Fetch the map": "Fetch the map",
+  "Fetching the map": "Fetching the map",
   "Install it over this one; your bundles and cards are kept.": "Install it over this one; your bundles and cards are kept.",
+  "Map": "Map",
+  "No map on this laptop yet": "No map on this laptop yet",
   "Not signed in. Sign in when you are online to load a bundle or upload cards.": "Not signed in. Sign in when you are online to load a bundle or upload cards.",
   "Password": "Password",
+  "Project": "Project",
   "Protect Field is up to date (v{{version}}).": "Protect Field is up to date (v{{version}}).",
   "Protect Field v{{latest}} is available; you have v{{current}}.": "Protect Field v{{latest}} is available; you have v{{current}}.",
   "Protect's decoding": "Protect's decoding",
@@ -19,6 +27,7 @@
   "Server address": "Server address",
   "Server version": "Server version",
   "Sign in": "Sign in",
+  "Sign in first; the map comes from the server you are signed in to.": "Sign in first; the map comes from the server you are signed in to.",
   "Sign in to {{server}}": "Sign in to {{server}}",
   "Sign out": "Sign out",
   "Signed in as {{email}}. The sign-in lasts until {{time}}; Field asks for your password again when it needs the server after that.": "Signed in as {{email}}. The sign-in lasts until {{time}}; Field asks for your password again when it needs the server after that.",
@@ -32,5 +41,6 @@
   "This build (v{{version}}) is newer than the newest release.": "This build (v{{version}}) is newer than the newest release.",
   "unknown": "unknown",
   "Version": "Version",
-  "Which Protect server does this laptop work with?": "Which Protect server does this laptop work with?"
+  "Which Protect server does this laptop work with?": "Which Protect server does this laptop work with?",
+  "While you are online, fetch the map of the project's area from the server. It is then drawn here without a connection.": "While you are online, fetch the map of the project's area from the server. It is then drawn here without a connection."
 }

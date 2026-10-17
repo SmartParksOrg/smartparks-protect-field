@@ -3,4 +3,6 @@ export const queryKeys = {
   health: ["health"] as const,
   setup: ["setup"] as const,
   latestRelease: ["latest-release"] as const,
+  map: ["map"] as const,
+  projects: ["projects"] as const,
 };

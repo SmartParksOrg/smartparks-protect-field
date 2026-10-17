@@ -14,6 +14,7 @@ export default defineConfig(({ mode }) => {
   return {
     envDir,
     plugins: [react(), tailwindcss()],
+    worker: { format: "es" },
     resolve: {
       alias: { "@": path.resolve(import.meta.dirname, "./src") },
     },

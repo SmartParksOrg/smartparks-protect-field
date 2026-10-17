@@ -93,3 +93,24 @@ async def test_a_server_that_is_not_protect_is_refused(app):
         assert (await client.get("/api/setup")).json()["server_url"] is None
         no_server = await client.post("/api/session", json={"email": "a@b.c", "password": "x"})
         assert no_server.status_code == 409
+
+
+async def test_the_projects_come_from_the_server(app):
+    def server(request: httpx.Request) -> httpx.Response:
+        if request.url.path == "/api/v1/projects":
+            assert request.headers["Authorization"] == f"Bearer {TOKEN}"
+            return httpx.Response(
+                200,
+                json={"items": [{"id": "p1", "name": "LP0", "role": "project_admin"}], "total": 1},
+            )
+        return protect_server(request)
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        assert (await client.get("/api/projects")).status_code == 409
+        await client.put(
+            "/api/setup/server", json={"server_url": "https://dev-protect.example.org"}
+        )
+        await client.post("/api/session", json={"email": "ranger@example.org", "password": "right"})
+        app.state.http_transport = httpx.MockTransport(server)
+        projects = await client.get("/api/projects")
+        assert projects.status_code == 200 and projects.json() == [{"id": "p1", "name": "LP0"}]

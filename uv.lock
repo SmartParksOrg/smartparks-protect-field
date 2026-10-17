@@ -1169,6 +1169,12 @@ wheels = [
 ]
 
 [[package]]
+name = "pmtiles"
+version = "3.4.1"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/21/69/5c2e4eb58aaf6303aebbaad3e6d7394b96d28f94af5bc16a6540d815bb09/pmtiles-3.4.1.tar.gz", hash = "sha256:48d6d8f317e7ec1f4150a715b1c220777f89f0c1061874a6022255a0859836ee", size = 13895, upload-time = "2024-10-12T05:33:45.891Z" }
+
+[[package]]
 name = "proto-plus"
 version = "1.29.0"
 source = { registry = "https://pypi.org/simple" }
@@ -1631,6 +1637,7 @@ version = "0.0.0"
 source = { editable = "." }
 dependencies = [
     { name = "fastapi" },
+    { name = "pmtiles" },
     { name = "pydantic" },
     { name = "pydantic-settings" },
     { name = "smartparks-protect-shared" },
@@ -1657,6 +1664,7 @@ packaging = [
 [package.metadata]
 requires-dist = [
     { name = "fastapi", specifier = "==0.141.1" },
+    { name = "pmtiles", specifier = "==3.4.1" },
     { name = "pydantic", specifier = "==2.13.5" },
     { name = "pydantic-settings", specifier = "==2.15.0" },
     { name = "smartparks-protect-shared", git = "https://github.com/SmartParksOrg/smartparks-protect?subdirectory=shared&rev=8c0a6b6c52a81cc95065f4ffbd2c9130fbb8b2b7" },

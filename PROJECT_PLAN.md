@@ -17,10 +17,10 @@ Living plan for building Smart Parks Protect Field, the companion of Smart Parks
 
 | Field | Value |
 | --- | --- |
-| Active phase | Phase 1b (installed like AddaxAI, D6 to D10) built on 2026-10-17: the shell, the frozen backend, the installers' workflow, the setup, the update notice, the user page; v0.1.0 released the same day (I8); I9 (certificates) waits for Tim. Phase 1 (the Protect side) P1, P2 and P4 done in Protect (8c0a6b6), P3 open. Phase 2 (a card read offline) next |
+| Active phase | Phase 2 begun with F0, the offline map, on 2026-10-17 (Protect's P3 the same day); phase 1b (installed like AddaxAI, D6 to D10) built on 2026-10-17: the shell, the frozen backend, the installers' workflow, the setup, the update notice, the user page; v0.1.0 released the same day (I8); I9 (certificates) waits for Tim. Phase 1 (the Protect side) P1, P2 and P4 done in Protect (8c0a6b6), P3 open. Phase 2 (a card read offline) next |
 | Latest release | v0.1.0 (2026-10-17): the installers, the setup, the update notice |
 | Last session | 2026-10-17 (Claude and Tim): the design chosen (ADR 0001, D1 to D5), the repository created with Protect's conventions, hooks, CI, docs and frontend tooling mirrored, the Python package with the server skeleton and the proof that Protect's decoding runs here, the frontend skeleton with its first screen, the documentation site; Protect pinned at 2755c92. Committed as 9391087, pushed to `SmartParksOrg/smartparks-protect-field` (private); the first CI run failed on the audit's export of the git package, fixed in ad9bafa, CI green since |
-| Next item | Tim tries the v0.1.0 installer on a Windows and a Mac laptop from the Offload page on dev; then phase 2 F1 and F2 (the bundle loaded, a card read); P3 in Protect when the map is wanted |
+| Next item | Protect P6 (one decode function in `shared` for the pipeline and Field), then F1 and F2 here (the bundle loaded, a card read and decoded); Tim tries the v0.1.0 installer and, after the next release, the map of the LP0 project on dev |
 | Blockers | No code-signing certificates (Windows Authenticode, Apple Developer ID), so the installers are unsigned and users click through SmartScreen and Gatekeeper as the user page explains; I9 is Tim's. A real LP0 v5 card does not exist yet (Protect's O8 waits for the firmware developer); until then the cards are synthetic, built with `build_uplink` as Protect's demo script builds them |
 
 ## What we are building
@@ -91,7 +91,8 @@ Every item, every phase:
 
 - [ ] F1. The local store: SQLite in the data folder; a bundle loaded from a file or fetched from a Protect server the user signs in to, encrypted on disk with a key the user gives; the bundle's age shown and a fresh one asked for when online
 - [ ] F2. The card: a folder or zip dropped in, routed to the station by its EUI from the file names, parsed with P1, every frame unwrapped with the tracker's credentials from the bundle and decoded with the OpenCollar driver; the result (positions, measurements, states, events) stored per card; a frame that fails kept with its reason
-- [ ] F3. The pages: the cards read with their status; per tracker a map of its positions on the offline tiles (D4) and a table of its measurements, bounded by a window; per station what it collected
+- [x] F0. The offline map (D4; 2026-10-17): `POST /api/map/fetch` gets the project's PMTiles from Protect's `GET /projects/{id}/field-bundle/map` (asking for it when the server has none), `GET /api/map/tiles.pmtiles` serves it with range requests, the Map page draws it with Protomaps' style and the sprites and glyphs shipped in `public/map/`; `GET /api/projects` for the picker
+- [ ] F3. The pages: the cards read with their status; per tracker a map of its positions on the offline map (F0) and a table of its measurements, bounded by a window; per station what it collected
 - [ ] F4. The upload queue: each card file to Protect's log files endpoint when online, Protect's answer kept (accepted, duplicate, refused), retried on failure, shown
 - [ ] F5. Packaging as the replay app was packaged: Docker Desktop launchers for Windows and macOS, and a plain `uv run` path; the data folder outside the repository
 - [ ] F6. A tracker or station read over Web Bluetooth in the field (Chrome on a laptop), as Protect's station dialog does, so a device's credentials reach the bundle without a connection; decide whether this is Field's or stays Protect's
@@ -132,3 +133,8 @@ Every item, every phase:
 - Built the same here (D6 to D10, phase 1b): the shell, the frozen backend (runs on Linux, health names the decoders), the electron-builder block, the installers' workflow (signing when the secrets exist, else a warning), the setup and session endpoints with tests, the setup and sign-in pages, the update notice, the user page after AddaxAI's. The Protect side (the Offload page's card and the protocol link) is Protect's D332.
 - The manual installer build on GitHub made all three installers (the Linux one after the shell's package got a homepage, 935c777). The artifacts of a manual run live 14 days; a release carries them for good.
 - Open for Tim: publish v0.1.0 so the installers exist (I8), and the certificates (I9).
+
+### 2026-10-17, the offline map (Claude and Tim)
+
+- Tim asked for the next steps and then to start with the first: the offline map of the LP0 network's area. Protect's side (P3, commit 282eac0 there): the export worker cuts the project's area, with a 5 km margin, from the newest Protomaps planet build with go-pmtiles down to zoom 14 and keeps it in MinIO; `GET /projects/{id}/field-bundle/map` streams it. Here: `POST /api/map/fetch`, the range-serving `GET /api/map/tiles.pmtiles`, the Map page with Protomaps' style and the sprites and glyphs shipped in `public/map/` (2.4 MB: light and dark sprites, Noto Sans Regular, Medium and Italic for Latin, Greek, Cyrillic and punctuation), `GET /api/projects` for the picker. Tests with a mock server and a synthetic PMTiles file.
+- Next: Protect P6 (one decode function), then F1 and F2.

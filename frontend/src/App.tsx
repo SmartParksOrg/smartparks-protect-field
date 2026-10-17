@@ -5,6 +5,7 @@ import { Navigate, Route, Routes } from "react-router";
 import { api, type Setup } from "@/api/client";
 import { queryKeys } from "@/api/queryKeys";
 import { HomePage } from "@/pages/HomePage";
+import { MapPage } from "@/pages/MapPage";
 import { SetupPage } from "@/pages/SetupPage";
 import { SignInPage } from "@/pages/SignInPage";
 
@@ -30,6 +31,10 @@ export default function App() {
       <Route
         path="/sign-in"
         element={current.server_url ? <SignInPage setup={current} /> : <Navigate to="/setup" replace />}
+      />
+      <Route
+        path="/map"
+        element={current.server_url ? <MapPage signedIn={current.signed_in} /> : <Navigate to="/setup" replace />}
       />
       <Route
         path="/"

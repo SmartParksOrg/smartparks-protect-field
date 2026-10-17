@@ -32,5 +32,15 @@
   "The address you open Protect at in your browser. Field downloads the project's bundle from it and uploads the cards to it.": "Het adres waarop je Protect in je browser opent. Field haalt daar de bundel van het project op en uploadt er de kaarten naar.",
   "The same email and password you use for Protect. The password goes to the server and is not kept here.": "Hetzelfde e-mailadres en wachtwoord als voor Protect. Het wachtwoord gaat naar de server en wordt hier niet bewaard.",
   "This build (v{{version}}) is newer than the newest release.": "Deze build (v{{version}}) is nieuwer dan de nieuwste release.",
-  "Which Protect server does this laptop work with?": "Met welke Protect-server werkt deze laptop?"
+  "Which Protect server does this laptop work with?": "Met welke Protect-server werkt deze laptop?",
+  "{{project}}, map of {{build}}, {{size}} MB, down to zoom {{zoom}}. OpenStreetMap data built by Protomaps.": "{{project}}, kaart van {{build}}, {{size}} MB, tot zoom {{zoom}}. OpenStreetMap-gegevens, gebouwd door Protomaps.",
+  "A fresh map": "Een verse kaart",
+  "Back": "Terug",
+  "Fetch the map": "De kaart ophalen",
+  "Fetching the map": "De kaart wordt opgehaald",
+  "Map": "Kaart",
+  "No map on this laptop yet": "Nog geen kaart op deze laptop",
+  "Project": "Project",
+  "Sign in first; the map comes from the server you are signed in to.": "Meld je eerst aan; de kaart komt van de server waarbij je bent aangemeld.",
+  "While you are online, fetch the map of the project's area from the server. It is then drawn here without a connection.": "Haal, terwijl je online bent, de kaart van het projectgebied van de server. Daarna wordt die hier zonder verbinding getekend."
 }
