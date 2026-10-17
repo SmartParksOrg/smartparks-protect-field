@@ -52,7 +52,7 @@ class Page(HTMLParser):
 
 
 def site_prefix() -> str:
-    """The path of `site_url` in mkdocs.yml ("/smartparks-protect-field/" on GitHub Pages): the
+    """The path of `site_url` in mkdocs.yml ("/smartparks-protect-go/" on GitHub Pages): the
     built site writes root-relative links under it, which the check maps back to `site/`."""
     for line in (ROOT / "mkdocs.yml").read_text(encoding="utf-8").splitlines():
         if line.startswith("site_url:"):

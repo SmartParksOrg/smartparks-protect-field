@@ -1,5 +1,5 @@
 /** The desktop shell's bridge (electron/src/preload.ts), present when the page runs inside
- * Protect Field's window and absent in a plain browser during development. */
+ * Protect Go's window and absent in a plain browser during development. */
 export interface ShellBridge {
   getVersion(): Promise<string>;
   getPlatform(): Promise<string>;
@@ -9,12 +9,12 @@ export interface ShellBridge {
 
 declare global {
   interface Window {
-    protectField?: ShellBridge;
+    protectGo?: ShellBridge;
   }
 }
 
 export function shell(): ShellBridge | undefined {
-  return typeof window === "undefined" ? undefined : window.protectField;
+  return typeof window === "undefined" ? undefined : window.protectGo;
 }
 
 /** Opens a web page outside the app: through the shell when there is one, else a new tab. */

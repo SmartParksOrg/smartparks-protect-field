@@ -8,14 +8,14 @@ import httpx
 import pytest
 from httpx import ASGITransport, AsyncClient
 
-from protect_field.config import get_settings
-from protect_field.main import create_app
+from protect_go.config import get_settings
+from protect_go.main import create_app
 
 TOKEN = (
     "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9."
     "eyJzdWIiOiJhYmMiLCJhdWQiOlsiZmFzdGFwaS11c2VyczphdXRoIl0sImV4cCI6NDEwMjQ0NDgwMH0."
     "c2ln"
-)  # exp 2100-01-01; the signature is not checked by Field, Protect made the token
+)  # exp 2100-01-01; the signature is not checked by Protect Go, Protect made the token
 
 
 def protect_server(request: httpx.Request) -> httpx.Response:
@@ -34,7 +34,7 @@ def protect_server(request: httpx.Request) -> httpx.Response:
 
 @pytest.fixture
 def app(tmp_path, monkeypatch):
-    monkeypatch.setenv("FIELD_DATA_DIR", str(tmp_path / "data"))
+    monkeypatch.setenv("PROTECT_GO_DATA_DIR", str(tmp_path / "data"))
     get_settings.cache_clear()
     application = create_app()
     application.state.http_transport = httpx.MockTransport(protect_server)

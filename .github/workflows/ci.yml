@@ -89,7 +89,7 @@ jobs:
       - run: uv run pyinstaller backend.spec --clean --noconfirm
       - name: Health names the decoders
         run: |
-          FIELD_DATA_DIR="$RUNNER_TEMP/field-data" FIELD_PORT=18090 dist/backend/backend > backend-smoke.log 2>&1 &
+          PROTECT_GO_DATA_DIR="$RUNNER_TEMP/field-data" PROTECT_GO_PORT=18090 dist/backend/backend > backend-smoke.log 2>&1 &
           for i in $(seq 1 60); do curl -sf http://127.0.0.1:18090/api/health > health.json && break; sleep 1; done
           cat health.json; grep -q '"decoders":\["opencollar"\]' health.json
 

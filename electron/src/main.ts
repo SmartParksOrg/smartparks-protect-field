@@ -1,10 +1,10 @@
 /**
- * The desktop shell of Smart Parks Protect Field, after AddaxAI's: it starts the frozen Python
+ * The desktop shell of Smart Parks Protect Go, after AddaxAI's: it starts the frozen Python
  * backend from the app's resources (or the repository's virtual environment in development),
  * waits for its health answer, and shows the interface the backend serves at 127.0.0.1. The
  * window is a browser without chrome; external links open in the system browser. The shell
- * registers the `protect-field://` scheme so Protect's Offload page can open Field with the
- * server to connect to (`protect-field://connect?server=https://...`, decision D9).
+ * registers the `protect-go://` scheme so Protect's Offload page can open Protect Go with the
+ * server to connect to (`protect-go://connect?server=https://...`, decision D9).
  */
 
 import { spawn, type ChildProcess } from "node:child_process";
@@ -14,11 +14,11 @@ import os from "node:os";
 import path from "node:path";
 import { app, BrowserWindow, ipcMain, Menu, shell } from "electron";
 
-const BACKEND_PORT = Number(process.env.PROTECT_FIELD_PORT ?? 18090);
+const BACKEND_PORT = Number(process.env.PROTECT_GO_PORT ?? 18090);
 const BACKEND_URL = `http://127.0.0.1:${BACKEND_PORT}`;
-const DATA_DIR = process.env.FIELD_DATA_DIR ?? path.join(os.homedir(), "ProtectField");
+const DATA_DIR = process.env.PROTECT_GO_DATA_DIR ?? path.join(os.homedir(), "ProtectGo");
 const LOG_DIR = path.join(DATA_DIR, "logs");
-const DOCS_URL = "https://smartparksorg.github.io/smartparks-protect-field/";
+const DOCS_URL = "https://smartparksorg.github.io/smartparks-protect-go/";
 const SLOW_NOTICE_MS = 20_000;
 
 let mainWindow: BrowserWindow | null = null;
@@ -40,7 +40,7 @@ function logLine(prefix: string, text: string): void {
   }
 }
 
-// --- The protocol link: protect-field://connect?server=https://protect.example.org
+// --- The protocol link: protect-go://connect?server=https://protect.example.org
 
 /** The in-app route a protocol link asks for, or null for a link we do not understand. */
 export function routeForProtocolUrl(raw: string): string | null {
@@ -50,7 +50,7 @@ export function routeForProtocolUrl(raw: string): string | null {
   } catch {
     return null;
   }
-  if (url.protocol !== "protect-field:") return null;
+  if (url.protocol !== "protect-go:") return null;
   const action = (url.hostname || url.pathname.replace(/^\/+/, "")).toLowerCase();
   if (action !== "connect") return null;
   const server = url.searchParams.get("server") ?? "";
@@ -59,7 +59,7 @@ export function routeForProtocolUrl(raw: string): string | null {
 }
 
 function protocolUrlIn(argv: string[]): string | null {
-  return argv.find((arg) => arg.startsWith("protect-field://")) ?? null;
+  return argv.find((arg) => arg.startsWith("protect-go://")) ?? null;
 }
 
 function openRoute(route: string): void {
@@ -125,7 +125,7 @@ function resolveBackendCommand(): { executable: string; args: string[]; cwd: str
       ? path.join(root, ".venv", "Scripts", "python.exe")
       : path.join(root, ".venv", "bin", "python");
   if (!fs.existsSync(python)) throw new Error(`No virtual environment at ${python}; run uv sync`);
-  return { executable: python, args: ["-m", "protect_field"], cwd: root };
+  return { executable: python, args: ["-m", "protect_go"], cwd: root };
 }
 
 function spawnBackend(): void {
@@ -136,7 +136,7 @@ function spawnBackend(): void {
   const proc = spawn(executable, args, {
     cwd,
     stdio: ["ignore", "pipe", "pipe"],
-    env: { ...process.env, FIELD_PORT: String(BACKEND_PORT), FIELD_DATA_DIR: DATA_DIR, FIELD_HOST: "127.0.0.1" },
+    env: { ...process.env, PROTECT_GO_PORT: String(BACKEND_PORT), PROTECT_GO_DATA_DIR: DATA_DIR, PROTECT_GO_HOST: "127.0.0.1" },
   });
   backendProcess = proc;
   proc.stdout?.on("data", (data) => logLine("[backend]", String(data)));
@@ -178,13 +178,13 @@ async function waitForBackend(): Promise<void> {
 async function ensureBackend(): Promise<void> {
   const existing = await probeHealth(1500);
   if (isFieldHealth(existing)) {
-    logLine("[shell]", `a Field backend answers on ${BACKEND_PORT} already (version ${existing?.version}); using it`);
+    logLine("[shell]", `a Protect Go backend answers on ${BACKEND_PORT} already (version ${existing?.version}); using it`);
     return;
   }
   if (existing !== null) {
     throw new Error(
-      `Port ${BACKEND_PORT} is in use by another program. Quit it and start Protect Field again, ` +
-        `or set PROTECT_FIELD_PORT to a free port.`,
+      `Port ${BACKEND_PORT} is in use by another program. Quit it and start Protect Go again, ` +
+        `or set PROTECT_GO_PORT to a free port.`,
     );
   }
   spawnBackend();
@@ -202,7 +202,7 @@ function stopBackend(): void {
 // --- The window
 
 function shellPage(body: string): string {
-  return `<!doctype html><html><head><meta charset="utf-8"><title>Protect Field</title><style>
+  return `<!doctype html><html><head><meta charset="utf-8"><title>Protect Go</title><style>
     body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;font-family:system-ui,sans-serif;background:#ffffff;color:#1f2a24}
     @media (prefers-color-scheme: dark){body{background:#121917;color:#e6ece8}}
     main{max-width:32rem;padding:2rem;text-align:center}h1{font-size:1.25rem;font-weight:600;color:#52735E}p{line-height:1.5}
@@ -221,7 +221,7 @@ async function createWindow(): Promise<void> {
     height: 820,
     minWidth: 900,
     minHeight: 600,
-    title: `Protect Field v${app.getVersion()}`,
+    title: `Protect Go v${app.getVersion()}`,
     autoHideMenuBar: false,
     backgroundColor: "#ffffff",
     webPreferences: {
@@ -247,14 +247,14 @@ async function createWindow(): Promise<void> {
   mainWindow.on("closed", () => {
     mainWindow = null;
   });
-  await loadHtml(shellPage("<h1>Protect Field</h1><p>Starting</p>"));
+  await loadHtml(shellPage("<h1>Protect Go</h1><p>Starting</p>"));
 }
 
 async function showError(message: string): Promise<void> {
   logLine("[shell]", `error: ${message}`);
   await loadHtml(
     shellPage(
-      `<h1>Protect Field could not start</h1><p>${message.replace(/</g, "&lt;")}</p>` +
+      `<h1>Protect Go could not start</h1><p>${message.replace(/</g, "&lt;")}</p>` +
         `<button onclick="window.close()">Quit</button>`,
     ),
   );
@@ -293,7 +293,7 @@ function setupMenu(): void {
       submenu: [
         { label: "Documentation", click: () => void shell.openExternal(DOCS_URL) },
         { label: "Open the data folder", click: () => void shell.openPath(DATA_DIR) },
-        ...(isMac ? [] : [{ label: `About Protect Field v${app.getVersion()}`, enabled: false }]),
+        ...(isMac ? [] : [{ label: `About Protect Go v${app.getVersion()}`, enabled: false }]),
       ],
     },
   ];
@@ -324,7 +324,7 @@ if (!app.requestSingleInstanceLock()) {
     const route = routeForProtocolUrl(url);
     if (route) openRoute(route);
   });
-  if (app.isPackaged) app.setAsDefaultProtocolClient("protect-field");
+  if (app.isPackaged) app.setAsDefaultProtocolClient("protect-go");
 
   const firstUrl = protocolUrlIn(process.argv);
   if (firstUrl) pendingRoute = routeForProtocolUrl(firstUrl) ?? "";

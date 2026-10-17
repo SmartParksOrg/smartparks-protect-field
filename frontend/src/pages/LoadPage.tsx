@@ -59,7 +59,7 @@ export function LoadPage({ signedIn }: { signedIn: boolean }) {
         <CardHeader>
           <CardTitle>{t("Before you leave, while online")}</CardTitle>
           <CardDescription>
-            {t("Field fetches the project's devices, entities and stations, the LP0 keys your account may see, and the map of the area. Everything is kept on this laptop for the field; the keys are encrypted.")}
+            {t("The app fetches the project's devices, entities and stations, the LP0 keys your account may see, and the map of the area. Everything is kept on this laptop for the field; the keys are encrypted.")}
           </CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col gap-3 text-sm">

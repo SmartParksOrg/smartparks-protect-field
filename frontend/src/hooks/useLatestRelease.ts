@@ -1,6 +1,6 @@
 /** The newest release on GitHub against the running version, the way AddaxAI's update check
  * does it (decision D8): one request at start, shared by the notice and the menu's "Check for
- * updates"; a failure is quiet, so Field works without a connection. The newest release of any
+ * updates"; a failure is quiet, so the app works without a connection. The newest release of any
  * kind is taken, not `/releases/latest`, which hides pre-releases. */
 import { useQuery } from "@tanstack/react-query";
 
@@ -8,9 +8,9 @@ import { queryKeys } from "@/api/queryKeys";
 import { compareVersions, parseVersion } from "@/lib/version";
 
 export const RELEASES_API =
-  "https://api.github.com/repos/SmartParksOrg/smartparks-protect-field/releases?per_page=1";
-export const DOWNLOAD_URL = "https://smartparksorg.github.io/smartparks-protect-field/using-field/";
-export const ALL_RELEASES_URL = "https://github.com/SmartParksOrg/smartparks-protect-field/releases";
+  "https://api.github.com/repos/SmartParksOrg/smartparks-protect-go/releases?per_page=1";
+export const DOWNLOAD_URL = "https://smartparksorg.github.io/smartparks-protect-go/using-protect-go/";
+export const ALL_RELEASES_URL = "https://github.com/SmartParksOrg/smartparks-protect-go/releases";
 
 export interface GitHubRelease {
   tag_name: string;

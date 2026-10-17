@@ -1,6 +1,6 @@
 # -*- mode: python ; coding: utf-8 -*-
-"""PyInstaller spec for the Field backend, the way AddaxAI freezes its backend: one folder
-with the Python runtime, `protect_field`, Protect's `shared` package and what they import, plus
+"""PyInstaller spec for the Protect Go backend, the way AddaxAI freezes its backend: one folder
+with the Python runtime, `protect_go`, Protect's `shared` package and what they import, plus
 the built interface, `VERSION` and `uv.lock` (the Protect commit is read from it). The Electron
 shell starts `backend/backend` from its resources (`electron/src/main.ts`).
 
@@ -37,14 +37,14 @@ hiddenimports += collect_submodules("shared.station_decode")
 hiddenimports += collect_submodules("keyring")  # the keychain backends per system
 
 a = Analysis(
-    [str(root / "protect_field" / "__main__.py")],
+    [str(root / "protect_go" / "__main__.py")],
     pathex=[str(root)],
     binaries=[],
     datas=datas,
     hiddenimports=hiddenimports,
     hookspath=[],
     runtime_hooks=[],
-    # the server-only heavy packages the shared package depends on and Field never imports
+    # the server-only heavy packages the shared package depends on and Protect Go never imports
     excludes=["tkinter", "matplotlib", "weasyprint", "pyarrow", "PIL", "openpyxl", "chirpstack_api", "grpc", "minio", "aiomqtt", "asyncpg", "psycopg"],
     noarchive=False,
 )

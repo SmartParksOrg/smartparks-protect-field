@@ -48,7 +48,7 @@ test("shows the server, the account and the versions", async () => {
 
 test("says when a newer release exists", async () => {
   renderPage({ "/api/health": HEALTH, "api.github.com": [{ tag_name: "v0.2.0", html_url: "", body: "- Cards read offline" }] });
-  expect(await screen.findByText(/Protect Field v0.2.0 is available; you have v0.1.0/)).toBeInTheDocument();
+  expect(await screen.findByText(/Protect Go v0.2.0 is available; you have v0.1.0/)).toBeInTheDocument();
   expect(screen.getByText("- Cards read offline")).toBeInTheDocument();
 });
 

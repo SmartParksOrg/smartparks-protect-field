@@ -10,8 +10,8 @@ from httpx import ASGITransport, AsyncClient
 from pmtiles.tile import Compression, TileType, zxy_to_tileid
 from pmtiles.writer import Writer
 
-from protect_field.config import get_settings
-from protect_field.main import create_app
+from protect_go.config import get_settings
+from protect_go.main import create_app
 from tests.test_setup import TOKEN, protect_server
 
 PROJECT = "11111111-1111-1111-1111-111111111111"
@@ -50,7 +50,7 @@ def small_map(path: Path) -> bytes:
 
 @pytest.fixture
 def app(tmp_path, monkeypatch):
-    monkeypatch.setenv("FIELD_DATA_DIR", str(tmp_path / "data"))
+    monkeypatch.setenv("PROTECT_GO_DATA_DIR", str(tmp_path / "data"))
     get_settings.cache_clear()
     application = create_app()
     yield application
@@ -94,7 +94,7 @@ async def test_the_map_is_asked_for_then_fetched_then_served_in_ranges(app, tmp_
         await _signed_in(client, app)
         app.state.http_transport = httpx.MockTransport(server)
 
-        # the server has no map yet: Field asks for one and says so
+        # the server has no map yet: Protect Go asks for one and says so
         first = await client.post(
             "/api/map/fetch", json={"project_id": PROJECT, "project_name": "LP0"}
         )
@@ -102,7 +102,7 @@ async def test_the_map_is_asked_for_then_fetched_then_served_in_ranges(app, tmp_
         assert first.json()["present"] is False and "making the map" in first.json()["server_state"]
         assert state["asked"] == 1
 
-        # a viewer's account may not ask the server to cut a map; Field says whom to ask
+        # a viewer's account may not ask the server to cut a map; Protect Go says whom to ask
         state["forbid"] = True
         told = await client.post("/api/map/fetch", json={"project_id": PROJECT})
         assert told.status_code == 200 and "ask an analyst" in told.json()["server_state"]

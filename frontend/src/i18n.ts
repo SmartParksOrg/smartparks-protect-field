@@ -28,7 +28,7 @@ void i18n
     detection: {
       order: ["localStorage", "navigator"],
       caches: ["localStorage"],
-      lookupLocalStorage: "protect-field.language",
+      lookupLocalStorage: "protect-go.language",
     },
     returnEmptyString: false,
   });

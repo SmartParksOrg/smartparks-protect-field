@@ -2,12 +2,12 @@
 
 from httpx import ASGITransport, AsyncClient
 
-from protect_field.main import create_app
+from protect_go.main import create_app
 
 
 async def test_health_names_both_versions(tmp_path, monkeypatch):
-    monkeypatch.setenv("FIELD_DATA_DIR", str(tmp_path / "data"))
-    from protect_field.config import get_settings
+    monkeypatch.setenv("PROTECT_GO_DATA_DIR", str(tmp_path / "data"))
+    from protect_go.config import get_settings
 
     get_settings.cache_clear()
     app = create_app()

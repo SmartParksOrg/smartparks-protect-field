@@ -10,8 +10,8 @@ from typing import Any
 
 import httpx
 
-from protect_field.cards import CardStore
-from protect_field.store import Settings
+from protect_go.cards import CardStore
+from protect_go.store import Settings
 
 TIMEOUT = httpx.Timeout(30.0, read=300.0)
 

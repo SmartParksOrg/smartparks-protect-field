@@ -11,7 +11,7 @@ TIMEOUT = httpx.Timeout(15.0)
 
 
 class ProtectError(Exception):
-    """A reason in words, and the HTTP status Field answers with."""
+    """A reason in words, and the HTTP status Protect Go answers with."""
 
     def __init__(self, status: int, message: str) -> None:
         super().__init__(message)
@@ -54,7 +54,7 @@ async def probe_version(
 
 
 def token_expiry(token: str) -> datetime:
-    """The token's own `exp`, read without verifying (Protect signed it; Field only needs the
+    """The token's own `exp`, read without verifying (Protect signed it; Protect Go only needs the
     time), or an hour from now when it has none."""
     try:
         claims = jwt.decode(token, options={"verify_signature": False})

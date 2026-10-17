@@ -1,6 +1,6 @@
-"""Field's settings on disk: the Protect server, who is signed in and their token, in
+"""Protect Go's settings on disk: the Protect server, who is signed in and their token, in
 `settings.json` in the data folder, readable by the owner alone. The password is never kept
-(decision D7); the token is Protect's, an hour long, and Field asks for the password again when
+(decision D7); the token is Protect's, an hour long, and Protect Go asks for the password again when
 it needs the server after that."""
 
 import json

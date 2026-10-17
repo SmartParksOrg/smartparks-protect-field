@@ -12,7 +12,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
 /** Step two of the setup (decision D7): the user's Protect account, email and password, checked
- * by the server itself. Field keeps the server's token, an hour long, and never the password;
+ * by the server itself. The app keeps the server's token, an hour long, and never the password;
  * when the token has expired and the server is needed, this page comes back. */
 export function SignInPage({ setup }: { setup: Setup }) {
   const { t } = useTranslation();
@@ -29,7 +29,7 @@ export function SignInPage({ setup }: { setup: Setup }) {
   });
   return (
     <main className="mx-auto flex min-h-dvh max-w-xl flex-col justify-center gap-4 p-4">
-      <h1 className="text-2xl font-semibold text-primary">{t("Smart Parks Protect Field")}</h1>
+      <h1 className="text-2xl font-semibold text-primary">{t("Smart Parks Protect Go")}</h1>
       <Card>
         <CardHeader>
           <CardTitle>{t("Sign in to {{server}}", { server: setup.server_url })}</CardTitle>

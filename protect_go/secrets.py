@@ -9,7 +9,7 @@ from pathlib import Path
 
 from cryptography.fernet import Fernet
 
-SERVICE = "Smart Parks Protect Field"
+SERVICE = "Smart Parks Protect Go"
 ACCOUNT = "bundle-key"
 
 

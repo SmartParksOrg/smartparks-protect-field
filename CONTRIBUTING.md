@@ -1,6 +1,6 @@
 # Contributing
 
-Thanks for helping build Smart Parks Protect Field. The house style is `CONVENTIONS.md` (mirrored from Protect, which is the master copy), the code is explained in `DEVELOPERS.md`, the roadmap is `PROJECT_PLAN.md`.
+Thanks for helping build Smart Parks Protect Go. The house style is `CONVENTIONS.md` (mirrored from Protect, which is the master copy), the code is explained in `DEVELOPERS.md`, the roadmap is `PROJECT_PLAN.md`.
 
 ## Before you start
 

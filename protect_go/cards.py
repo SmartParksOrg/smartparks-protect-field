@@ -378,7 +378,7 @@ class CardStore:
                 base,
                 status="refused",
                 code="DRIVER_UNKNOWN",
-                reason=f"Field has no driver {tracker.driver_key!r} for {tracker.name}",
+                reason=f"Protect Go has no driver {tracker.driver_key!r} for {tracker.name}",
             )
             return
         try:

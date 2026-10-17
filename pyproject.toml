@@ -1,7 +1,7 @@
 [project]
-name = "smartparks-protect-field"
+name = "smartparks-protect-go"
 version = "0.0.0"
-description = "Smart Parks Protect Field: reads an offload station's SD card without a connection and hands the files to Protect when there is one."
+description = "Smart Parks Protect Go: reads an offload station's SD card without a connection and hands the files to Protect when there is one."
 requires-python = ">=3.12,<3.13"
 dependencies = [
     # Protect's own decoding code, pinned to a commit of main; `scripts/dev.sh bump-protect`
@@ -17,7 +17,7 @@ dependencies = [
 ]
 
 [project.scripts]
-protect-field = "protect_field.main:run"
+protect-go = "protect_go.main:run"
 
 [tool.uv.sources]
 smartparks-protect-shared = { git = "https://github.com/SmartParksOrg/smartparks-protect", subdirectory = "shared", rev = "d79ffafedc3a918d8288c3dc9aeb0ae24c20d361" }
@@ -44,7 +44,7 @@ requires = ["uv_build"]
 build-backend = "uv_build"
 
 [tool.uv.build-backend]
-module-name = "protect_field"
+module-name = "protect_go"
 module-root = ""
 
 [tool.ruff]
@@ -66,7 +66,7 @@ extend-immutable-calls = ["fastapi.Depends", "fastapi.Query", "fastapi.Body", "f
 [tool.mypy]
 python_version = "3.12"
 strict = true
-packages = ["protect_field"]
+packages = ["protect_go"]
 plugins = ["pydantic.mypy"]
 
 [[tool.mypy.overrides]]

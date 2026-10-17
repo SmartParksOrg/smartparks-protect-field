@@ -12,7 +12,7 @@ Only the latest tagged release receives security fixes.
 
 ## Scope
 
-Smart Parks Protect Field runs on one person's computer. The maintainers fix problems in this codebase. Problems in the decoding it shares with Protect go to Protect's security policy; problems in the firmware of the stations and trackers go to the firmware's repository.
+Smart Parks Protect Go runs on one person's computer. The maintainers fix problems in this codebase. Problems in the decoding it shares with Protect go to Protect's security policy; problems in the firmware of the stations and trackers go to the firmware's repository.
 
 ## Secrets
 

@@ -12,8 +12,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
 /** Step one of the setup (decision D7): the Protect server this laptop synchronises with. The
- * address is prefilled when Field was opened from Protect's Offload page
- * (`protect-field://connect?server=...`, decision D9); Field keeps it once the server answers. */
+ * address is prefilled when the app was opened from Protect's Offload page
+ * (`protect-go://connect?server=...`, decision D9); the app keeps it once the server answers. */
 export function SetupPage({ current }: { current?: Setup }) {
   const { t } = useTranslation();
   const navigate = useNavigate();
@@ -29,12 +29,12 @@ export function SetupPage({ current }: { current?: Setup }) {
   });
   return (
     <main className="mx-auto flex min-h-dvh max-w-xl flex-col justify-center gap-4 p-4">
-      <h1 className="text-2xl font-semibold text-primary">{t("Smart Parks Protect Field")}</h1>
+      <h1 className="text-2xl font-semibold text-primary">{t("Smart Parks Protect Go")}</h1>
       <Card>
         <CardHeader>
           <CardTitle>{t("Which Protect server does this laptop work with?")}</CardTitle>
           <CardDescription>
-            {t("The address you open Protect at in your browser. Field downloads the project's bundle from it and uploads the cards to it.")}
+            {t("The address you open Protect at in your browser. The app downloads the project's bundle from it and uploads the cards to it.")}
           </CardDescription>
         </CardHeader>
         <CardContent>

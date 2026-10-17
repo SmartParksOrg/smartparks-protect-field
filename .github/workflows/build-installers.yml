@@ -103,7 +103,7 @@ jobs:
             windows) BIN=dist/backend/backend.exe ;;
             *) BIN=dist/backend/backend ;;
           esac
-          FIELD_DATA_DIR="$RUNNER_TEMP/field-data" FIELD_PORT=18090 "$BIN" > backend-smoke.log 2>&1 &
+          PROTECT_GO_DATA_DIR="$RUNNER_TEMP/field-data" PROTECT_GO_PORT=18090 "$BIN" > backend-smoke.log 2>&1 &
           for i in $(seq 1 60); do
             if curl -sf http://127.0.0.1:18090/api/health > health.json; then break; fi
             sleep 1

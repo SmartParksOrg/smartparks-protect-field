@@ -7,8 +7,8 @@ from typing import Annotated, Any
 from fastapi import APIRouter, File, Form, HTTPException, Request, UploadFile
 from pydantic import BaseModel
 
-from protect_field.bundle import BundleStore
-from protect_field.cards import POSITIONS_LIMIT, CardStore
+from protect_go.bundle import BundleStore
+from protect_go.cards import POSITIONS_LIMIT, CardStore
 
 router = APIRouter(prefix="/api")
 

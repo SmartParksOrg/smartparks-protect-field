@@ -1,6 +1,6 @@
 """The local server: a small API under `/api` and the built interface from `frontend/dist`.
 
-Started with `protect-field` (or `uv run protect-field`); the browser opens
+Started with `protect-go` (or `uv run protect-go`); the browser opens
 http://127.0.0.1:18090. During development Vite serves the interface itself and proxies `/api`
 here (`frontend/vite.config.ts`).
 """
@@ -11,17 +11,17 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
-from protect_field.bundle import BundleStore
-from protect_field.cards import CardStore
-from protect_field.config import get_settings
-from protect_field.decoding import decoders
-from protect_field.routers.bundle import router as bundle_router
-from protect_field.routers.cards import router as cards_router
-from protect_field.routers.map import router as map_router
-from protect_field.routers.setup import router as setup_router
-from protect_field.routers.uploads import router as uploads_router
-from protect_field.store import Store
-from protect_field.version import ROOT, __version__, protect_revision
+from protect_go.bundle import BundleStore
+from protect_go.cards import CardStore
+from protect_go.config import get_settings
+from protect_go.decoding import decoders
+from protect_go.routers.bundle import router as bundle_router
+from protect_go.routers.cards import router as cards_router
+from protect_go.routers.map import router as map_router
+from protect_go.routers.setup import router as setup_router
+from protect_go.routers.uploads import router as uploads_router
+from protect_go.store import Store
+from protect_go.version import ROOT, __version__, protect_revision
 
 DIST = ROOT / "frontend" / "dist"
 
@@ -37,7 +37,7 @@ class Health(BaseModel):
 def create_app() -> FastAPI:
     settings = get_settings()
     settings.data_dir.mkdir(parents=True, exist_ok=True)
-    app = FastAPI(title="Smart Parks Protect Field", version=__version__, docs_url="/api/docs")
+    app = FastAPI(title="Smart Parks Protect Go", version=__version__, docs_url="/api/docs")
     app.state.store = Store(settings.data_dir)
     app.state.bundle_store = BundleStore(settings.data_dir, settings.key_store)
     app.state.card_store = CardStore(settings.data_dir)

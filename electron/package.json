@@ -1,11 +1,11 @@
 {
-  "name": "protect-field-shell",
+  "name": "protect-go-shell",
   "version": "0.0.0",
   "private": true,
-  "description": "The desktop shell of Smart Parks Protect Field: starts the frozen backend and shows the interface, the way AddaxAI's shell does.",
+  "description": "The desktop shell of Smart Parks Protect Go: starts the frozen backend and shows the interface, the way AddaxAI's shell does.",
   "main": "dist/main.js",
   "author": "Smart Parks <protect@smartparks.org>",
-  "homepage": "https://smartparksorg.github.io/smartparks-protect-field/",
+  "homepage": "https://smartparksorg.github.io/smartparks-protect-go/",
   "license": "MIT",
   "scripts": {
     "build": "tsc",
@@ -23,7 +23,7 @@
   },
   "build": {
     "appId": "org.smartparks.protect.field",
-    "productName": "Protect Field",
+    "productName": "Protect Go",
     "directories": {
       "output": "dist-build"
     },
@@ -41,9 +41,9 @@
     ],
     "protocols": [
       {
-        "name": "Protect Field",
+        "name": "Protect Go",
         "schemes": [
-          "protect-field"
+          "protect-go"
         ]
       }
     ],
@@ -52,7 +52,7 @@
       "target": [
         "dmg"
       ],
-      "artifactName": "ProtectField-${arch}.${ext}",
+      "artifactName": "ProtectGo-${arch}.${ext}",
       "icon": "build/icon.png",
       "hardenedRuntime": true,
       "gatekeeperAssess": false,
@@ -79,7 +79,7 @@
       "target": [
         "nsis"
       ],
-      "artifactName": "ProtectField-Setup.${ext}",
+      "artifactName": "ProtectGo-Setup.${ext}",
       "icon": "build/icon.png",
       "signtoolOptions": {
         "publisherName": "Smart Parks",
@@ -98,13 +98,13 @@
       "target": [
         "deb"
       ],
-      "artifactName": "ProtectField-${arch}.${ext}",
+      "artifactName": "ProtectGo-${arch}.${ext}",
       "icon": "build/icon.png",
       "category": "Science",
       "maintainer": "Smart Parks <protect@smartparks.org>"
     },
     "deb": {
-      "packageName": "protect-field"
+      "packageName": "protect-go"
     }
   },
   "allowScripts": {

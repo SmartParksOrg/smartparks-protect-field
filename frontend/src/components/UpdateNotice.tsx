@@ -20,7 +20,7 @@ export function UpdateNotice({ currentVersion, forceShow = false }: { currentVer
         {release.failed
           ? t("Could not check for updates. There may be no connection.")
           : release.upToDate
-            ? t("Protect Field is up to date (v{{version}}).", { version: release.current })
+            ? t("Protect Go is up to date (v{{version}}).", { version: release.current })
             : t("This build (v{{version}}) is newer than the newest release.", { version: release.current })}
       </Callout>
     );
@@ -28,7 +28,7 @@ export function UpdateNotice({ currentVersion, forceShow = false }: { currentVer
   return (
     <Callout kind="info">
       <p className="font-medium">
-        {t("Protect Field v{{latest}} is available; you have v{{current}}.", {
+        {t("Protect Go v{{latest}} is available; you have v{{current}}.", {
           latest: release.latest,
           current: release.current,
         })}

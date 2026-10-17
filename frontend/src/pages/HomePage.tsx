@@ -12,7 +12,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { shell } from "@/lib/shell";
 
 /** The first screen once set up: which server and account this laptop works with, the versions
- * (Field's, and the Protect commit it decodes with), and the update notice. The pages for a
+ * (the app's, and the Protect commit it decodes with), and the update notice. The pages for a
  * bundle, a card and the upload come with phase 2. */
 export function HomePage({ setup }: { setup: Setup }) {
   const { t } = useTranslation();
@@ -29,14 +29,14 @@ export function HomePage({ setup }: { setup: Setup }) {
   const expires = setup.token_expires_at ? new Date(setup.token_expires_at) : null;
   return (
     <main className="mx-auto flex min-h-dvh max-w-xl flex-col gap-4 p-4">
-      <h1 className="text-2xl font-semibold text-primary">{t("Smart Parks Protect Field")}</h1>
+      <h1 className="text-2xl font-semibold text-primary">{t("Smart Parks Protect Go")}</h1>
       {health.data && <UpdateNotice currentVersion={health.data.version} forceShow={checkAsked} />}
       <Card>
         <CardHeader>
           <CardTitle>{t("Connected to {{server}}", { server: setup.server_url })}</CardTitle>
           <CardDescription>
             {setup.signed_in
-              ? t("Signed in as {{email}}. The sign-in lasts until {{time}}; Field asks for your password again when it needs the server after that.", {
+              ? t("Signed in as {{email}}. The sign-in lasts until {{time}}; the app asks for your password again when it needs the server after that.", {
                   email: setup.email,
                   time: expires?.toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" }),
                 })

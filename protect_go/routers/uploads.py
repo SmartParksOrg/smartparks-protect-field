@@ -6,9 +6,9 @@ import httpx
 from fastapi import APIRouter, Request
 from pydantic import BaseModel, Field
 
-from protect_field.cards import CardStore
-from protect_field.store import Store
-from protect_field.uploads import run_uploads
+from protect_go.cards import CardStore
+from protect_go.store import Store
+from protect_go.uploads import run_uploads
 
 router = APIRouter(prefix="/api")
 

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Daily development commands for Smart Parks Protect Field. Run from anywhere in the repository.
+# Daily development commands for Smart Parks Protect Go. Run from anywhere in the repository.
 #   scripts/dev.sh run | desktop | freeze | test | lint | format | docs | hooks | bump-protect [rev]
 set -euo pipefail
 
@@ -17,7 +17,7 @@ shift || true
 case "$cmd" in
     run)
         # the local server with the built interface; `cd frontend && npm run dev` for live reload
-        uv run protect-field "$@"
+        uv run protect-go "$@"
         ;;
     desktop)
         # the Electron shell against the repository's virtual environment and the built interface

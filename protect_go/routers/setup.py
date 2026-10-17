@@ -1,4 +1,4 @@
-"""The setup of Field (decision D7): the Protect server it synchronises with, and who is signed
+"""The setup of Protect Go (decision D7): the Protect server it synchronises with, and who is signed
 in. `PUT /api/setup/server` probes the server before keeping it; `POST /api/session` signs in
 with Protect's own login and keeps the token, never the password."""
 
@@ -8,8 +8,8 @@ import httpx
 from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel, Field
 
-from protect_field.protect import ProtectError, normalise_server_url, probe_version, sign_in
-from protect_field.store import Settings, Store
+from protect_go.protect import ProtectError, normalise_server_url, probe_version, sign_in
+from protect_go.store import Settings, Store
 
 router = APIRouter(prefix="/api")
 

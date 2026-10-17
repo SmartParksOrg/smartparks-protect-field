@@ -12,7 +12,7 @@ from typing import Any
 
 from cryptography.fernet import Fernet, InvalidToken
 
-from protect_field.secrets import bundle_key
+from protect_go.secrets import bundle_key
 
 STALE_AFTER = timedelta(days=7)
 

@@ -14,10 +14,10 @@ import httpx
 import pytest
 from httpx import ASGITransport, AsyncClient
 
-from protect_field.bundle import BundleStore
-from protect_field.cards import CardStore
-from protect_field.config import get_settings
-from protect_field.main import create_app
+from protect_go.bundle import BundleStore
+from protect_go.cards import CardStore
+from protect_go.config import get_settings
+from protect_go.main import create_app
 from tests.test_bundle import BUNDLE
 from tests.test_protect_decoding import CREDENTIALS, FLASH, build_uplink
 from tests.test_setup import protect_server
@@ -89,8 +89,8 @@ def card_zip(station: str = STATION) -> bytes:
 
 @pytest.fixture
 def app(tmp_path, monkeypatch):
-    monkeypatch.setenv("FIELD_DATA_DIR", str(tmp_path / "data"))
-    monkeypatch.setenv("FIELD_KEY_STORE", "file")
+    monkeypatch.setenv("PROTECT_GO_DATA_DIR", str(tmp_path / "data"))
+    monkeypatch.setenv("PROTECT_GO_KEY_STORE", "file")
     get_settings.cache_clear()
     application = create_app()
     application.state.http_transport = httpx.MockTransport(protect_server)

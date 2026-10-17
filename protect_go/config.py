@@ -1,4 +1,4 @@
-"""Settings, read from the environment with the prefix `FIELD_` and an optional `.env` file.
+"""Settings, read from the environment with the prefix `PROTECT_GO_` and an optional `.env` file.
 
 The companion runs on one person's computer, so there is little to configure: where it keeps its
 data and which address it listens on. Protect's own settings (`shared.config`) are never read;
@@ -15,7 +15,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
-        env_prefix="FIELD_", env_file=".env", env_file_encoding="utf-8", extra="ignore"
+        env_prefix="PROTECT_GO_", env_file=".env", env_file_encoding="utf-8", extra="ignore"
     )
 
     data_dir: Path = Field(

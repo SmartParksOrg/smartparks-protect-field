@@ -9,7 +9,7 @@ const envDir = path.resolve(import.meta.dirname, "..");
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, envDir, "VITE_");
-  // the local server (protect_field/main.py); VITE_PROXY_TARGET points elsewhere when needed
+  // the local server (protect_go/main.py); VITE_PROXY_TARGET points elsewhere when needed
   const proxyTarget = env.VITE_PROXY_TARGET || "http://127.0.0.1:18090";
   return {
     envDir,

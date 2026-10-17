@@ -9,9 +9,9 @@ import httpx
 from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel, Field
 
-from protect_field.bundle import BundleStore, BundleSummary
-from protect_field.routers.map import MapFetch, MapRead, fetch_map
-from protect_field.store import Store
+from protect_go.bundle import BundleStore, BundleSummary
+from protect_go.routers.map import MapFetch, MapRead, fetch_map
+from protect_go.store import Store
 
 router = APIRouter(prefix="/api")
 

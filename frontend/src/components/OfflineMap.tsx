@@ -51,7 +51,7 @@ let protocolRegistered = false;
 
 /** The offline map (decision D4): MapLibre over the project's PMTiles file served by the local
  * backend with range requests, drawn with Protomaps' basemap style whose sprites and glyphs
- * ship inside Field (`public/map/`), so nothing is fetched from the internet. */
+ * ship inside the app (`public/map/`), so nothing is fetched from the internet. */
 export function OfflineMap({ bounds, dark, points = [] }: { bounds: MapBounds; dark: boolean; points?: MapPoint[] }) {
   const container = useRef<HTMLDivElement>(null);
   const mapRef = useRef<InstanceType<typeof maplibregl.Map> | null>(null);

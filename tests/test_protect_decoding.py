@@ -86,11 +86,11 @@ FLASH = bytes.fromhex(
 
 
 def test_a_frame_is_opened_and_read_through_protects_shared_decode_path():
-    """Protect's phase 43 P6: the two calls Field makes for every line of a card, the same two
+    """Protect's phase 43 P6: the two calls Protect Go makes for every line of a card, the same two
     the server's pipeline makes, so the readings cannot differ."""
     from datetime import UTC, datetime
 
-    from protect_field.decoding import (
+    from protect_go.decoding import (
         FrameRefused,
         OpenCollarDriver,
         decode_station_frame,

@@ -1,7 +1,7 @@
 """Protect's decoding code, imported in one place so the frozen backend proves at start that
 it carries it (decision D1): the station file parser, the shared decode path of a frame (the
 keys, the checks, the driver's read; Protect's phase 43 P6) and the OpenCollar driver.
-Everything Field decodes goes through these; nothing is decoded with code of Field's own."""
+Everything the app decodes goes through these; nothing is decoded with code of its own."""
 
 from shared.connectivity.adapters.lp0_station.lorawan import Credentials, FrameError, unwrap
 from shared.device_drivers.base import DecodedRecords
@@ -37,5 +37,5 @@ __all__ = [
 
 
 def decoders() -> list[str]:
-    """The drivers Field can decode with, by key; the health answer names them."""
+    """The drivers Protect Go can decode with, by key; the health answer names them."""
     return [OpenCollarDriver.key]

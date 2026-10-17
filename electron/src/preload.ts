@@ -2,7 +2,7 @@
  * the system browser; and the menu's commands. Nothing else of Node or Electron reaches the page. */
 import { contextBridge, ipcRenderer } from "electron";
 
-contextBridge.exposeInMainWorld("protectField", {
+contextBridge.exposeInMainWorld("protectGo", {
   getVersion: (): Promise<string> => ipcRenderer.invoke("app:getVersion"),
   getPlatform: (): Promise<string> => ipcRenderer.invoke("app:getPlatform"),
   openExternal: (url: string): Promise<void> => ipcRenderer.invoke("shell:openExternal", url),

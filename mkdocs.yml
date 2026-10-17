@@ -1,7 +1,7 @@
-site_name: Smart Parks Protect Field
+site_name: Smart Parks Protect Go
 site_description: The companion of Smart Parks Protect for the place without a connection
-site_url: https://smartparksorg.github.io/smartparks-protect-field/
-repo_url: https://github.com/SmartParksOrg/smartparks-protect-field
+site_url: https://smartparksorg.github.io/smartparks-protect-go/
+repo_url: https://github.com/SmartParksOrg/smartparks-protect-go
 edit_uri: edit/main/docs/
 strict: true
 not_in_nav: |
@@ -51,7 +51,7 @@ markdown_extensions:
 
 nav:
   - Home: index.md
-  - Using Field: using-field.md
+  - Using Protect Go: using-protect-go.md
   - The contract with Protect: contract.md
   - Decisions:
       - adr/index.md

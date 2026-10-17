@@ -1,4 +1,4 @@
-"""The offline map (Field's decision D4; Protect's phase 43 P3): the project's PMTiles file,
+"""The offline map (Protect Go's decision D4; Protect's phase 43 P3): the project's PMTiles file,
 downloaded from the Protect server while online and served to MapLibre here with range requests,
 so the map draws without a connection. One map at a time, the project's, in `map.pmtiles` in the
 data folder with `map.json` beside it saying which project and build it is."""
@@ -14,7 +14,7 @@ from fastapi import APIRouter, HTTPException, Request, Response
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 
-from protect_field.store import Store
+from protect_go.store import Store
 
 router = APIRouter(prefix="/api")
 
