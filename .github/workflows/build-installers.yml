@@ -56,16 +56,22 @@ jobs:
             os: windows
             runs-on: windows-2022
             artifact-glob: electron/dist-build/*.exe electron/dist-build/*.exe.blockmap electron/dist-build/latest.yml
+            artifact-files: |
+              electron/dist-build/*.exe
+              electron/dist-build/*.exe.blockmap
+              electron/dist-build/latest.yml
             electron-builder-args: --win
           - label: macOS arm64
             os: macos
             runs-on: macos-14
             artifact-glob: electron/dist-build/*.dmg
+            artifact-files: electron/dist-build/*.dmg
             electron-builder-args: --mac --arm64
           - label: Linux x64
             os: linux
             runs-on: ubuntu-22.04
             artifact-glob: electron/dist-build/*.deb
+            artifact-files: electron/dist-build/*.deb
             electron-builder-args: --linux
     defaults:
       run:
@@ -206,7 +212,7 @@ jobs:
         with:
           name: ${{ matrix.os }}-installer
           # upload-artifact wants one path a line; the release upload takes them on one
-          path: ${{ join(fromJSON(format('["{0}"]', join(split(matrix.artifact-glob, ' '), '","'))), '\n') }}
+          path: ${{ matrix.artifact-files }}
           retention-days: 14
           if-no-files-found: error
 
