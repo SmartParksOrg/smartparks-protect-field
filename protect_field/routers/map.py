@@ -107,6 +107,14 @@ async def fetch_map(body: MapFetch, request: Request) -> MapRead:
                 detail = await _detail(response)
             if response.status_code in (404, 202):
                 asked = await http.post(path, json={}, headers=headers)
+                if asked.status_code == 403:
+                    read = _read(request)
+                    read.server_state = (
+                        "The server has no map of this project yet, and your account may not "
+                        "ask for one; ask an analyst or an administrator of the project to open "
+                        "the Offload page and prepare the map"
+                    )
+                    return read
                 if asked.status_code == 202:
                     state = asked.json()
                     read = _read(request)

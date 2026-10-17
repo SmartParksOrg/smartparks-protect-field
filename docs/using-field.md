@@ -40,7 +40,7 @@ To change the server later, choose **Another server** on the first screen.
 
 ## The map
 
-Open **Map** from the first screen while you are online, choose the project and press **Fetch the map**. Field asks the server for the map of the project's area; the first time, the server has to cut it first, which takes a few minutes, and Field says so: try again a little later. Once fetched, the map is drawn on the laptop without any connection, down to street level around the stations, with place names in Latin script. It is OpenStreetMap's map as Protomaps builds it, not satellite imagery, which cannot be taken offline. Fetch it again now and then: the server renews its copy once a month, and a project whose area grew needs a new one.
+Open **Map** from the first screen while you are online, choose the project and press **Fetch the map**. Field asks the server for the map of the project's area; the first time, the server has to cut it first, which takes a few minutes, and Field says so: try again a little later. Asking the server to cut a map takes an analyst's or administrator's account; a viewer fetches the map once it exists, or asks one of them to prepare it from the Offload page. Once fetched, the map is drawn on the laptop without any connection, down to street level around the stations, with place names in Latin script. It is OpenStreetMap's map as Protomaps builds it, not satellite imagery, which cannot be taken offline. Fetch it again now and then: the server renews its copy once a month, and a project whose area grew needs a new one.
 
 ## The cycle
 

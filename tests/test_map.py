@@ -74,6 +74,10 @@ async def test_the_map_is_asked_for_then_fetched_then_served_in_ranges(app, tmp_
         if request.url.path == f"/api/v1/projects/{PROJECT}/field-bundle/map":
             assert request.headers["Authorization"] == f"Bearer {TOKEN}"
             if request.method == "POST":
+                if state.get("forbid"):
+                    return httpx.Response(
+                        403, json={"detail": "Permission exports:create required"}
+                    )
                 state["asked"] += 1
                 return httpx.Response(202, json={"status": "queued"})
             if not state["ready"]:
@@ -97,6 +101,12 @@ async def test_the_map_is_asked_for_then_fetched_then_served_in_ranges(app, tmp_
         assert first.status_code == 200, first.text
         assert first.json()["present"] is False and "making the map" in first.json()["server_state"]
         assert state["asked"] == 1
+
+        # a viewer's account may not ask the server to cut a map; Field says whom to ask
+        state["forbid"] = True
+        told = await client.post("/api/map/fetch", json={"project_id": PROJECT})
+        assert told.status_code == 200 and "ask an analyst" in told.json()["server_state"]
+        state["forbid"] = False
 
         state["ready"] = True
         got = await client.post(
