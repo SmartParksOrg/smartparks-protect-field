@@ -300,5 +300,6 @@
   "Command Palette": "Opdrachtenpalet",
   "Search for a command to run...": "Zoek een opdracht om uit te voeren...",
   "The newest release has no installer to fetch yet; it is still being built. Try again in a few minutes.": "De nieuwste release heeft nog geen installatiebestand om op te halen; het wordt nog gebouwd. Probeer het over een paar minuten opnieuw.",
-  "Full screen": "Volledig scherm"
+  "Full screen": "Volledig scherm",
+  "Leave full screen": "Volledig scherm verlaten"
 }
