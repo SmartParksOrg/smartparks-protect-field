@@ -4,6 +4,12 @@ All notable changes to Smart Parks Protect Field. The format follows Keep a Chan
 
 ## Unreleased
 
+Nothing yet.
+
+## v0.2.0, 2026-10-17
+
+The whole cycle: load a project, read a card offline, see it on the map, upload it. Protect pinned at d79ffaf.
+
 ### Added
 
 - The upload to Protect: the Upload page sends the card files that wait to the server, one by one and exactly as they were on the card, and keeps the server's answer on each: taken, had already, refused. A sign-in that expired stops the run and says so; a card whose station the project does not know waits until the station is made on Protect's Offload page.

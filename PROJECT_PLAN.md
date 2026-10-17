@@ -18,9 +18,9 @@ Living plan for building Smart Parks Protect Field, the companion of Smart Parks
 | Field | Value |
 | --- | --- |
 | Active phase | Phase 2: F0 (the offline map), F1 (the bundle, D11), F2 (a card read) and F4 (the upload) built on 2026-10-17; the loop of ADR 0001 is closed (Protect's P3 the same day); phase 1b (installed like AddaxAI, D6 to D10) built on 2026-10-17: the shell, the frozen backend, the installers' workflow, the setup, the update notice, the user page; v0.1.0 released the same day (I8); I9 (certificates) waits for Tim. Phase 1 (the Protect side) P1, P2 and P4 done in Protect (8c0a6b6), P3 open. Phase 2 (a card read offline) next |
-| Latest release | v0.1.0 (2026-10-17): the installers, the setup, the update notice |
+| Latest release | v0.2.0 (2026-10-17): the whole cycle, a project loaded, a card read offline and drawn, the upload; Protect pinned at d79ffaf |
 | Last session | 2026-10-17 (Claude and Tim): the design chosen (ADR 0001, D1 to D5), the repository created with Protect's conventions, hooks, CI, docs and frontend tooling mirrored, the Python package with the server skeleton and the proof that Protect's decoding runs here, the frontend skeleton with its first screen, the documentation site; Protect pinned at 2755c92. Committed as 9391087, pushed to `SmartParksOrg/smartparks-protect-field` (private); the first CI run failed on the audit's export of the git package, fixed in ad9bafa, CI green since |
-| Next item | A release (v0.2.0) so Tim tries the whole loop on a laptop against dev; then F3 the tracker pages across cards, F5 the Docker Desktop route, F6 Bluetooth |
+| Next item | Tim tries the whole loop with v0.2.0 on a laptop against dev (install from the Offload page, load LP0, read a demo card, upload); then F3 the tracker pages across cards, F5 the Docker Desktop route, F6 Bluetooth; the certificates (I9) |
 | Blockers | No code-signing certificates (Windows Authenticode, Apple Developer ID), so the installers are unsigned and users click through SmartScreen and Gatekeeper as the user page explains; I9 is Tim's. A real LP0 v5 card does not exist yet (Protect's O8 waits for the firmware developer); until then the cards are synthetic, built with `build_uplink` as Protect's demo script builds them |
 
 ## What we are building
@@ -158,4 +158,4 @@ Every item, every phase:
 ### 2026-10-17, the upload (Claude and Tim)
 
 - F4: the upload state per file on `card_files` (added to an existing database by `_migrate`), `run_uploads` sending one file a request to the station's offload-files endpoint with the server's answer kept per file, a 401 or 403 stopping the run with the way out named, a card of a station the project does not know waiting with a word; the Upload page with the counts per card and one button; the first screen's Upload button carries the waiting count. Tests: one file taken and one the server had already (its 422 naming "uploaded before"), an expired sign-in stopping the run, an unknown station waiting. Against dev: the demo card SP050101 (31 files) uploaded in 3.1 seconds, every file taken; the same card read into a fresh Field and uploaded again came back as 31 duplicates. Note: the demo script's `--out` run of 2026-10-17 writes files relative to that day, so they differed from the 19 files the script uploaded on 2026-10-16 and dev took them as new (a day-shifted copy of the demo month on the station SP050101); synthetic data in the demo project, cleaned by hand if it bothers.
-- Next: release v0.2.0 for Tim's test of the whole loop.
+- Released as v0.2.0 the same day.
