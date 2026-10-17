@@ -205,7 +205,8 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.os }}-installer
-          path: ${{ matrix.artifact-glob }}
+          # upload-artifact wants one path a line; the release upload takes them on one
+          path: ${{ join(fromJSON(format('["{0}"]', join(split(matrix.artifact-glob, ' '), '","'))), '\n') }}
           retention-days: 14
           if-no-files-found: error
 
