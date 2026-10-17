@@ -224,5 +224,12 @@
   "{{files}} files of {{stations}}, {{size}}": "{{files}} bestanden van {{stations}}, {{size}}",
   "Read this SD card": "Deze SD-kaart lezen",
   "No SD card is in this computer. Put the card in, or pick the folder it was copied to, or drop the card's LOG folders or a zip of them here. The files are read with the project's keys and kept for the upload.": "Er zit geen SD-kaart in deze computer. Steek de kaart erin, kies de map waarnaar ze is gekopieerd, of sleep de LOG-mappen van de kaart of een zip ervan hierheen. De bestanden worden gelezen met de sleutels van het project en bewaard voor de upload.",
-  "Or pick the folder the card was copied to, or drop the card's LOG folders or a zip of them here. The files are read with the project's keys and kept for the upload.": "Of kies de map waarnaar de kaart is gekopieerd, of sleep de LOG-mappen van de kaart of een zip ervan hierheen. De bestanden worden gelezen met de sleutels van het project en bewaard voor de upload."
+  "Or pick the folder the card was copied to, or drop the card's LOG folders or a zip of them here. The files are read with the project's keys and kept for the upload.": "Of kies de map waarnaar de kaart is gekopieerd, of sleep de LOG-mappen van de kaart of een zip ervan hierheen. De bestanden worden gelezen met de sleutels van het project en bewaard voor de upload.",
+  "Restart to update": "Opnieuw starten om bij te werken",
+  "The app closes, installs the new version and opens again; your bundles and cards are kept.": "De app sluit, installeert de nieuwe versie en opent weer; je bundels en kaartbestanden blijven bewaard.",
+  "Downloading the new version, {{percent}}%": "De nieuwe versie wordt gedownload, {{percent}}%",
+  "Download and install": "Downloaden en installeren",
+  "The update could not be fetched: {{message}}": "De update kon niet worden opgehaald: {{message}}",
+  "Download it by hand": "Met de hand downloaden",
+  "The app fetches the new version and installs it when you say so; your bundles and cards are kept.": "De app haalt de nieuwe versie op en installeert ze wanneer jij dat zegt; je bundels en kaartbestanden blijven bewaard."
 }

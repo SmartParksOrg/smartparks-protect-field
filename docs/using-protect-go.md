@@ -75,11 +75,11 @@ Take the SD card out of the station and put it in the laptop. Open **Files**: th
 
 ## Updates
 
-The app is updated often. At every start it looks at the newest release and, when there is a newer one, shows it on the first screen with its notes and a download button. **Check for updates…** in the menu does the same at any time. Install the new version over the old one:
+The app is updated often. At every start it looks at the newest release and, when there is a newer one, shows it on the first screen with its notes. **Check for updates…** in the menu does the same at any time.
 
-- Windows: run the new setup file. It replaces the old version.
-- macOS: open the new dmg, drag Protect Go into Applications and choose **Replace**.
-- Linux: `sudo apt install ./ProtectGo-amd64.deb` again.
+- **Windows:** the app installs the update itself. Press **Download and install**; the download runs in the background, and **Restart to update** closes the app, installs the new version and opens it again. If you close the app with the download finished, it installs on the way out. The first version that does this is v0.7.0; from v0.6.0 or older, run the new setup file once by hand.
+- **macOS:** open the new dmg, drag Protect Go into Applications and choose **Replace**. The app will install updates itself once it is code signed, which macOS demands for that.
+- **Linux:** `sudo apt install ./ProtectGo-amd64.deb` again.
 
 Your bundles and cards are kept in every case. Without a connection the check fails quietly and the app works as before.
 

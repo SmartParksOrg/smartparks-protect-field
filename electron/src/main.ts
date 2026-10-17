@@ -13,6 +13,7 @@ import http from "node:http";
 import os from "node:os";
 import path from "node:path";
 import { app, BrowserWindow, dialog, ipcMain, Menu, shell } from "electron";
+import { autoUpdater } from "electron-updater";
 
 const BACKEND_PORT = Number(process.env.PROTECT_GO_PORT ?? 18090);
 const BACKEND_URL = `http://127.0.0.1:${BACKEND_PORT}`;
@@ -292,13 +293,23 @@ async function startAndLoad(): Promise<void> {
 
 // --- The menu
 
+function checkForUpdatesFromMenu(): Promise<boolean> {
+  return checkForUpdates();
+}
+
 function sendMenuCommand(id: string): void {
   mainWindow?.webContents.send("menu:command", id);
 }
 
 function setupMenu(): void {
   const isMac = process.platform === "darwin";
-  const checkForUpdates = { label: "Check for updates…", click: () => sendMenuCommand("check-updates") };
+  const checkForUpdates = {
+    label: "Check for updates…",
+    click: () => {
+      sendMenuCommand("check-updates");
+      void checkForUpdatesFromMenu();
+    },
+  };
   const template: Electron.MenuItemConstructorOptions[] = [
     ...(isMac
       ? [{ label: app.name, submenu: [{ role: "about" as const }, checkForUpdates, { type: "separator" as const }, { role: "quit" as const }] }]
@@ -317,7 +328,84 @@ function setupMenu(): void {
   Menu.setApplicationMenu(Menu.buildFromTemplate(template));
 }
 
+// --- Updates (decision D17)
+//
+// On Windows the installed app updates itself: electron-updater reads `latest.yml` beside the
+// installer of the newest GitHub release, downloads the installer when the page asks, and runs
+// it on quit. macOS accepts that only from a signed app and the Debian package has no updater,
+// so there the page keeps its download link.
+
+const UPDATES_SUPPORTED = app.isPackaged && process.platform === "win32";
+
+interface UpdateStatus {
+  state: "unsupported" | "idle" | "checking" | "none" | "available" | "downloading" | "downloaded" | "error";
+  version?: string;
+  percent?: number;
+  message?: string;
+}
+
+let updateStatus: UpdateStatus = { state: UPDATES_SUPPORTED ? "idle" : "unsupported" };
+
+function setUpdateStatus(next: UpdateStatus): void {
+  updateStatus = next;
+  logLine("[update]", JSON.stringify(next));
+  mainWindow?.webContents.send("update:status", next);
+}
+
+function setupUpdater(): void {
+  if (!UPDATES_SUPPORTED) return;
+  autoUpdater.autoDownload = false;
+  autoUpdater.autoInstallOnAppQuit = true;
+  autoUpdater.logger = {
+    info: (message: unknown) => logLine("[update]", String(message)),
+    warn: (message: unknown) => logLine("[update]", `warning: ${String(message)}`),
+    error: (message: unknown) => logLine("[update]", `error: ${String(message)}`),
+    debug: () => undefined,
+  };
+  autoUpdater.on("checking-for-update", () => setUpdateStatus({ state: "checking" }));
+  autoUpdater.on("update-available", (info) => setUpdateStatus({ state: "available", version: info.version }));
+  autoUpdater.on("update-not-available", (info) => setUpdateStatus({ state: "none", version: info.version }));
+  autoUpdater.on("download-progress", (progress) =>
+    setUpdateStatus({ state: "downloading", percent: Math.round(progress.percent) }),
+  );
+  autoUpdater.on("update-downloaded", (info) => setUpdateStatus({ state: "downloaded", version: info.version }));
+  autoUpdater.on("error", (error) => setUpdateStatus({ state: "error", message: error.message }));
+}
+
+async function checkForUpdates(): Promise<boolean> {
+  if (!UPDATES_SUPPORTED) return false;
+  try {
+    const result = await autoUpdater.checkForUpdates();
+    return result?.isUpdateAvailable ?? false;
+  } catch (error) {
+    setUpdateStatus({ state: "error", message: error instanceof Error ? error.message : String(error) });
+    return false;
+  }
+}
+
+async function downloadUpdate(): Promise<void> {
+  if (!UPDATES_SUPPORTED) return;
+  if (updateStatus.state === "downloading" || updateStatus.state === "downloaded") return;
+  if (updateStatus.state !== "available" && !(await checkForUpdates())) return;
+  try {
+    await autoUpdater.downloadUpdate();
+  } catch (error) {
+    setUpdateStatus({ state: "error", message: error instanceof Error ? error.message : String(error) });
+  }
+}
+
+function installUpdate(): void {
+  if (updateStatus.state !== "downloaded") return;
+  stopBackend();
+  autoUpdater.quitAndInstall(true, true);
+}
+
 // --- IPC for the interface (preload.ts)
+
+ipcMain.handle("update:status", () => updateStatus);
+ipcMain.handle("update:check", () => checkForUpdates());
+ipcMain.handle("update:download", () => downloadUpdate());
+ipcMain.handle("update:install", () => installUpdate());
 
 ipcMain.handle("app:getVersion", () => app.getVersion());
 ipcMain.handle("app:getPlatform", () => process.platform);
@@ -355,7 +443,10 @@ if (!app.requestSingleInstanceLock()) {
 
   void app.whenReady().then(async () => {
     setupMenu();
+    setupUpdater();
     await startAndLoad();
+    // the check at start, once the page is up; the page shows what it finds
+    setTimeout(() => void checkForUpdates(), 8000);
     app.on("activate", () => {
       if (BrowserWindow.getAllWindows().length === 0) void startAndLoad();
     });

@@ -1,8 +1,9 @@
 name: Build installers
 
 # AddaxAI's release shape: publishing a release on GitHub builds the three installers and
-# attaches them to it; a manual run builds debug installers kept as workflow artifacts for 14
-# days. The version comes from the tag into VERSION and electron/package.json. Signing and
+# attaches them to it, with `latest.yml` and the blockmap beside the Windows installer so an
+# installed app updates itself from the release (decision D17); a manual run builds debug
+# installers kept as workflow artifacts for 14 days. The version comes from the tag into VERSION and electron/package.json. Signing and
 # notarisation happen when the secrets are present; without them the build says so and the
 # installer is unsigned (users then click through SmartScreen or Gatekeeper, see the user page).
 # Once Smart Parks holds certificates, set REQUIRE_SIGNING to "1" below so a release can never
@@ -30,7 +31,7 @@ jobs:
           - label: Windows x64
             os: windows
             runs-on: windows-2022
-            artifact-glob: electron/dist-build/*.exe
+            artifact-glob: electron/dist-build/*.exe electron/dist-build/*.exe.blockmap electron/dist-build/latest.yml
             electron-builder-args: --win
           - label: macOS arm64
             os: macos
@@ -169,7 +170,7 @@ jobs:
           npx electron-builder ${{ matrix.electron-builder-args }} --publish never
 
       - name: What was built
-        run: ls -lh electron/dist-build/ | grep -E "\.(exe|dmg|deb)$"
+        run: ls -lh electron/dist-build/ | grep -E "\.(exe|dmg|deb|blockmap|yml)$"
 
       - name: Keep the installers (manual run)
         if: github.event_name == 'workflow_dispatch'

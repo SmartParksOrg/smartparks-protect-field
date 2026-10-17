@@ -6,6 +6,12 @@ All notable changes to Smart Parks Protect Go. The format follows Keep a Changel
 
 Nothing yet.
 
+## v0.7.0, 2026-10-17
+
+### Added
+
+- The app updates itself on Windows (decision D17): the notice's "Download and install" fetches the new version in the background and "Restart to update" installs it and opens the app again; a finished download installs on quit too. The release carries `latest.yml` and the blockmap beside the Windows installer for this. macOS waits for code signing, which it demands for self-updates; the Debian package keeps the download link.
+
 ## v0.6.0, 2026-10-17
 
 ### Added

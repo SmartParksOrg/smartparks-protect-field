@@ -9,6 +9,19 @@ export interface ShellBridge {
   pickFolder?(title: string): Promise<string | null>;
   leaveFullScreen?(): Promise<void>;
   onFullScreen?(handler: (on: boolean) => void): () => void;
+  /** The self-update (decision D17): Windows only; elsewhere the state is "unsupported". */
+  updateStatus?(): Promise<UpdateStatus>;
+  checkForUpdates?(): Promise<boolean>;
+  downloadUpdate?(): Promise<void>;
+  installUpdate?(): Promise<void>;
+  onUpdateStatus?(handler: (status: UpdateStatus) => void): () => void;
+}
+
+export interface UpdateStatus {
+  state: "unsupported" | "idle" | "checking" | "none" | "available" | "downloading" | "downloaded" | "error";
+  version?: string;
+  percent?: number;
+  message?: string;
 }
 
 declare global {
