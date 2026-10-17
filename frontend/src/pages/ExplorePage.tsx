@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { ChartLine, ChevronDown, ChevronUp, Map as MapIcon, Table2 } from "lucide-react";
+import { ChartLine, ChevronDown, ChevronUp, Download, Map as MapIcon, Table2 } from "lucide-react";
 import { useCallback, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link, useSearchParams } from "react-router";
@@ -11,6 +11,7 @@ import { EmptyState } from "@/components/common/EmptyState";
 import { Drawer } from "@/components/explore/Drawer";
 import { drawerSpace } from "@/components/explore/drawerSpace";
 import { ExploreChart } from "@/components/explore/ExploreChart";
+import { ExportDialog } from "@/components/explore/ExportDialog";
 import { ExploreMap } from "@/components/explore/ExploreMap";
 import { colourTrackers, type StationMarker } from "@/components/map/trackLayers";
 import { VirtualTable } from "@/components/records/VirtualTable";
@@ -123,6 +124,7 @@ export function ExplorePage() {
   const [drawerHeight, setDrawerHeight] = usePreference<number>("explore_drawer_height", 280);
   const [drawerOpen, setDrawerOpen] = usePreference<boolean>("explore_drawer_open", true);
   const [stripChoice, setStripChoice] = useState<boolean | null>(null);
+  const [exportOpen, setExportOpen] = useState(false);
   const stripOpen = stripChoice ?? !phone;
   const names = useMemo(() => new Map(all.map((tr) => [tr.device_id, tr.device_name])), [all]);
   const summary = useMemo(() => {
@@ -189,6 +191,10 @@ export function ExplorePage() {
             </button>
           )}
           <div className="ml-auto flex shrink-0 items-center gap-2">
+            <Button variant="outline" size="sm" className="h-8" onClick={() => setExportOpen(true)} disabled={rows.length === 0} aria-label={t("Export")}>
+              <Download className="size-4" />
+              <span className="hidden sm:inline">{t("Export")}</span>
+            </Button>
             <Tabs value={state.mode} onValueChange={(v) => update({ mode: v as ExploreMode })}>
               <TabsList className="h-8">
                 <TabsTrigger value="table" className="h-7 gap-1 px-2">
@@ -315,6 +321,7 @@ export function ExplorePage() {
           </>
         )}
       </div>
+      <ExportDialog open={exportOpen} onOpenChange={setExportOpen} selection={{ trackers: selected, from: window.from, to: window.to, metrics: chosen, summary, rows: rows.length }} />
     </div>
   );
 }

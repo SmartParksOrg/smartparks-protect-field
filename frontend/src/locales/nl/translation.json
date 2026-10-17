@@ -361,5 +361,18 @@
   "Batches read": "Gelezen partijen",
   "Uploaded": "Geüpload",
   "Offload station": "Offload-station",
-  "Last": "Laatste"
+  "Last": "Laatste",
+  "Export": "Exporteren",
+  "The decoded data on this laptop for the selection, as a file. Times are written in UTC. Protect's own export stays the one of record.": "De gedecodeerde gegevens op deze laptop voor de selectie, als bestand. Tijden staan in UTC. De export van Protect zelf blijft de officiële.",
+  "Data": "Gegevens",
+  "Records: the positions and the measurements": "Records: de posities en de metingen",
+  "Positions: the tracks": "Posities: de sporen",
+  "Format": "Formaat",
+  "Wide: one row per tracker and moment, a column per metric. Long: one row per value.": "Breed: één rij per tracker en moment, een kolom per meting. Lang: één rij per waarde.",
+  "GeoJSON: a line per tracker and its fixes as points. GPX: a track per tracker, for GPS tools.": "GeoJSON: een lijn per tracker en zijn fixes als punten. GPX: een spoor per tracker, voor gps-programma's.",
+  "CSV, wide": "CSV, breed",
+  "CSV, long": "CSV, lang",
+  "Download": "Downloaden",
+  "GeoJSON": "GeoJSON",
+  "GPX": "GPX"
 }

@@ -6,6 +6,12 @@ All notable changes to Smart Parks Protect Go. The format follows Keep a Changel
 
 Nothing yet.
 
+## v0.12.0, 2026-10-17
+
+### Added
+
+- Export from the Data explorer (decision D27), after Protect's: the selection's records as CSV in the wide layout (a column per metric) or the long one (a row per value), or its positions as GeoJSON (a line per tracker, its fixes as points) or GPX (a track per tracker). The file comes from the laptop's own decoded data, times in UTC; Protect's export stays the one of record (Tim, 2026-10-17).
+
 ## v0.11.0, 2026-10-17
 
 ### Added

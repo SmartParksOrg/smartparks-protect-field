@@ -65,6 +65,8 @@ If your Protect account may not see the LP0 keys of a tracker (its device page d
 
 ## The Data explorer
 
+**Export** at the top of the Data explorer saves the selection as a file, as Protect's export does: the records as CSV, wide (one row per tracker and moment, a column per measurement) or long (one row per value), or the positions as GeoJSON or GPX for a map or a GPS tool. The file holds what this laptop decoded; Protect's own export stays the one of record.
+
 The pages look and navigate as Protect's do: the navigation on the left, or behind the menu button on a small screen, the theme switch at the top right, and the language at the foot of the navigation. The map comes with the project. The first time, the server has to cut it first, which takes a few minutes, and the app says so: open **Map** a little later, or load the project again. Asking the server to cut a map takes an analyst's or administrator's account; a viewer fetches the map once it exists, or asks one of them to prepare it from the Offload page. Once fetched, the map is drawn on the laptop without any connection, down to street level around the stations, with place names in Latin script. It is OpenStreetMap's map as Protomaps builds it, not satellite imagery, which cannot be taken offline. Load the project again now and then: the server renews its map once a month, and a project whose area grew needs a new one.
 
 ## The cycle

@@ -3,11 +3,14 @@ a window and bounded, each tracker with its span and newest position, and a trac
 and measurements. What Protect's map and explorer show of a project, here from the files on the
 laptop."""
 
+from datetime import UTC, datetime
 from typing import Annotated, Any
 
 from fastapi import APIRouter, HTTPException, Query, Request
+from fastapi.responses import Response
 from pydantic import BaseModel
 
+from protect_go import exports
 from protect_go.cards import POSITIONS_LIMIT, RECORDS_LIMIT, CardStore
 
 router = APIRouter(prefix="/api")
@@ -110,6 +113,32 @@ def offered_metrics(
 ) -> list[dict[str, Any]]:
     """The metrics the chosen trackers reported in the window, with counts."""
     return _cards(request).offered_metrics(device_id or None, since=since, until=until)
+
+
+@router.get("/export")
+def export(
+    request: Request,
+    format: str,
+    device_id: Annotated[list[str] | None, Query()] = None,
+    metric: Annotated[list[str] | None, Query()] = None,
+    since: str | None = None,
+    until: str | None = None,
+) -> Response:
+    """The decoded data of the selection as a file (decision D27): the records as CSV, wide or
+    long, or the positions as GeoJSON or GPX; the browser saves it."""
+    if format not in exports.FORMATS:
+        raise HTTPException(422, f"Unknown format; one of {', '.join(exports.FORMATS)}")
+    rows = _cards(request).records(device_id or None, since=since, until=until)
+    body = exports.render(format, rows, metric or None)
+    media_type, extension = exports.FORMATS[format]
+    stamp = datetime.now(UTC).strftime("%Y%m%d-%H%M")
+    what = "records" if format.startswith("csv") else "positions"
+    name = f"protect-go-{what}-{stamp}.{extension}"
+    return Response(
+        content=body,
+        media_type=f"{media_type}; charset=utf-8",
+        headers={"Content-Disposition": f'attachment; filename="{name}"'},
+    )
 
 
 @router.get("/trackers/{device_id}/metrics", response_model=list[MetricRead])
