@@ -52,9 +52,11 @@ export function MapPage({ signedIn }: { signedIn: boolean }) {
       setNotice(state.server_state);
     },
   });
-  const chosen = projects.data?.find((p) => p.id === choice) ?? projects.data?.[0];
-  const dark = document.documentElement.classList.contains("dark");
   const state = map.data;
+  // the picker starts on the project whose map is on the laptop, else the first
+  const wanted = choice || state?.project_id || "";
+  const chosen = projects.data?.find((p) => p.id === wanted) ?? projects.data?.[0];
+  const dark = document.documentElement.classList.contains("dark");
   return (
     <main className="mx-auto flex min-h-dvh max-w-4xl flex-col gap-4 p-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
