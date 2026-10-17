@@ -4,8 +4,13 @@ All notable changes to Smart Parks Protect Go. The format follows Keep a Changel
 
 ## Unreleased
 
+Nothing yet.
+
+## v0.10.1, 2026-10-17
+
 ### Changed
 
+- The explorer's map has a full screen button, as Protect's maps do, and "Fit the tracks" wears an icon that does not read as one (Tim, 2026-10-17: the fit button looked like full screen and did nothing of the kind).
 - "Download and install" answers at once: the button says that the check runs, and when the newest release has no installer to fetch yet, because it is still being built, the notice says so instead of staying silent (Tim, 2026-10-17).
 
 ## v0.10.0, 2026-10-17

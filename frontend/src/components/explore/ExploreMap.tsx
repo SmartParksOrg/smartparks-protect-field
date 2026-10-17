@@ -1,4 +1,4 @@
-import { Compass, Layers, Maximize2, Minus, Plus } from "lucide-react";
+import { Compass, Focus, Layers, Maximize, Minimize, Minus, Plus } from "lucide-react";
 import type { MapLayerMouseEvent } from "maplibre-gl";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
@@ -60,6 +60,7 @@ export function ExploreMap({
   const [chosenFlavour, setChosenFlavour] = usePreference<Flavour | "auto">("map_flavour", "auto");
   const flavour: Flavour = chosenFlavour === "auto" ? (resolved === "dark" ? "dark" : "light") : chosenFlavour;
   const container = useRef<HTMLDivElement | null>(null);
+  const frame = useRef<HTMLDivElement | null>(null);
   const initialBounds = useMemo(() => {
     const b = boundsOfTracks(tracks);
     return b ? ([b[0][0], b[0][1], b[1][0], b[1][1]] as [number, number, number, number]) : null;
@@ -122,6 +123,22 @@ export function ExploreMap({
     map.setFilter("track-point-selected", ["in", ["get", "key"], ["literal", keys]]);
   }, [mapRef, ready, shownTracks, marked]);
 
+  // full screen through the browser's API on the map's frame, as Protect's result map does
+  // (Tim, 2026-10-17: the fit button's icon read as full screen, and there was none); the map
+  // follows the size
+  const [fullscreen, setFullscreen] = useState(false);
+  useEffect(() => {
+    const onChange = () => {
+      setFullscreen(globalThis.document.fullscreenElement === frame.current);
+      setTimeout(() => mapRef.current?.resize(), 50);
+    };
+    globalThis.document.addEventListener("fullscreenchange", onChange);
+    return () => globalThis.document.removeEventListener("fullscreenchange", onChange);
+  }, [mapRef]);
+  const toggleFullscreen = () => {
+    if (globalThis.document.fullscreenElement) void globalThis.document.exitFullscreen();
+    else void frame.current?.requestFullscreen?.();
+  };
   const [layersOpen, setLayersOpen] = useState(false);
   const [sliding, setSliding] = useState<number | null>(null);
   const value = sliding ?? marked ?? window.to;
@@ -138,7 +155,8 @@ export function ExploreMap({
             { key: "in", icon: Plus, label: t("Zoom in"), onClick: () => mapRef.current?.zoomIn() },
             { key: "out", icon: Minus, label: t("Zoom out"), onClick: () => mapRef.current?.zoomOut() },
             { key: "north", icon: Compass, label: t("North up"), onClick: () => mapRef.current?.resetNorthPitch() },
-            { key: "fit", icon: Maximize2, label: t("Fit the tracks"), disabled: shownTracks.length === 0, onClick: fit },
+            { key: "fit", icon: Focus, label: t("Fit the tracks"), disabled: shownTracks.length === 0, onClick: fit },
+            { key: "fullscreen", icon: fullscreen ? Minimize : Maximize, label: fullscreen ? t("Leave full screen") : t("Full screen"), active: fullscreen, onClick: toggleFullscreen },
           ]}
         />,
         cornerHost,
@@ -146,7 +164,7 @@ export function ExploreMap({
     : null;
 
   return (
-    <div className="absolute inset-0">
+    <div ref={frame} className="absolute inset-0 bg-background">
       <div ref={container} className="absolute! inset-0 z-0" />
       {corner}
       {/* Layers top left, as on Protect's map (its decision D174): the trackers and the base map */}
