@@ -12,4 +12,6 @@ All notable changes to Smart Parks Protect Field. The format follows Keep a Chan
 - `scripts/dev.sh` with `run`, `test`, `lint`, `format`, `docs`, `hooks` and `bump-protect`, which moves the Protect pin and reruns the decoding proof.
 - The documentation site: the contract with Protect (the field bundle down, the card files up), ADR 0001, and a user page (where Field runs, how to install it, the cycle of bundle, card and upload), published from `main`.
 
-Protect pinned at 2755c92 (main of 2026-10-16).
+- Protect pinned at 8c0a6b6 (main of 2026-10-17), which brings `shared.station_files`, the parser without a database, and the field bundle endpoint; the proof test parses a station line with it.
+
+Protect pinned at 8c0a6b6 (main of 2026-10-17).

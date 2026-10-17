@@ -34,3 +34,44 @@ def test_the_firmware_fixture_unwraps_with_protects_codec():
 def test_the_opencollar_driver_is_importable_and_has_a_catalog():
     catalog = OpenCollarDriver.catalog()
     assert catalog, "the driver catalog is empty"
+
+
+def test_a_station_file_parses_with_protects_parser():
+    """Protect's phase 43 P1: the station file parser imports without a database."""
+    import base64
+    import json
+
+    from shared.station_files import parse_station_jsonl, station_eui_from_name
+
+    line = json.dumps(
+        {
+            "gatewayEui": "0016C001F0ABCDEF",
+            "rxpk": {
+                "time": "2026-10-12T08:50:31Z",
+                "tmst": 1791795031,
+                "freq": 864.629,
+                "datr": "SF7BW250",
+                "codr": "4/5",
+                "rssi": -71,
+                "lsnr": 9,
+                "size": len(SAVED_REPLAY_PACKET),
+                "data": base64.b64encode(SAVED_REPLAY_PACKET).decode(),
+            },
+            "lp0": {
+                "version": 5,
+                "source_eui": "0016C001F0100001",
+                "session": 1,
+                "window": 2,
+                "slot": 3,
+            },
+        }
+    )
+    parsed = parse_station_jsonl("\n" + line + "\n")
+    assert not parsed.errors and len(parsed.frames) == 1
+    frame = parsed.frames[0]
+    assert frame.station_eui == "0016C001F0ABCDEF" and frame.data == SAVED_REPLAY_PACKET
+    assert frame.lp0_version == 5 and frame.source_eui == "0016C001F0100001"
+    assert unwrap(frame.data, CREDENTIALS).payload == THREE_RECORDS
+    assert (
+        station_eui_from_name("LOG_3/0016c001f0abcdef_1791795031_002.jsonl") == "0016C001F0ABCDEF"
+    )

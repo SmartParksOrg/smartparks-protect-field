@@ -4,24 +4,30 @@ Field and Protect exchange two things, and the second is the one Protect already
 
 ## Down: the field bundle
 
-When Field is online, a user who is a member of a project asks Protect for the project's field bundle (planned on Protect's side as `GET /projects/{id}/field-bundle`, phase 1 of the plan). One file holds:
+When Field is online, a user who is a member of a project asks Protect for the project's field bundle: `GET /projects/{id}/field-bundle` (Protect's phase 43 P2, built 2026-10-17; the page [Field, the companion](https://smartparksorg.github.io/smartparks-protect/devices/field-companion/) in Protect's documentation). One JSON document, `format_version` 1, with:
 
-- the project's devices with their type, serial, DevEUI and the entity each is assigned to now, and the entity names;
-- the LP0 credentials (DevAddr, AppSKey, NwkSKey) of the trackers the user may see, so a card decodes offline; a user who may not see keys in Protect gets a bundle without them and Field shows the frames undecoded;
-- the stations the project knows, so a card is routed by the station's EUI;
-- the area the project works in and a map extract of it (PMTiles, decision D4), so the map draws without a connection.
+- `project`: id, name, slug, time zone; `generated_at`, `protect_version`, `protect_commit` and `server_url`, where the upload goes;
+- `devices`: the project's devices the caller may see, each with `device_type_key`, `driver_key`, `serial_number`, `dev_eui`, `status`, `firmware_version`, the entity it tracks now (`entity_id`, `entity_name`), `is_station`, and `lp0`: the tracker's `dev_addr`, `keys_set`, and `app_s_key` and `nwk_s_key` as 32 hex digits when `credentials_included` is true, null otherwise;
+- `credentials_included`: whether the caller may set keys in Protect (device control in the project, or a server admin); a viewer gets every address and no key, and Field shows that tracker's frames undecoded;
+- `entities`: the entities those devices track, with type key and label, icon and a GeoJSON place when set by hand;
+- `stations`: the offload stations with `station_eui` and a GeoJSON point where they stand, so a card is routed by the EUI in its file names;
+- `area`: the project's bounding box (`west`, `south`, `east`, `north`) from its features, entity places and device places, or null when the project has none yet; the offline map extract (decision D4, Protect's P3, not built yet) is cut for it.
 
-The bundle is encrypted on disk with a key the user gives Field. It expires; Field says when a bundle is older than a week and asks for a fresh one when online.
+Protect writes every download to its audit log with how many devices, stations and keys it carried. The bundle is encrypted on disk with a key the user gives Field. It expires; Field says when a bundle is older than a week and asks for a fresh one when online.
 
 ## Up: the card files
 
-Field uploads the card's files exactly as it read them to Protect's existing log files endpoint, the one the station's device page uses. Protect decodes them with the same code, attributes the records to the entities as of their record time, and refuses a file it already holds by its content digest and a frame it already holds by its hash. Field keeps a queue of what is uploaded and what is not, and shows it.
+Field uploads the card's files exactly as it read them to `POST /devices/{station id}/offload-files` on the server the bundle came from, the upload the station's device page makes (a `.jsonl` or a zip of the card's folders). Protect decodes them with the same code, attributes the records to the entities as of their record time, and refuses a file it already holds by its content digest and a frame it already holds by its hash. Field keeps a queue of what is uploaded and what is not, and shows it.
 
 ## What never travels
 
 - Nothing decoded leaves Field. A position or a measurement Field shows is Field's reading of the card, and Protect makes its own.
 - No master key. Field holds session keys for the trackers in the bundle, never the LP0 master key, as Protect does not (Protect's decision D327).
 - No notes, events or edits from Field, for now. Should the offline user need to record things that must travel back, that becomes a small append-only outbox, a later phase, never a general merge.
+
+## The parser
+
+Field reads a card with `shared.station_files` from Protect's `shared` package (Protect's phase 43 P1): `unpack_card_zip`, `parse_station_jsonl`, `station_eui_from_name`, with `shared.connectivity.adapters.lp0_station.lorawan.unwrap` for the frame and `shared.device_drivers.opencollar` for the records. None of these import a database.
 
 ## Versions
 

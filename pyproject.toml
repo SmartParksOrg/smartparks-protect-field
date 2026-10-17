@@ -17,7 +17,7 @@ dependencies = [
 protect-field = "protect_field.main:run"
 
 [tool.uv.sources]
-smartparks-protect-shared = { git = "https://github.com/SmartParksOrg/smartparks-protect", subdirectory = "shared", rev = "2755c929035da9400a15dc16cc17025d7b740988" }
+smartparks-protect-shared = { git = "https://github.com/SmartParksOrg/smartparks-protect", subdirectory = "shared", rev = "8c0a6b6c52a81cc95065f4ffbd2c9130fbb8b2b7" }
 
 [dependency-groups]
 dev = [

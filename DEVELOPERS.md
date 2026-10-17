@@ -2,7 +2,7 @@
 
 This file describes how the Smart Parks Protect Field codebase works today. The plan for where it is going lives in `PROJECT_PLAN.md`. Conventions live in `CONVENTIONS.md`, mirrored from Protect; the frontend's in `frontend/FRONTEND_CONVENTIONS.md`.
 
-Status: phase 0 (2026-10-17), the repository and its tooling; nothing a user can run yet. Protect's `shared` package is pinned at 2755c92 (Protect's `main` of 2026-10-16, decisions up to D330). Decisions here at D5.
+Status: phase 0 (2026-10-17), the repository and its tooling; nothing a user can run yet. Protect's `shared` package is pinned at 8c0a6b6 (Protect's `main` of 2026-10-17, decisions up to D331, with `shared.station_files` and the field bundle endpoint). Decisions here at D5.
 
 ## What this program is
 
@@ -11,7 +11,7 @@ Smart Parks Protect Field reads the SD card of a RangerEdge offload station wher
 ## Relationship to Protect
 
 - **One decoder.** `pyproject.toml` depends on `smartparks-protect-shared` from Protect's repository, subdirectory `shared`, pinned to a commit under `[tool.uv.sources]`. `scripts/dev.sh bump-protect [rev]` moves the pin, relocks and reruns `tests/test_protect_decoding.py`, which unwraps the firmware's LP0 fixture with Protect's codec and loads the OpenCollar driver. Record a bump in `CHANGELOG.md` and in the status line above.
-- **Modules Field may import from `shared`:** `shared.connectivity.adapters.lp0_station` (the LP0 codec and adapter), `shared.device_drivers` (the drivers and their base), `shared.connectivity.base`, `shared.enums`, `shared.timeutil`, `shared.geodesy`, and, once Protect has split it from its database code (plan item P1), the station file parser. **Never:** `shared.config` (wants a database URL and a broker), `shared.bus`, `shared.models`, `shared.database`, `shared.storage`, `shared.trace`'s database half, `shared.domain.*`. The tests run without `DATABASE_URL`, `REDIS_URL`, `MINIO_ENDPOINT` or `JWT_SECRET` and one test asserts none is set; CI sets none.
+- **Modules Field may import from `shared`:** `shared.connectivity.adapters.lp0_station` (the LP0 codec and adapter), `shared.device_drivers` (the drivers and their base), `shared.connectivity.base`, `shared.enums`, `shared.timeutil`, `shared.geodesy`, and `shared.station_files` (the station file parser, split out for Field by Protect's phase 43 P1). **Never:** `shared.config` (wants a database URL and a broker), `shared.bus`, `shared.models`, `shared.database`, `shared.storage`, `shared.trace`'s database half, `shared.domain.*`. The tests run without `DATABASE_URL`, `REDIS_URL`, `MINIO_ENDPOINT` or `JWT_SECRET` and one test asserts none is set; CI sets none.
 - **What Protect provides** (planned there, see the contract in `docs/contract.md`): the field bundle endpoint and the map extract; the card upload is Protect's existing log files endpoint.
 - **Conventions, tooling and documents** are copied from Protect: `CONVENTIONS.md`, `CODE_OF_CONDUCT.md`, the git hooks, the ruff and mypy configuration, the CI shape, Dependabot, the MkDocs site, the frontend's configuration and its shadcn components. Protect's copies are the master. When Protect changes one, copy the change here.
 

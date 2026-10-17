@@ -17,10 +17,10 @@ Living plan for building Smart Parks Protect Field, the companion of Smart Parks
 
 | Field | Value |
 | --- | --- |
-| Active phase | Phase 0 (the repository and its tooling) built on 2026-10-17; phase 1 (the Protect side) next |
+| Active phase | Phase 1 (the Protect side): P1, P2 and P4 done in Protect on 2026-10-17 (8c0a6b6), Field pinned at it; P3 (the map extract) open. Phase 2 (a card read offline) next |
 | Latest release | None. `VERSION` is `v0.0.0` |
 | Last session | 2026-10-17 (Claude and Tim): the design chosen (ADR 0001, D1 to D5), the repository created with Protect's conventions, hooks, CI, docs and frontend tooling mirrored, the Python package with the server skeleton and the proof that Protect's decoding runs here, the frontend skeleton with its first screen, the documentation site; Protect pinned at 2755c92. Committed as 9391087, pushed to `SmartParksOrg/smartparks-protect-field` (private); the first CI run failed on the audit's export of the git package, fixed in ad9bafa, CI green since |
-| Next item | P1 and P2 in Protect (the parser split and the field bundle endpoint), then phase 2 here |
+| Next item | Phase 2 F1 and F2 here (the local store with the bundle, a card read and decoded); P3 in Protect when the map is wanted |
 | Blockers | A real LP0 v5 card does not exist yet (Protect's O8 waits for the firmware developer); until then the cards are synthetic, built with `build_uplink` as Protect's demo script builds them |
 
 ## What we are building
@@ -64,10 +64,10 @@ Every item, every phase:
 
 ### Phase 1: the Protect side (in Protect's repository)
 
-- [ ] P1. Split the station file parser (`parse_station_jsonl`, `parse_station_line`, `_lp0_metadata`, `unpack_card_zip`, `looks_like_station_file`, `StationFrame`) out of `shared/logfiles.py` into a module without database imports, so Field can read a card with it; Protect's own code imports it from there
-- [ ] P2. `GET /projects/{id}/field-bundle`: the project's devices with type, serial, DevEUI and current entity; the entities' names; the LP0 credentials of the trackers the caller may see (the permission that shows keys on the device page), none for a caller without it; the stations; the project's area; a version stamp and the Protect version. Access control tested per role. Bounded: one project
+- [x] P1. Split the station file parser (`parse_station_jsonl`, `parse_station_line`, `_lp0_metadata`, `unpack_card_zip`, `looks_like_station_file`, `StationFrame`) out of `shared/logfiles.py` into a module without database imports, so Field can read a card with it; Protect's own code imports it from there (done in Protect, 8c0a6b6, 2026-10-17)
+- [x] P2. `GET /projects/{id}/field-bundle`: the project's devices with type, serial, DevEUI and current entity; the entities' names; the LP0 credentials of the trackers the caller may see (the permission that shows keys on the device page), none for a caller without it; the stations; the project's area; a version stamp and the Protect version. Access control tested per role. Bounded: one project (done in Protect, 8c0a6b6, 2026-10-17; the shape is in `docs/contract.md`)
 - [ ] P3. The map extract: the project's bounding box cut from a Protomaps planet build as PMTiles, cached per project on the server, part of the bundle or fetched beside it. Decide the zoom range by size against the areas Protect has; record it
-- [ ] P4. Document the contract on Protect's side (`docs/devices/offload-stations.md` or a page of its own) and pin Field to the commit
+- [x] P4. Document the contract on Protect's side (`docs/devices/field-companion.md` there) and pin Field to the commit (8c0a6b6, 2026-10-17)
 
 ### Phase 2: a card read offline
 
@@ -101,3 +101,9 @@ Every item, every phase:
 - Noted for Protect: P1 to P4 under phase 1; recorded in Protect's plan as decision D331 so the two plans point at each other.
 - CI: the first run failed in the dependency audit because the export listed Protect's shared package, which pip-audit cannot find on PyPI; the audit leaves it out as Protect's image audit leaves its path packages out (ad9bafa). Green since. Dependabot alerts switched on as Protect has them. Tim opened the repository; private vulnerability reporting switched on, the pages job added, and a user page written (`docs/using-field.md`: where Field runs, install, the cycle; the planned steps marked as such).
 - Next: P1 and P2 in Protect, then phase 2 here.
+
+### 2026-10-17, the Protect side built, the repository public (Claude and Tim)
+
+- Tim opened the repository; the docs site publishes from `main` (the Pages site had to be created once with Tim's token, the workflow token may not), private vulnerability reporting on. A user page (`docs/using-field.md`) says where Field runs (the user's laptop, 127.0.0.1, never the server) and how the cycle goes, with the unbuilt steps marked planned.
+- Protect built P1 (the parser as `shared.station_files`), P2 (`GET /projects/{id}/field-bundle`) and P4 (the page in Protect's docs) in commit 8c0a6b6; Field pinned at it with `bump-protect`, the proof test now also parses a station line with Protect's parser. `docs/contract.md` carries the bundle's shape as built.
+- Next: phase 2 F1 and F2.
