@@ -44,6 +44,10 @@ logs/
 
 # Build outputs
 site/
+/build/
+/dist/
+electron/dist/
+electron/dist-build/
 *.bak
 *.backup
 

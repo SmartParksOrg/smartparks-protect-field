@@ -2,7 +2,7 @@
 
 This file describes how the Smart Parks Protect Field codebase works today. The plan for where it is going lives in `PROJECT_PLAN.md`. Conventions live in `CONVENTIONS.md`, mirrored from Protect; the frontend's in `frontend/FRONTEND_CONVENTIONS.md`.
 
-Status: phase 0 (2026-10-17), the repository and its tooling; nothing a user can run yet. Protect's `shared` package is pinned at 8c0a6b6 (Protect's `main` of 2026-10-17, decisions up to D331, with `shared.station_files` and the field bundle endpoint). Decisions here at D5.
+Status: phase 0 and the packaging (2026-10-17): the Electron shell, the frozen backend, the installers' workflow, the first-run setup (server, account) and the update notice; phase 2 (a card read offline) next. Protect's `shared` package is pinned at 8c0a6b6 (Protect's `main` of 2026-10-17, decisions up to D331, with `shared.station_files` and the field bundle endpoint). Decisions here at D10.
 
 ## What this program is
 
@@ -29,7 +29,8 @@ Smart Parks Protect Field reads the SD card of a RangerEdge offload station wher
 
 | Layer | Technology | Notes |
 | --- | --- | --- |
-| Backend | Python 3.12, FastAPI 0.141, uvicorn, Pydantic 2 | `protect_field/main.py` builds the app: `/api/health`, the built interface from `frontend/dist`, every unknown path answered with `index.html` so the browser router owns it |
+| Backend | Python 3.12, FastAPI 0.141, uvicorn, Pydantic 2, httpx, PyJWT (from `shared`) | `protect_field/main.py` builds the app: `/api/health` (version, Protect commit, decoders), the setup and session endpoints (`routers/setup.py`), the built interface from `frontend/dist`, every unknown path answered with `index.html` so the browser router owns it |
+| Desktop shell | Electron 44, electron-builder 26, PyInstaller 6.22 | `electron/` after AddaxAI's shell (decision D6): starts `dist/backend/backend` from the app's resources, waits for `/api/health`, shows `http://127.0.0.1:18090`; `backend.spec` freezes the backend with the built interface, `VERSION` and `uv.lock` inside |
 | Decoding | Protect's `shared` package | See above |
 | Frontend | React 19, Vite 8, TypeScript 6 strict, Tailwind 4, shadcn/ui on Radix, TanStack Query 5, React Router 8, i18next, Vitest 4, ESLint 10 | `frontend/`, Protect's configuration; `npm run build` type checks first |
 | Docs | MkDocs Material, built strictly | `docs/`, `mkdocs.yml`, `scripts/docs_check.py` |
@@ -38,13 +39,37 @@ Smart Parks Protect Field reads the SD card of a RangerEdge offload station wher
 ## Layout
 
 ```
-protect_field/        the Python package: main.py (the server), config.py (settings), version.py
-frontend/             the interface: src/api (client, query keys), src/pages, src/components/ui (shadcn copies), src/locales
+protect_field/        the Python package: main.py (the server), config.py (settings), version.py,
+                      decoding.py (Protect's decoding imported in one place), store.py (settings.json),
+                      protect.py (the Protect server: probe, sign-in), routers/setup.py
+frontend/             the interface: src/api (client, query keys), src/pages (Setup, SignIn, Home),
+                      src/components (UpdateNotice, common/Callout, ui/ shadcn copies), src/hooks
+                      (useLatestRelease), src/lib (version, shell), src/locales
+electron/             the desktop shell: src/main.ts, src/preload.ts, build/ (icon, entitlements,
+                      notarize.js, installer.nsh), package.json with the electron-builder block
+backend.spec          PyInstaller: the frozen backend in dist/backend/
 tests/                pytest; test_protect_decoding.py is the proof that Protect's code works here
-scripts/dev.sh        run | test | lint | format | docs | hooks | bump-protect
-docs/                 the site: index, the contract with Protect, ADRs
+scripts/dev.sh        run | desktop | freeze | test | lint | format | docs | hooks | bump-protect
+docs/                 the site: index, Using Field (the user page), the contract with Protect, ADRs
+.github/workflows/    ci.yml (python, frontend, shell, frozen backend, docs, audit, pages),
+                      build-installers.yml (the three installers on a published release)
 .githooks/            commit-msg (strips assistant trailers), pre-commit (refuses credentials)
 ```
+
+## Packaging, after AddaxAI (decision D6)
+
+The desktop AddaxAI ships an Electron shell with a PyInstaller-frozen Python backend as `extraResources`, built by electron-builder into an NSIS installer (`-Setup.exe`, per user, no administrator), a dmg (drag to Applications) and a deb, attached to a GitHub release by a workflow that runs when the release is published, the version copied from the tag into `VERSION` and `electron/package.json`. Its website links `releases/latest/download/<fixed name>` per system, and the app checks GitHub's releases list at start and shows a notice; the user installs the new installer over the old one, which keeps the data folder outside the install folder. Field does the same:
+
+- `electron/src/main.ts`: one instance; `protect-field://connect?server=…` from a second instance or macOS's `open-url` becomes the route `/setup?server=…` (decision D9); the backend is `process.resourcesPath/backend/backend(.exe)` when packaged, else the repository's `.venv` python with `-m protect_field`; `FIELD_PORT`, `FIELD_DATA_DIR` (`~/ProtectField`) and `FIELD_HOST` passed in the environment; the backend's output goes to the console and `logs/backend.log` in the data folder; a Field backend already answering on the port is used, a stranger on it is an error with the way out named; the window loads `http://127.0.0.1:18090`, web links open in the system browser, the window never navigates away; the menu has Check for updates (sent to the page as `menu:command`), Documentation, Open the data folder. `preload.ts` exposes `window.protectField` (version, platform, openExternal, onMenuCommand).
+- `backend.spec`: entry `protect_field/__main__.py`, `datas` the built interface, `VERSION` and `uv.lock` (read through `sys._MEIPASS`, `version.py`), the OpenCollar driver's catalogue and codec files, `hiddenimports` for the decoding modules, `excludes` for the server-only packages `shared` depends on and Field never imports (matplotlib, weasyprint, pyarrow, Pillow, openpyxl, chirpstack, grpc, minio, mqtt, asyncpg, psycopg). About 150 MB on Linux. `protect_field/decoding.py` imports the parser, the codec and the driver at start so a frozen build that lacks one fails at once, and `/api/health` names the decoders.
+- `electron/package.json`'s `build`: appId `org.smartparks.protect.field`, product name Protect Field, artifacts `ProtectField-Setup.exe`, `ProtectField-arm64.dmg`, `ProtectField-amd64.deb`, the `protect-field` scheme, NSIS not one-click with the directory changeable and `installer.nsh` (the uninstaller asks before removing `~/ProtectField`), hardened runtime and `notarize.js` after signing on macOS, the icon from `build/icon.png` (the Smart Parks mark on brand green, 1024 px; electron-builder derives the icns and ico).
+- `.github/workflows/build-installers.yml`: on a published release, and by hand for debug builds kept 14 days. Windows signs when `WINDOWS_CERT_PFX_BASE64` and `WINDOWS_CERT_PFX_PASSWORD` are set, macOS signs and notarises when `MACOS_CERTIFICATE`, `MACOS_CERTIFICATE_PWD`, `APPLE_ID`, `APPLE_APP_SPECIFIC_PASSWORD` and `APPLE_TEAM_ID` are; without them the build warns and the installer is unsigned (`REQUIRE_SIGNING` in the workflow turns that into an error once the certificates exist; AddaxAI hard-fails, Field cannot yet). Every build starts the frozen backend and checks that health names the decoders before packaging.
+- Updates (decision D8): `hooks/useLatestRelease.ts` asks `api.github.com/repos/SmartParksOrg/smartparks-protect-field/releases?per_page=1` once per start (the newest release of any kind, so a pre-release counts), compares with `lib/version.ts`, and `UpdateNotice` shows the newer version with its notes and a button to the user page; the menu's Check for updates shows the result either way. A dev build (`v0.0.0-dev`) never nags. Automatic download and install (electron-updater) waits for signed builds.
+- Releasing: tag `vX.Y.Z` on `main` with `VERSION` written, publish a GitHub release with notes written for users (the notice shows them verbatim), and the workflow attaches the installers. The docs' download links point at `releases/latest/download/<name>`, so they never change.
+
+## The setup (decision D7)
+
+`protect_field/store.py` keeps `settings.json` in the data folder (mode 600): the server, its version, the account's email, Protect's token and its expiry read from the token's `exp`; never the password. `protect_field/protect.py` talks to the server: `probe_version` (`GET /api/version`, anything else is "not a Protect server"), `sign_in` (`POST /api/v1/auth/login` form-encoded, then `GET /api/v1/users/me`). `routers/setup.py`: `GET /api/setup`, `PUT /api/setup/server` (a new server ends the session), `POST /api/session`, `DELETE /api/session`. The tests hand `app.state.http_transport` an `httpx.MockTransport`. The interface gates on the setup (`App.tsx`): no server sends to `/setup`, which reads `?server=` from the protocol link; a server without an account to `/sign-in`.
 
 ## Commands
 
@@ -52,13 +77,18 @@ docs/                 the site: index, the contract with Protect, ADRs
 scripts/dev.sh hooks            # once per clone
 uv sync --all-groups
 (cd frontend && npm ci)
-scripts/dev.sh lint             # ruff, mypy, eslint, tsc
+(cd electron && npm ci)         # on npm 11, if node_modules/electron/dist is missing: node node_modules/electron/install.js
+scripts/dev.sh lint             # ruff, mypy, eslint, tsc (frontend and shell)
 scripts/dev.sh test             # pytest, vitest
 scripts/dev.sh docs             # mkdocs --strict and the docs check
 scripts/dev.sh run              # the server with the built interface on http://127.0.0.1:18090
 (cd frontend && npm run dev)    # live reload on http://127.0.0.1:5173, /api proxied to the server
+scripts/dev.sh desktop          # the Electron shell against .venv and the built interface
+scripts/dev.sh freeze           # the frozen backend in dist/backend/, as the installers carry it
 scripts/dev.sh bump-protect     # move the Protect pin to the newest main and prove the decoding
 ```
+
+Under WSL the shell runs through WSLg; `--no-sandbox` may be needed there. A terminal inside VS Code sets `ELECTRON_RUN_AS_NODE=1`, which makes the Electron binary run as plain Node and fail on `ipcMain`; `scripts/dev.sh desktop` unsets it. `FIELD_DATA_DIR` and `PROTECT_FIELD_PORT` point a run elsewhere. With `--remote-debugging-port=9333`, `curl http://127.0.0.1:9333/json` lists the page the window loaded.
 
 After adding UI strings: `cd frontend && npm run i18n:extract`, then write the Dutch lines in `src/locales/nl/translation.json` by hand, appended.
 

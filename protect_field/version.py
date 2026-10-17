@@ -3,10 +3,20 @@ release tag, or `v0.0.0-dev` in a checkout without it. The Protect commit the de
 from is read from the lockfile so the health answer can name both."""
 
 import re
+import sys
 from pathlib import Path
 
 DEV_VERSION = "v0.0.0-dev"
-ROOT = Path(__file__).resolve().parents[1]
+
+
+def _root() -> Path:
+    """The repository root, or the frozen backend's bundle folder (PyInstaller sets
+    `sys._MEIPASS`), where `backend.spec` copies `VERSION`, `uv.lock` and the built interface."""
+    frozen = getattr(sys, "_MEIPASS", None)
+    return Path(frozen) if frozen else Path(__file__).resolve().parents[1]
+
+
+ROOT = _root()
 
 
 def read_version() -> str:

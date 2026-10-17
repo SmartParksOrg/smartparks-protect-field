@@ -17,11 +17,11 @@ Living plan for building Smart Parks Protect Field, the companion of Smart Parks
 
 | Field | Value |
 | --- | --- |
-| Active phase | Phase 1 (the Protect side): P1, P2 and P4 done in Protect on 2026-10-17 (8c0a6b6), Field pinned at it; P3 (the map extract) open. Phase 2 (a card read offline) next |
+| Active phase | Phase 1b (installed like AddaxAI, D6 to D10) built on 2026-10-17: the shell, the frozen backend, the installers' workflow, the setup, the update notice, the user page; I8 (the first release) and I9 (certificates) wait for Tim. Phase 1 (the Protect side) P1, P2 and P4 done in Protect (8c0a6b6), P3 open. Phase 2 (a card read offline) next |
 | Latest release | None. `VERSION` is `v0.0.0` |
 | Last session | 2026-10-17 (Claude and Tim): the design chosen (ADR 0001, D1 to D5), the repository created with Protect's conventions, hooks, CI, docs and frontend tooling mirrored, the Python package with the server skeleton and the proof that Protect's decoding runs here, the frontend skeleton with its first screen, the documentation site; Protect pinned at 2755c92. Committed as 9391087, pushed to `SmartParksOrg/smartparks-protect-field` (private); the first CI run failed on the audit's export of the git package, fixed in ad9bafa, CI green since |
-| Next item | Phase 2 F1 and F2 here (the local store with the bundle, a card read and decoded); P3 in Protect when the map is wanted |
-| Blockers | A real LP0 v5 card does not exist yet (Protect's O8 waits for the firmware developer); until then the cards are synthetic, built with `build_uplink` as Protect's demo script builds them |
+| Next item | Tim publishes release v0.1.0 (I8) so the Offload page's download links resolve, and tries the installer on a Windows and a Mac laptop; then phase 2 F1 and F2 (the bundle loaded, a card read); P3 in Protect when the map is wanted |
+| Blockers | No code-signing certificates (Windows Authenticode, Apple Developer ID), so the installers are unsigned and users click through SmartScreen and Gatekeeper as the user page explains; I9 is Tim's. A real LP0 v5 card does not exist yet (Protect's O8 waits for the firmware developer); until then the cards are synthetic, built with `build_uplink` as Protect's demo script builds them |
 
 ## What we are building
 
@@ -38,6 +38,12 @@ Design principles, from Protect's: devices are hardware and entities are what yo
 | D3 | Protect's conventions, tooling and documents mirrored, Protect's copies the master | `CONVENTIONS.md`, `CODE_OF_CONDUCT.md`, the hooks, ruff and mypy configuration, the CI shape, Dependabot, MkDocs, the frontend configuration and shadcn components copied; differences listed in `DEVELOPERS.md` | Tim (2026-10-17): "make sure it adheres to all the relevant rules and conventions from the protect repo (so we do not have to define that all again)" |
 | D4 | Offline map tiles as a PMTiles extract of the project's area, made by Protect in the bundle | Protomaps' daily planet builds support range extraction; Protect cuts the project's bounding box server side; MapLibre reads the file locally through the pmtiles protocol. A park at zoom 14 is tens of megabytes | Protect's own base maps (OpenFreeMap styles) need a connection; a single file travels with the bundle and needs no tile server on the laptop |
 | D5 | The name `smartparks-protect-field`, public, MIT | Under SmartParksOrg beside `smartparks-protect`; the Python package is `protect_field`, the product name "Smart Parks Protect Field" | Named for where it runs. Private at creation so Tim decided what is shown; opened by Tim the same morning, which let GitHub Pages publish the docs site and private vulnerability reporting be switched on |
+
+| D6 | Installed the way AddaxAI is: an Electron shell with the PyInstaller-frozen backend, electron-builder installers (NSIS per user, dmg, deb) attached to a GitHub release by a workflow, fixed asset names under `releases/latest/download/` | `electron/`, `backend.spec`, `.github/workflows/build-installers.yml`; version from the tag into `VERSION` and `electron/package.json`; the data folder `~/ProtectField` outside the install so an update keeps it; signing and notarisation when the secrets exist, unsigned with a warning until then (AddaxAI hard-fails; Smart Parks has no certificates yet) | Tim (2026-10-17): check how AddaxAI offers installs on Apple and Windows and use the same methods, most users are not technical. Read from AddaxAI's repository: `build-electron.yml`, `electron/package.json`, `backend.spec`, `main.ts`, the install page of docs.addaxai.com |
+| D7 | Setup: the server address first, then the account's email and password through Protect's own login; the token kept, the password never | `PUT /api/setup/server` probes `/api/version`; `POST /api/session` is Protect's `/api/v1/auth/login` and `/users/me`; `settings.json` mode 600 in the data folder; the token lasts Protect's hour and Field asks again when it needs the server after that | Tim (2026-10-17): the user defines the server URL of the Protect instance (dev-protect for testing), then authenticates with email and password. OAuth refresh tokens (Protect has the authorisation server) are the step if the hourly sign-in annoys |
+| D8 | Updates as AddaxAI does them: a check of GitHub's releases list at start, a notice with the notes and a download button, the new installer over the old | `hooks/useLatestRelease.ts`, `UpdateNotice.tsx`, the menu's Check for updates; quiet without a connection or on a dev build | Tim (2026-10-17): Field will be updated frequently, so it must check automatically. electron-updater (download and install in place) needs signed builds on macOS; it follows the certificates |
+| D9 | Field is offered from Protect's Offload page: the installer for the visitor's system, the server address, and "Open Field" through the `protect-field://connect?server=` link the app registers | The shell registers the scheme (electron-builder `protocols`, `setAsDefaultProtocolClient`), the route `/setup?server=…` prefills the setup page; Protect's card is decision D332 there | Tim (2026-10-17): the install must be initiated from within Protect on the Offload page |
+| D10 | macOS on Apple Silicon alone, as AddaxAI; Windows 64-bit; Debian and Ubuntu | One backend per architecture is frozen; an Intel dmg would need an Intel runner, which GitHub is retiring | Keeps one macOS build; added when a user asks |
 
 ## Definition of done
 
@@ -68,6 +74,18 @@ Every item, every phase:
 - [x] P2. `GET /projects/{id}/field-bundle`: the project's devices with type, serial, DevEUI and current entity; the entities' names; the LP0 credentials of the trackers the caller may see (the permission that shows keys on the device page), none for a caller without it; the stations; the project's area; a version stamp and the Protect version. Access control tested per role. Bounded: one project (done in Protect, 8c0a6b6, 2026-10-17; the shape is in `docs/contract.md`)
 - [ ] P3. The map extract: the project's bounding box cut from a Protomaps planet build as PMTiles, cached per project on the server, part of the bundle or fetched beside it. Decide the zoom range by size against the areas Protect has; record it
 - [x] P4. Document the contract on Protect's side (`docs/devices/field-companion.md` there) and pin Field to the commit (8c0a6b6, 2026-10-17)
+
+### Phase 1b: installed like AddaxAI (2026-10-17)
+
+- [x] I1. The Electron shell (`electron/`): starts the frozen backend, waits for health, shows the interface, registers `protect-field://`, menu with Check for updates and the data folder
+- [x] I2. The frozen backend (`backend.spec`) with the built interface, `VERSION` and `uv.lock` inside; health names the decoders; 148 MB on Linux
+- [x] I3. electron-builder: `ProtectField-Setup.exe`, `ProtectField-arm64.dmg`, `ProtectField-amd64.deb`, the icon, NSIS asking before removing the data, hardened runtime and notarisation hook
+- [x] I4. `build-installers.yml` on a published release and by hand; signing when the secrets exist; the frozen backend checked before packaging
+- [x] I5. The first-run setup: the server (probed), the account (Protect's login), the token kept and the password not; `?server=` prefilled from the protocol link
+- [x] I6. The update notice from GitHub's releases list, and Check for updates in the menu
+- [x] I7. The user page rewritten after AddaxAI's install guide: per system, the warnings, updates, uninstall, the data folder
+- [ ] I8. A first release `v0.1.0` published so the installers exist for the Offload page's links (Tim's call: the release notes are shown to users)
+- [ ] I9. Certificates: a Windows Authenticode certificate and an Apple Developer ID with notarisation credentials as repository secrets, then `REQUIRE_SIGNING` on (Tim)
 
 ### Phase 2: a card read offline
 
@@ -107,3 +125,9 @@ Every item, every phase:
 - Tim opened the repository; the docs site publishes from `main` (the Pages site had to be created once with Tim's token, the workflow token may not), private vulnerability reporting on. A user page (`docs/using-field.md`) says where Field runs (the user's laptop, 127.0.0.1, never the server) and how the cycle goes, with the unbuilt steps marked planned.
 - Protect built P1 (the parser as `shared.station_files`), P2 (`GET /projects/{id}/field-bundle`) and P4 (the page in Protect's docs) in commit 8c0a6b6; Field pinned at it with `bump-protect`, the proof test now also parses a station line with Protect's parser. `docs/contract.md` carries the bundle's shape as built.
 - Next: phase 2 F1 and F2.
+
+### 2026-10-17, installed like AddaxAI (Claude and Tim)
+
+- Tim: look at how the desktop AddaxAI (not Connect) offers installs on Apple and Windows, use the same methods, users are not technical; the install must start from Protect's Offload page; the setup asks the server URL, then email and password; think about automatic update checks. Read AddaxAI's `build-electron.yml`, `electron/package.json`, `backend.spec`, `main.ts`, `useLatestRelease.ts`, the download cards and the install page: an Electron shell over a PyInstaller backend, NSIS and dmg and deb from electron-builder on a published release, signed and notarised, fixed asset names, a releases-list check at start with a notice, the new installer over the old.
+- Built the same here (D6 to D10, phase 1b): the shell, the frozen backend (runs on Linux, health names the decoders), the electron-builder block, the installers' workflow (signing when the secrets exist, else a warning), the setup and session endpoints with tests, the setup and sign-in pages, the update notice, the user page after AddaxAI's. The Protect side (the Offload page's card and the protocol link) is Protect's D332.
+- Open for Tim: publish v0.1.0 so the installers exist (I8), and the certificates (I9).

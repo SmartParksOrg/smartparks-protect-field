@@ -1,0 +1,102 @@
+"""The setup of Field (decision D7): the Protect server it synchronises with, and who is signed
+in. `PUT /api/setup/server` probes the server before keeping it; `POST /api/session` signs in
+with Protect's own login and keeps the token, never the password."""
+
+from typing import Any
+
+import httpx
+from fastapi import APIRouter, HTTPException, Request
+from pydantic import BaseModel, Field
+
+from protect_field.protect import ProtectError, normalise_server_url, probe_version, sign_in
+from protect_field.store import Settings, Store
+
+router = APIRouter(prefix="/api")
+
+
+class SetupRead(BaseModel):
+    server_url: str | None
+    protect_version: str | None
+    email: str | None
+    signed_in: bool
+    token_expires_at: str | None
+
+
+class ServerUpdate(BaseModel):
+    server_url: str = Field(min_length=1, max_length=500)
+
+
+class SignIn(BaseModel):
+    email: str = Field(min_length=3, max_length=320)
+    password: str = Field(min_length=1, max_length=500)
+
+
+def _store(request: Request) -> Store:
+    store: Store = request.app.state.store
+    return store
+
+
+def _transport(request: Request) -> httpx.AsyncBaseTransport | None:
+    transport: httpx.AsyncBaseTransport | None = getattr(request.app.state, "http_transport", None)
+    return transport
+
+
+def _read(settings: Settings) -> SetupRead:
+    return SetupRead(
+        server_url=settings.server_url,
+        protect_version=settings.protect_version,
+        email=settings.email,
+        signed_in=settings.signed_in,
+        token_expires_at=settings.token_expires_at.isoformat()
+        if settings.token_expires_at
+        else None,
+    )
+
+
+@router.get("/setup", response_model=SetupRead)
+async def read_setup(request: Request) -> SetupRead:
+    return _read(_store(request).load())
+
+
+@router.put("/setup/server", response_model=SetupRead)
+async def set_server(body: ServerUpdate, request: Request) -> SetupRead:
+    """Keep a Protect server after it answered `/api/version`; a new server ends the session."""
+    try:
+        url = normalise_server_url(body.server_url)
+        version: dict[str, Any] = await probe_version(url, _transport(request))
+    except ProtectError as exc:
+        raise HTTPException(exc.status, exc.message) from None
+    store = _store(request)
+    settings = store.load()
+    if settings.server_url != url:
+        settings.email = settings.token = settings.token_expires_at = None
+    settings.server_url = url
+    settings.protect_version = str(version.get("version"))
+    store.save(settings)
+    return _read(settings)
+
+
+@router.post("/session", response_model=SetupRead)
+async def create_session(body: SignIn, request: Request) -> SetupRead:
+    store = _store(request)
+    settings = store.load()
+    if settings.server_url is None:
+        raise HTTPException(409, "Set the Protect server first")
+    try:
+        token, email, expires = await sign_in(
+            settings.server_url, body.email.strip(), body.password, _transport(request)
+        )
+    except ProtectError as exc:
+        raise HTTPException(exc.status, exc.message) from None
+    settings.email, settings.token, settings.token_expires_at = email, token, expires
+    store.save(settings)
+    return _read(settings)
+
+
+@router.delete("/session", response_model=SetupRead)
+async def end_session(request: Request) -> SetupRead:
+    store = _store(request)
+    settings = store.load()
+    settings.email = settings.token = settings.token_expires_at = None
+    store.save(settings)
+    return _read(settings)

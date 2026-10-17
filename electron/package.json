@@ -1,0 +1,112 @@
+{
+  "name": "protect-field-shell",
+  "version": "0.0.0",
+  "private": true,
+  "description": "The desktop shell of Smart Parks Protect Field: starts the frozen backend and shows the interface, the way AddaxAI's shell does.",
+  "main": "dist/main.js",
+  "author": "Smart Parks <protect@smartparks.org>",
+  "license": "MIT",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc && electron .",
+    "start": "electron .",
+    "package": "electron-builder",
+    "lint": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@electron/notarize": "^3.1.2",
+    "@types/node": "^26.4.1",
+    "electron": "^44.9.0",
+    "electron-builder": "^26.15.3",
+    "typescript": "^6.0.3"
+  },
+  "build": {
+    "appId": "org.smartparks.protect.field",
+    "productName": "Protect Field",
+    "directories": {
+      "output": "dist-build"
+    },
+    "publish": null,
+    "generateUpdatesFilesForAllChannels": false,
+    "files": [
+      "dist/**/*",
+      "package.json"
+    ],
+    "extraResources": [
+      {
+        "from": "../dist/backend",
+        "to": "backend"
+      }
+    ],
+    "protocols": [
+      {
+        "name": "Protect Field",
+        "schemes": [
+          "protect-field"
+        ]
+      }
+    ],
+    "mac": {
+      "category": "public.app-category.productivity",
+      "target": [
+        "dmg"
+      ],
+      "artifactName": "ProtectField-${arch}.${ext}",
+      "icon": "build/icon.png",
+      "hardenedRuntime": true,
+      "gatekeeperAssess": false,
+      "entitlements": "build/entitlements.mac.plist",
+      "entitlementsInherit": "build/entitlements.mac.plist",
+      "notarize": false
+    },
+    "afterSign": "build/notarize.js",
+    "dmg": {
+      "contents": [
+        {
+          "x": 130,
+          "y": 220
+        },
+        {
+          "x": 410,
+          "y": 220,
+          "type": "link",
+          "path": "/Applications"
+        }
+      ]
+    },
+    "win": {
+      "target": [
+        "nsis"
+      ],
+      "artifactName": "ProtectField-Setup.${ext}",
+      "icon": "build/icon.png",
+      "signtoolOptions": {
+        "publisherName": "Smart Parks",
+        "signingHashAlgorithms": [
+          "sha256"
+        ],
+        "rfc3161TimeStampServer": "http://timestamp.digicert.com"
+      }
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "include": "build/installer.nsh"
+    },
+    "linux": {
+      "target": [
+        "deb"
+      ],
+      "artifactName": "ProtectField-${arch}.${ext}",
+      "icon": "build/icon.png",
+      "category": "Science",
+      "maintainer": "Smart Parks <protect@smartparks.org>"
+    },
+    "deb": {
+      "packageName": "protect-field"
+    }
+  },
+  "allowScripts": {
+    "electron-winstaller@5.4.0": true
+  }
+}

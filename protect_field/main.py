@@ -5,8 +5,6 @@ http://127.0.0.1:18090. During development Vite serves the interface itself and 
 here (`frontend/vite.config.ts`).
 """
 
-from pathlib import Path
-
 import uvicorn
 from fastapi import FastAPI
 from fastapi.responses import FileResponse
@@ -14,15 +12,19 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
 from protect_field.config import get_settings
-from protect_field.version import __version__, protect_revision
+from protect_field.decoding import decoders
+from protect_field.routers.setup import router as setup_router
+from protect_field.store import Store
+from protect_field.version import ROOT, __version__, protect_revision
 
-DIST = Path(__file__).resolve().parents[1] / "frontend" / "dist"
+DIST = ROOT / "frontend" / "dist"
 
 
 class Health(BaseModel):
     status: str
     version: str
     protect_revision: str | None
+    decoders: list[str]
     data_dir: str
 
 
@@ -30,6 +32,9 @@ def create_app() -> FastAPI:
     settings = get_settings()
     settings.data_dir.mkdir(parents=True, exist_ok=True)
     app = FastAPI(title="Smart Parks Protect Field", version=__version__, docs_url="/api/docs")
+    app.state.store = Store(settings.data_dir)
+    app.state.http_transport = None  # the tests hand in a mock transport
+    app.include_router(setup_router)
 
     @app.get("/api/health", response_model=Health)
     async def health() -> Health:
@@ -37,6 +42,7 @@ def create_app() -> FastAPI:
             status="ok",
             version=__version__,
             protect_revision=protect_revision(),
+            decoders=decoders(),
             data_dir=str(settings.data_dir.resolve()),
         )
 

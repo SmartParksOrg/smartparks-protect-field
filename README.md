@@ -12,7 +12,7 @@ Documentation: https://smartparksorg.github.io/smartparks-protect-field/
 
 The companion of [Smart Parks Protect](https://github.com/SmartParksOrg/smartparks-protect) for the place without a connection. It reads the SD card of a RangerEdge offload station on a laptop in the field, decodes the trackers' frames with Protect's own code, shows the positions and the measurements on a map and in tables, and hands the untouched card files to Protect the moment there is a connection. Protect decodes them itself; nothing decoded here is sent, so there is nothing to reconcile.
 
-Status: phase 0, the repository and its tooling (2026-10-17). Nothing to run for a user yet; `PROJECT_PLAN.md` says what comes in which order.
+Status: the installers for Windows, macOS and Linux, the first-run setup (the Protect server, your account) and the update notice are built (2026-10-17); reading a card, the map and the upload queue are phase 2 of `PROJECT_PLAN.md`.
 
 ## How it fits
 
@@ -22,9 +22,13 @@ Status: phase 0, the repository and its tooling (2026-10-17). Nothing to run for
 
 ## Where it runs
 
-On your own laptop, not on the Protect server. The program serves its page at `http://127.0.0.1:18090` on the same machine, so it works with the connection off. How people use it, from loading a bundle to uploading the cards, is in [Using Field](https://smartparksorg.github.io/smartparks-protect-field/using-field/).
+On your own laptop, not on the Protect server. The program serves its page at `http://127.0.0.1:18090` on the same machine, so it works with the connection off. How people install and use it, from the installer to uploading the cards, is in [Using Field](https://smartparksorg.github.io/smartparks-protect-field/using-field/).
 
-## Run
+## Install
+
+Download the installer for your system from the [latest release](https://github.com/SmartParksOrg/smartparks-protect-field/releases/latest): `ProtectField-Setup.exe` (Windows), `ProtectField-arm64.dmg` (macOS, Apple Silicon) or `ProtectField-amd64.deb` (Debian, Ubuntu). The Offload page of a Protect server offers the same download and opens Field connected to that server.
+
+## Run from source
 
 ```bash
 uv sync

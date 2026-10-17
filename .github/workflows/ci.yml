@@ -54,6 +54,45 @@ jobs:
       - run: npm run build
       - run: npm run test
 
+  shell:
+    name: desktop shell compiles
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: electron
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: electron/package-lock.json
+      - run: npm ci --ignore-scripts
+      - run: npm run build
+
+  frozen-backend:
+    name: the backend freezes and answers
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          version: ${{ env.UV_VERSION }}
+          enable-cache: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: uv sync --frozen --all-groups
+      - run: cd frontend && npm ci && npm run build
+      - run: uv run pyinstaller backend.spec --clean --noconfirm
+      - name: Health names the decoders
+        run: |
+          FIELD_DATA_DIR="$RUNNER_TEMP/field-data" FIELD_PORT=18090 dist/backend/backend > backend-smoke.log 2>&1 &
+          for i in $(seq 1 60); do curl -sf http://127.0.0.1:18090/api/health > health.json && break; sleep 1; done
+          cat health.json; grep -q '"decoders":\["opencollar"\]' health.json
+
   docs:
     runs-on: ubuntu-latest
     steps:
@@ -109,7 +148,9 @@ jobs:
         with:
           node-version: 24
           cache: npm
-          cache-dependency-path: frontend/package-lock.json
+          cache-dependency-path: |
+            frontend/package-lock.json
+            electron/package-lock.json
       - name: Python dependencies (pip-audit, high and critical fail)
         # Protect's shared package comes from git, not PyPI, so it is left out of the export
         # (pip-audit cannot look it up); its own dependencies stay in and are audited.
@@ -118,3 +159,5 @@ jobs:
           uvx pip-audit -r requirements-audit.txt --strict
       - name: Frontend dependencies (npm audit, high and critical fail)
         run: cd frontend && npm ci --ignore-scripts && npm audit --audit-level=high
+      - name: Shell dependencies (npm audit, high and critical fail)
+        run: cd electron && npm ci --ignore-scripts && npm audit --audit-level=high

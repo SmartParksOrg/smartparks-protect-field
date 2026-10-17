@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Daily development commands for Smart Parks Protect Field. Run from anywhere in the repository.
-#   scripts/dev.sh run | test | lint | format | docs | hooks | bump-protect [rev]
+#   scripts/dev.sh run | desktop | freeze | test | lint | format | docs | hooks | bump-protect [rev]
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -19,6 +19,16 @@ case "$cmd" in
         # the local server with the built interface; `cd frontend && npm run dev` for live reload
         uv run protect-field "$@"
         ;;
+    desktop)
+        # the Electron shell against the repository's virtual environment and the built interface
+        (cd frontend && npm run build)
+        (cd electron && env -u ELECTRON_RUN_AS_NODE npm run dev)
+        ;;
+    freeze)
+        # the frozen backend as the installers carry it, in dist/backend/
+        (cd frontend && npm run build)
+        uv run pyinstaller backend.spec --clean --noconfirm "$@"
+        ;;
     test)
         uv run pytest -q "$@"
         (cd frontend && npm run test)
@@ -28,6 +38,7 @@ case "$cmd" in
         uv run ruff format --check .
         uv run mypy
         (cd frontend && npm run lint && npm run typecheck)
+        (cd electron && npm run lint)
         ;;
     format)
         uv run ruff format .
