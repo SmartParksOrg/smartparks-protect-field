@@ -1,7 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Link, useNavigate } from "react-router";
+import { useNavigate } from "react-router";
 
 import { send, type Setup } from "@/api/client";
 import { queryKeys } from "@/api/queryKeys";
@@ -14,7 +14,7 @@ import { Label } from "@/components/ui/label";
 /** Step two of the setup (decision D7): the user's Protect account, email and password, checked
  * by the server itself. The app keeps the server's token, an hour long, and never the password;
  * when the token has expired and the server is needed, this page comes back. */
-export function SignInPage({ setup }: { setup: Setup }) {
+export function SignInPage({ setup, onCancel }: { setup: Setup; onCancel?: () => void }) {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -24,11 +24,13 @@ export function SignInPage({ setup }: { setup: Setup }) {
     mutationFn: () => send<Setup>("POST", "/api/session", { email, password }),
     onSuccess: (next) => {
       queryClient.setQueryData(queryKeys.setup, next);
-      void navigate("/", { replace: true });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.connection });
+      if (onCancel) onCancel();
+      else void navigate("/", { replace: true });
     },
   });
   return (
-    <div className="mx-auto flex w-full max-w-xl flex-col gap-4 p-4">
+    <div className="flex w-full flex-col gap-4">
       <Card>
         <CardHeader>
           <CardTitle>{t("Sign in to {{server}}", { server: setup.server_url })}</CardTitle>
@@ -57,9 +59,11 @@ export function SignInPage({ setup }: { setup: Setup }) {
               <Button type="submit" disabled={signIn.isPending}>
                 {signIn.isPending ? t("Signing in") : t("Sign in")}
               </Button>
-              <Button asChild type="button" variant="ghost">
-                <Link to="/setup">{t("Another server")}</Link>
-              </Button>
+              {onCancel && (
+                <Button type="button" variant="ghost" onClick={onCancel}>
+                  {t("Cancel")}
+                </Button>
+              )}
             </div>
           </form>
         </CardContent>

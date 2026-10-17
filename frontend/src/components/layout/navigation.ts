@@ -1,7 +1,7 @@
 /** The sidebar's sections, after Protect's (decision D13): the project's pages first, then the
  * settings. The labels are marked for extraction and translated where they are shown. */
 import type { LucideIcon } from "lucide-react";
-import { CloudUpload, FolderOpen, Home, KeyRound, Map as MapIcon, PackageOpen, Server } from "lucide-react";
+import { CloudUpload, FolderOpen, Home, Map as MapIcon, PackageOpen, Server } from "lucide-react";
 
 import { t } from "@/lib/i18nMark";
 
@@ -33,7 +33,6 @@ export const sections: NavSection[] = [
     label: t("Settings"),
     items: [
       { label: t("Server"), icon: Server, to: "/setup" },
-      { label: t("Account"), icon: KeyRound, to: "/sign-in" },
     ],
   },
 ];

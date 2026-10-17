@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Outlet } from "react-router";
 
-import { api, send, type Bundle, type Setup } from "@/api/client";
+import { api, send, type Bundle, type Connection, type Setup } from "@/api/client";
 import { queryKeys } from "@/api/queryKeys";
 import logoLandscape from "@/assets/brand/logo-landscape.webp";
 import { Sidebar } from "@/components/layout/Sidebar";
@@ -17,8 +17,9 @@ import { useLayoutStore } from "@/stores/layout";
  * The shell, after Protect's (decision D13): a fixed sidebar from 1024 px and a drawer below,
  * one viewport high with the main area scrolling, so the map page takes the full height with
  * `flex-1`. The top bar carries the landscape logo with the product name on the left and the
- * theme switch and the connection dot on the right. The dot is green when signed in to the
- * server, grey otherwise, with the server's address as its title.
+ * theme switch and the connection dot on the right. The dot follows the live state (decision
+ * D18): green when the server answers and the sign-in holds, amber when it answers without a
+ * sign-in, grey when it does not answer, the words in its title.
  */
 export function AppLayout({ setup }: { setup: Setup }) {
   const { t } = useTranslation();
@@ -27,6 +28,25 @@ export function AppLayout({ setup }: { setup: Setup }) {
   const sidebarHidden = useLayoutStore((s) => s.sidebarHidden);
   const setSidebarHidden = useLayoutStore((s) => s.setSidebarHidden);
   const bundle = useQuery({ queryKey: queryKeys.bundle, queryFn: () => api<Bundle>("/api/bundle") });
+  const connection = useQuery({
+    queryKey: queryKeys.connection,
+    queryFn: () => api<Connection>("/api/setup/connection"),
+    refetchInterval: 60_000,
+    retry: false,
+  });
+  const online = connection.data?.online;
+  const held = setup.signed_in && connection.data?.account_ok !== false;
+  const dotWords =
+    online === undefined
+      ? setup.signed_in
+        ? t("Signed in to {{server}}", { server: setup.server_url })
+        : t("Not signed in to {{server}}", { server: setup.server_url })
+      : !online
+        ? t("{{server}} does not answer", { server: setup.server_url })
+        : held
+          ? t("Online, signed in to {{server}}", { server: setup.server_url })
+          : t("Online, not signed in to {{server}}", { server: setup.server_url });
+  const dotColour = online === false ? "bg-muted-foreground/40" : online && held ? "bg-emerald-500" : online ? "bg-amber-500" : setup.signed_in ? "bg-emerald-500" : "bg-muted-foreground/40";
   const signOut = useMutation({
     mutationFn: () => send<Setup>("DELETE", "/api/session"),
     onSuccess: (next) => queryClient.setQueryData(queryKeys.setup, next),
@@ -71,12 +91,7 @@ export function AppLayout({ setup }: { setup: Setup }) {
           )}
           <span className="ml-auto flex shrink-0 items-center gap-1">
             <ThemeSwitch className="size-8 sm:size-9" />
-            <span
-              role="status"
-              aria-label={setup.signed_in ? t("Signed in to {{server}}", { server: setup.server_url }) : t("Not signed in to {{server}}", { server: setup.server_url })}
-              title={setup.signed_in ? t("Signed in to {{server}}", { server: setup.server_url }) : t("Not signed in to {{server}}", { server: setup.server_url })}
-              className={`mx-2 inline-block size-2.5 rounded-full ${setup.signed_in ? "bg-emerald-500" : "bg-muted-foreground/40"}`}
-            />
+            <span role="status" aria-label={dotWords} title={dotWords} className={`mx-2 inline-block size-2.5 rounded-full ${dotColour}`} />
           </span>
         </header>
         <main className="flex min-h-0 flex-1 flex-col overflow-y-auto">

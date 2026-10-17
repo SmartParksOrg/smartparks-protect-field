@@ -3,6 +3,7 @@ in. `PUT /api/setup/server` probes the server before keeping it; `POST /api/sess
 with Protect's own login and keeps the token, never the password."""
 
 import asyncio
+from datetime import UTC, datetime
 from typing import Any
 
 import httpx
@@ -11,6 +12,7 @@ from pydantic import BaseModel, Field
 
 from protect_go.protect import (
     ProtectError,
+    client,
     exchange_handoff,
     normalise_server_url,
     probe_version,
@@ -27,6 +29,14 @@ class SetupRead(BaseModel):
     email: str | None
     signed_in: bool
     token_expires_at: str | None
+
+
+class ConnectionRead(BaseModel):
+    online: bool
+    checked_at: str
+    protect_version: str | None
+    account_ok: bool | None
+    error: str | None
 
 
 class ServerUpdate(BaseModel):
@@ -68,6 +78,50 @@ def _read(settings: Settings) -> SetupRead:
 @router.get("/setup", response_model=SetupRead)
 async def read_setup(request: Request) -> SetupRead:
     return _read(_store(request).load())
+
+
+@router.get("/setup/connection", response_model=ConnectionRead)
+async def connection(request: Request) -> ConnectionRead:
+    """Whether the connected server answers right now and still accepts the sign-in (decision
+    D18): one probe of its version and, signed in, one read of the account. The Server page
+    shows the result with the time; the top bar's dot follows it."""
+    store = _store(request)
+    settings = store.load()
+    if not settings.server_url:
+        raise HTTPException(409, "No server is set")
+    transport = _transport(request)
+    checked_at = datetime.now(UTC).isoformat()
+    try:
+        version: dict[str, Any] = await probe_version(settings.server_url, transport)
+    except ProtectError as exc:
+        return ConnectionRead(
+            online=False,
+            checked_at=checked_at,
+            protect_version=settings.protect_version,
+            account_ok=None,
+            error=exc.message,
+        )
+    protect_version = str(version.get("version"))
+    if protect_version != settings.protect_version:
+        settings.protect_version = protect_version
+        store.save(settings)
+    account_ok: bool | None = None
+    if settings.signed_in:
+        try:
+            async with client(settings.server_url, transport) as http:
+                me = await http.get(
+                    "/api/v1/users/me", headers={"Authorization": f"Bearer {settings.token}"}
+                )
+            account_ok = me.status_code == 200
+        except httpx.HTTPError:
+            account_ok = False
+    return ConnectionRead(
+        online=True,
+        checked_at=checked_at,
+        protect_version=protect_version,
+        account_ok=account_ok,
+        error=None,
+    )
 
 
 @router.put("/setup/server", response_model=SetupRead)

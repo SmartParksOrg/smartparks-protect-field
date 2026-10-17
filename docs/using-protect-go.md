@@ -43,7 +43,7 @@ When the app did not come from that button, or the code has expired, it asks two
 1. **The server.** Which Protect server this laptop works with: the address you open Protect at in your browser, for example `https://dev-protect.smartparks.org`. The Offload page shows it with a copy button. The app checks that the address answers as a Protect server before keeping it.
 2. **Your account.** Sign in with the email and password you use for Protect. The password goes to the server and is not kept on the laptop. This sign-in lasts an hour; when the app needs the server after that, it asks for your password again. You can also sign out.
 
-To change the server later, choose **Another server** on the first screen.
+**Server** under Settings shows what the app is connected to: the server's address and Protect version, whether it answers right now (checked every minute and with **Check now**, with the time of the last check), and your account on that server, signed in until when, with **Sign out** and **Sign in as someone else**. When the sign-in has run out or the server no longer accepts it, the sign-in form is there. **Another server** on the same page changes the server.
 
 ## Loading a project
 

@@ -58,6 +58,15 @@ export interface Setup {
   token_expires_at: string | null;
 }
 
+/** The server right now (decision D18): answering or not, the sign-in still accepted or not. */
+export interface Connection {
+  online: boolean;
+  checked_at: string;
+  protect_version: string | null;
+  account_ok: boolean | null;
+  error: string | null;
+}
+
 export interface Bundle {
   present: boolean;
   project_id: string | null;

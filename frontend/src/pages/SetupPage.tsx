@@ -14,7 +14,7 @@ import { Label } from "@/components/ui/label";
 /** Step one of the setup (decision D7): the Protect server this laptop synchronises with. The
  * address is prefilled when the app was opened from Protect's Offload page
  * (`protect-go://connect?server=...`, decision D9); the app keeps it once the server answers. */
-export function SetupPage({ current }: { current?: Setup }) {
+export function SetupPage({ current, onCancel }: { current?: Setup; onCancel?: () => void }) {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -41,11 +41,13 @@ export function SetupPage({ current }: { current?: Setup }) {
     mutationFn: () => send<Setup>("PUT", "/api/setup/server", { server_url: server }),
     onSuccess: (setup) => {
       queryClient.setQueryData(queryKeys.setup, setup);
-      void navigate("/sign-in", { replace: true });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.connection });
+      if (onCancel) onCancel();
+      else void navigate("/sign-in", { replace: true });
     },
   });
   return (
-    <div className="mx-auto flex w-full max-w-xl flex-col gap-4 p-4">
+    <div className={onCancel ? "flex w-full flex-col gap-4" : "mx-auto flex w-full max-w-xl flex-col gap-4 p-4"}>
       <Card>
         <CardHeader>
           <CardTitle>{t("Which Protect server does this laptop work with?")}</CardTitle>
@@ -82,7 +84,7 @@ export function SetupPage({ current }: { current?: Setup }) {
                 {save.isPending ? t("Checking the server") : t("Continue")}
               </Button>
               {current?.server_url && (
-                <Button type="button" variant="ghost" onClick={() => void navigate("/")}>
+                <Button type="button" variant="ghost" onClick={() => (onCancel ? onCancel() : void navigate("/"))}>
                   {t("Cancel")}
                 </Button>
               )}

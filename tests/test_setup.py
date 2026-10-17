@@ -171,3 +171,29 @@ async def test_a_code_from_the_offload_page_signs_in_without_typing(app):
             },
         )
         assert again.status_code == 401 and "not valid any more" in again.text
+
+
+async def test_the_connection_says_whether_the_server_and_the_sign_in_hold(app):
+    """Decision D18: the Server page shows a live state with its time; the probe reads the
+    version and, signed in, the account; a server that does not answer is offline."""
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        assert (await client.get("/api/setup/connection")).status_code == 409
+        await client.put(
+            "/api/setup/server", json={"server_url": "https://dev-protect.example.org"}
+        )
+        anonymous = (await client.get("/api/setup/connection")).json()
+        assert anonymous["online"] is True and anonymous["account_ok"] is None
+        assert anonymous["protect_version"] == "v2.9.0" and anonymous["checked_at"]
+        await client.post(
+            "/api/session", json={"email": "ranger@example.org", "password": "right"}
+        )
+        signed = (await client.get("/api/setup/connection")).json()
+        assert signed["online"] is True and signed["account_ok"] is True
+
+        def gone(request: httpx.Request) -> httpx.Response:
+            raise httpx.ConnectError("no route to host")
+
+        app.state.http_transport = httpx.MockTransport(gone)
+        offline = (await client.get("/api/setup/connection")).json()
+        assert offline["online"] is False and offline["account_ok"] is None
+        assert offline["protect_version"] == "v2.9.0" and "No answer" in offline["error"]

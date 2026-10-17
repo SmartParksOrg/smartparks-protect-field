@@ -6,14 +6,13 @@ import { api, type Setup } from "@/api/client";
 import { queryKeys } from "@/api/queryKeys";
 import { FullScreenNotice } from "@/components/FullScreenNotice";
 import { AppLayout } from "@/components/layout/AppLayout";
-import { Page, PageHeader } from "@/components/common/PageHeader";
 import { BatchPage } from "@/pages/BatchPage";
 import { FilesPage } from "@/pages/FilesPage";
 import { LoadPage } from "@/pages/LoadPage";
 import { MapPage } from "@/pages/MapPage";
 import { OverviewPage } from "@/pages/OverviewPage";
+import { ServerPage } from "@/pages/ServerPage";
 import { SetupPage } from "@/pages/SetupPage";
-import { SignInPage } from "@/pages/SignInPage";
 import { TrackerPage } from "@/pages/TrackerPage";
 import { UploadPage } from "@/pages/UploadPage";
 
@@ -57,28 +56,8 @@ export default function App() {
         <Route path="/files/:cardId" element={<BatchPage />} />
         <Route path="/trackers/:deviceId" element={<TrackerPage />} />
         <Route path="/upload" element={<UploadPage signedIn={current.signed_in} />} />
-        <Route
-          path="/setup"
-          element={
-            <>
-              <PageHeader title={t("Server")} description={t("The Protect server this laptop works with.")} />
-              <Page>
-                <SetupPage current={current} />
-              </Page>
-            </>
-          }
-        />
-        <Route
-          path="/sign-in"
-          element={
-            <>
-              <PageHeader title={t("Account")} description={t("Your Protect account on this server.")} />
-              <Page>
-                <SignInPage setup={current} />
-              </Page>
-            </>
-          }
-        />
+        <Route path="/setup" element={<ServerPage current={current} />} />
+        <Route path="/sign-in" element={<ServerPage current={current} />} />
         <Route path="/cards" element={<Navigate to="/files" replace />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Route>

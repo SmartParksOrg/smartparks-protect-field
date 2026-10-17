@@ -6,6 +6,12 @@ All notable changes to Smart Parks Protect Go. The format follows Keep a Changel
 
 Nothing yet.
 
+## v0.8.0, 2026-10-17
+
+### Changed
+
+- The Server page shows what the app is connected to (decision D18): the server with its Protect version, whether it answers right now with the time of the last check and a "Check now", and the account on that server, signed in until when, with Sign out and Sign in as someone else; the forms appear only when something is to be changed or the sign-in has run out. Account left the sidebar; it lives on the Server page. The top bar's dot follows the live state: green online and signed in, amber online without a sign-in, grey when the server does not answer.
+
 ## v0.7.0, 2026-10-17
 
 ### Added
