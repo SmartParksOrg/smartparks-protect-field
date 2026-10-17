@@ -82,8 +82,10 @@ jobs:
           cache: npm
           cache-dependency-path: frontend/package-lock.json
       - name: Python dependencies (pip-audit, high and critical fail)
+        # Protect's shared package comes from git, not PyPI, so it is left out of the export
+        # (pip-audit cannot look it up); its own dependencies stay in and are audited.
         run: |
-          uv export --frozen --all-groups --no-hashes --no-emit-project --format requirements-txt -o requirements-audit.txt
+          uv export --frozen --all-groups --no-hashes --no-emit-project --no-emit-package smartparks-protect-shared --format requirements-txt -o requirements-audit.txt
           uvx pip-audit -r requirements-audit.txt --strict
       - name: Frontend dependencies (npm audit, high and critical fail)
         run: cd frontend && npm ci --ignore-scripts && npm audit --audit-level=high
