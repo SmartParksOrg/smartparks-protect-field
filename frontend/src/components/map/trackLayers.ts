@@ -3,6 +3,7 @@
  * point click, the marked point, and the offload stations as square markers. */
 import type { GeoJSONSource, Map as MapLibreMap, MapLayerMouseEvent } from "maplibre-gl";
 
+import { ensureStationMarker, STATION_MARKER } from "@/components/icons/markers";
 import { PALETTE } from "@/lib/chartStyle";
 
 export const TRACK_SOURCE = "track";
@@ -111,22 +112,30 @@ export interface StationMarker {
   lon: number;
 }
 
-/** The offload stations as Protect's device markers: a square with the name beside it. */
-export function ensureStationLayers(map: MapLibreMap): void {
+/** The offload stations as Protect draws them (F18): its device marker, the LoRaWAN gateway
+ * icon in a rounded square with the green ring, and the name under it, as on Protect's entity
+ * layer. The image is drawn once and registered before the layer is added. */
+export async function ensureStationLayers(map: MapLibreMap): Promise<void> {
+  if (map.getSource(STATION_SOURCE)) return;
+  await ensureStationMarker(map);
   if (map.getSource(STATION_SOURCE)) return;
   map.addSource(STATION_SOURCE, { type: "geojson", data: { type: "FeatureCollection", features: [] } });
   map.addLayer({
     id: "station-markers",
-    type: "circle",
-    source: STATION_SOURCE,
-    paint: { "circle-radius": 6, "circle-color": "#52735E", "circle-stroke-color": "#ffffff", "circle-stroke-width": 2 },
-  });
-  map.addLayer({
-    id: "station-labels",
     type: "symbol",
     source: STATION_SOURCE,
-    layout: { "text-field": ["get", "name"], "text-size": 11, "text-offset": [0, 1.1], "text-anchor": "top", "text-font": ["Noto Sans Regular"] },
-    paint: { "text-color": "#2F4A3A", "text-halo-color": "#ffffff", "text-halo-width": 1.2 },
+    layout: {
+      "icon-image": STATION_MARKER,
+      "icon-size": 0.9,
+      "icon-allow-overlap": true,
+      "text-field": ["get", "name"],
+      "text-size": 11,
+      "text-font": ["Noto Sans Regular"],
+      "text-offset": [0, 1.8],
+      "text-anchor": "top",
+      "text-optional": true,
+    },
+    paint: { "text-color": "#1f2a24", "text-halo-color": "#ffffff", "text-halo-width": 1.2 },
   });
 }
 

@@ -61,6 +61,10 @@ export function ExploreMap({
   useEffect(() => {
     handlers.current = { onHover, onPick };
   }, [onHover, onPick]);
+  const stationsRef = useRef(stations);
+  useEffect(() => {
+    stationsRef.current = stations;
+  }, [stations]);
   const shownTracks = useMemo(() => tracks.filter((tr) => !hidden.includes(tr.ownerId)), [tracks, hidden]);
 
   useEffect(() => {
@@ -69,8 +73,9 @@ export function ExploreMap({
     if (!map || !ready || !element) return;
     const observer = new ResizeObserver(() => map.resize());
     observer.observe(element);
-    ensureStationLayers(map);
     ensureTrackLayers(map);
+    // the station marker is an image drawn first; the stations land once the layer stands
+    void ensureStationLayers(map).then(() => setStations(map, stationsRef.current));
     const unbind = bindTrackPointClicks(map, (props) => handlers.current.onPick(Date.parse(props.time)));
     const onMove = (e: MapLayerMouseEvent) => {
       const time = e.features?.[0]?.properties?.time;

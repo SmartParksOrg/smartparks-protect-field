@@ -6,6 +6,12 @@ All notable changes to Smart Parks Protect Go. The format follows Keep a Changel
 
 Nothing yet.
 
+## v0.10.3, 2026-10-17
+
+### Changed
+
+- The offload stations stand on the explorer's map with the same marker Protect draws them with: the LoRaWAN gateway icon in a rounded square with the green ring, the name under it (Tim, 2026-10-17). The icon comes from Protect's registry, which took it from EarthRanger (Apache-2.0, the licence shipped).
+
 ## v0.10.2, 2026-10-17
 
 ### Changed
