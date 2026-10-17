@@ -26,19 +26,25 @@
 !macroend
 
 !macro customFinishPage
+  ; electron-builder's own StartApp macro declares a variable each time it is inserted, so
+  ; it cannot be used twice; this function does the same with the installer's launch link
+  Function startProtectGo
+    ${if} ${isUpdated}
+      ${StdUtils.ExecShellAsUser} $0 "$launchLink" "open" "--updated"
+    ${else}
+      ${StdUtils.ExecShellAsUser} $0 "$launchLink" "open" ""
+    ${endif}
+  FunctionEnd
+
   Function skipFinishPageIfUpdated
     ${if} ${isUpdated}
-      !insertmacro StartApp
+      Call startProtectGo
       Abort
     ${endif}
   FunctionEnd
 
-  Function StartAppFromFinishPage
-    !insertmacro StartApp
-  FunctionEnd
-
   !define MUI_PAGE_CUSTOMFUNCTION_PRE skipFinishPageIfUpdated
   !define MUI_FINISHPAGE_RUN
-  !define MUI_FINISHPAGE_RUN_FUNCTION "StartAppFromFinishPage"
+  !define MUI_FINISHPAGE_RUN_FUNCTION "startProtectGo"
   !insertmacro MUI_PAGE_FINISH
 !macroend

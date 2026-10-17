@@ -6,17 +6,14 @@ All notable changes to Smart Parks Protect Go. The format follows Keep a Changel
 
 Nothing yet.
 
-## v0.9.2, 2026-10-17
+## v0.9.3, 2026-10-17
+
+v0.9.1 and v0.9.2 were tagged but their Windows installer did not build (a variable declared twice in the installer script); this release carries both.
 
 ### Changed
 
+- "Restart to update" keeps a window on the screen (decision D22): the installer shows its progress bar while the files change, closes by itself and starts the new version, so nothing goes dark between the steps (Tim, 2026-10-17). The running version decides how the installer is started, so the first update that behaves so is the one after v0.9.3.
 - The Data explorer names and units the measurements as Protect does: the bundle carries Protect's metric registry (Protect's decision D334), served at `GET /api/bundle/metrics`. A bundle from an older server shows the keys as before; load the project again to get the names (Tim, 2026-10-17).
-
-## v0.9.1, 2026-10-17
-
-### Changed
-
-- "Restart to update" keeps a window on the screen (decision D22): the installer shows its progress bar while the files change, closes by itself and starts the new version, so nothing goes dark between the steps (Tim, 2026-10-17). The first update that behaves so is the one after v0.9.1, since the running version decides how the installer is started.
 
 ## v0.9.0, 2026-10-17
 
