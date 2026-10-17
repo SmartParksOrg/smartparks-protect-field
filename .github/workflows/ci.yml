@@ -1,0 +1,89 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  schedule:
+    - cron: "30 5 * * 1"
+
+env:
+  UV_VERSION: "0.12.9"
+
+jobs:
+  python:
+    runs-on: ubuntu-latest
+    # No database, broker or Protect settings on purpose: the companion must run without them
+    # (decision D1), and tests/test_protect_decoding.py checks that none is set.
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          version: ${{ env.UV_VERSION }}
+          enable-cache: true
+      - name: Install (frozen lockfile)
+        run: uv sync --frozen --all-groups
+      - name: Ruff
+        run: uv run ruff check . && uv run ruff format --check .
+      - name: Mypy
+        run: uv run mypy
+      - name: Pytest
+        run: |
+          set -o pipefail
+          uv run pytest -q -rfE --tb=short 2>&1 | tee pytest.log
+      - name: Failures as annotations
+        if: failure()
+        run: grep -E "^(FAILED|ERROR) " pytest.log | head -10 | while read -r line; do echo "::error::$line"; done
+
+  frontend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci
+      - run: npm run lint
+      - name: English catalogue is current
+        run: npm run i18n:check
+      - run: npm run build
+      - run: npm run test
+
+  docs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          version: ${{ env.UV_VERSION }}
+          enable-cache: true
+      - run: uv sync --frozen --all-groups
+      - run: uv run mkdocs build --strict
+      - name: Links, anchors and diagrams
+        run: uv run scripts/docs_check.py
+
+  audit:
+    name: dependency audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          version: ${{ env.UV_VERSION }}
+          enable-cache: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - name: Python dependencies (pip-audit, high and critical fail)
+        run: |
+          uv export --frozen --all-groups --no-hashes --no-emit-project --format requirements-txt -o requirements-audit.txt
+          uvx pip-audit -r requirements-audit.txt --strict
+      - name: Frontend dependencies (npm audit, high and critical fail)
+        run: cd frontend && npm ci --ignore-scripts && npm audit --audit-level=high

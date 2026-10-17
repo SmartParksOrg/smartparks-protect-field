@@ -1,0 +1,29 @@
+#!/bin/sh
+# Refuses a commit that would put a credential in the repository: an LP0 key, an API token, a
+# private key or a filled-in .env. Mirrors Protect's hook without its Ansible paths. Installed
+# with `scripts/dev.sh hooks` (git config core.hooksPath .githooks).
+set -u
+status=0
+
+forbidden='^(\.env|\.env\..*[^e]|.*\.pem|.*\.key|.*id_ed25519|.*id_rsa|data/.*)$'
+for path in $(git diff --cached --name-only --diff-filter=ACMR); do
+    case "$path" in *.example) continue ;; esac
+    if printf '%s\n' "$path" | grep -Eq "$forbidden"; then
+        echo "pre-commit: refusing to commit $path (credentials, filled-in configuration or local data)" >&2
+        status=1
+    fi
+done
+
+# Content patterns: cloud tokens, private keys, GitHub and Slack tokens, and a LoRaWAN session
+# key or address given a value in code (the only real keys are a tracker's; tests use the
+# firmware's synthetic fixture, whose values are listed as allowed).
+patterns='dop_v1_[0-9a-f]{20,}|AKIA[0-9A-Z]{16}|-----BEGIN [A-Z ]*PRIVATE KEY-----|ghp_[0-9A-Za-z]{30,}|xox[baprs]-[0-9A-Za-z-]{10,}|(app_s_key|nwk_s_key|AppSKey|NwkSKey)["'"'"']?\s*[:=]\s*["'"'"'][0-9a-fA-F]{32}'
+allowed='example|CHANGE_ME|placeholder|<[a-z_ ]+>|000102030405060708090a0b0c0d0e0f|101112131415161718191a1b1c1d1e1f'
+hits=$(git diff --cached -U0 --diff-filter=ACMR -- . ':!.githooks/pre-commit' | grep -E '^\+' | grep -Ev '^\+\+\+' | grep -En "$patterns" | grep -Ev "$allowed" || true)
+if [ -n "$hits" ]; then
+    echo "pre-commit: refusing to commit lines that look like credentials:" >&2
+    printf '%s\n' "$hits" | cut -c1-120 >&2
+    status=1
+fi
+
+exit $status

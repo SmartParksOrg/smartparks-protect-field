@@ -1,0 +1,57 @@
+site_name: Smart Parks Protect Field
+site_description: The companion of Smart Parks Protect for the place without a connection
+site_url: https://smartparksorg.github.io/smartparks-protect-field/
+repo_url: https://github.com/SmartParksOrg/smartparks-protect-field
+edit_uri: edit/main/docs/
+strict: true
+not_in_nav: |
+  adr/template.md
+
+theme:
+  name: material
+  logo: assets/logo-mark.svg
+  favicon: assets/favicon.svg
+  palette:
+    - scheme: default
+      primary: custom
+      accent: custom
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - scheme: slate
+      primary: custom
+      accent: custom
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  features:
+    - navigation.sections
+    - navigation.expand
+    - navigation.top
+    - search.suggest
+    - content.code.copy
+
+extra_css:
+  - assets/custom.css
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - md_in_html
+  - tables
+  - pymdownx.details
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+
+nav:
+  - Home: index.md
+  - The contract with Protect: contract.md
+  - Decisions:
+      - adr/index.md
+      - adr/0001-a-companion-on-protects-code.md

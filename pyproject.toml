@@ -1,0 +1,68 @@
+[project]
+name = "smartparks-protect-field"
+version = "0.0.0"
+description = "Smart Parks Protect Field: reads an offload station's SD card without a connection and hands the files to Protect when there is one."
+requires-python = ">=3.12,<3.13"
+dependencies = [
+    # Protect's own decoding code, pinned to a commit of main; `scripts/dev.sh bump-protect`
+    # moves the pin (decision D1). Only the modules DEVELOPERS.md lists are imported.
+    "smartparks-protect-shared",
+    "fastapi==0.141.1",
+    "uvicorn[standard]==0.52.4",
+    "pydantic==2.13.5",
+    "pydantic-settings==2.15.0",
+]
+
+[project.scripts]
+protect-field = "protect_field.main:run"
+
+[tool.uv.sources]
+smartparks-protect-shared = { git = "https://github.com/SmartParksOrg/smartparks-protect", subdirectory = "shared", rev = "2755c929035da9400a15dc16cc17025d7b740988" }
+
+[dependency-groups]
+dev = [
+    "ruff==0.16.5",
+    "mypy==2.3.1",
+    "pytest==9.1.1",
+    "pytest-asyncio==1.4.0",
+    "httpx==0.28.1",
+]
+docs = [
+    "mkdocs<2",
+    "mkdocs-material==9.7.7",
+]
+
+[build-system]
+requires = ["uv_build"]
+build-backend = "uv_build"
+
+[tool.uv.build-backend]
+module-name = "protect_field"
+module-root = ""
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+src = ["."]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "ASYNC", "SIM", "RUF", "ANN"]
+ignore = ["ANN401"]
+
+[tool.ruff.lint.flake8-bugbear]
+extend-immutable-calls = ["fastapi.Depends", "fastapi.Query", "fastapi.Body", "fastapi.Path", "fastapi.File", "fastapi.UploadFile"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["ANN", "E501"]
+"scripts/**" = ["E501"]
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+packages = ["protect_field"]
+plugins = ["pydantic.mypy"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+testpaths = ["tests"]

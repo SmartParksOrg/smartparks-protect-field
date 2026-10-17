@@ -1,0 +1,11 @@
+{
+  "Smart Parks Protect Field": "Smart Parks Protect Field",
+  "Reads an offload station's SD card where there is no connection": "Leest de SD-kaart van een offloadstation waar geen verbinding is",
+  "The card's files are decoded here with Protect's own code and handed to Protect when there is a connection.": "De bestanden van de kaart worden hier gedecodeerd met de code van Protect zelf en aan Protect overgedragen zodra er verbinding is.",
+  "Checking the local server": "De lokale server wordt gecontroleerd",
+  "The local server does not answer.": "De lokale server antwoordt niet.",
+  "Version": "Versie",
+  "Protect's decoding": "Decodering van Protect",
+  "unknown": "onbekend",
+  "Data folder": "Gegevensmap"
+}
