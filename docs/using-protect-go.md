@@ -10,7 +10,15 @@ On your laptop, not on the server. The app opens its own window; behind it a sma
 
 ## Install
 
-Pick your system, download the file, and follow the steps. The download links are on the Offload page of your Protect server too, so you can start from there: it offers the file for the computer you are on, shows the server address to type, and once the app is installed its "Open the app" button opens the program connected to that server.
+The newest version, one file per system:
+
+| System | Download |
+| --- | --- |
+| Windows 10 and 11, 64-bit | [ProtectGo-Setup.exe](https://github.com/SmartParksOrg/smartparks-protect-go/releases/latest/download/ProtectGo-Setup.exe) |
+| macOS on Apple Silicon | [ProtectGo-arm64.dmg](https://github.com/SmartParksOrg/smartparks-protect-go/releases/latest/download/ProtectGo-arm64.dmg) |
+| Debian and Ubuntu, 64-bit | [ProtectGo-amd64.deb](https://github.com/SmartParksOrg/smartparks-protect-go/releases/latest/download/ProtectGo-amd64.deb) |
+
+Every version and its notes: [all releases](https://github.com/SmartParksOrg/smartparks-protect-go/releases). Then follow the steps for your system. The download links are on the Offload page of your Protect server too, so you can start from there: it offers the file for the computer you are on, shows the server address to type, and once the app is installed its "Open the app" button opens the program connected to that server.
 
 ### Windows
 

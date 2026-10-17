@@ -12,6 +12,30 @@ export const RELEASES_API =
   "https://api.github.com/repos/SmartParksOrg/smartparks-protect-go/releases?per_page=1";
 export const DOWNLOAD_URL = "https://smartparksorg.github.io/smartparks-protect-go/using-protect-go/";
 export const ALL_RELEASES_URL = "https://github.com/SmartParksOrg/smartparks-protect-go/releases";
+const LATEST_DOWNLOAD = "https://github.com/SmartParksOrg/smartparks-protect-go/releases/latest/download/";
+
+/** The newest installer for this computer, by the shell's platform (`process.platform`) or the
+ * browser's hint; the fixed names never change (Tim, 2026-10-17: the user page had the links
+ * inside its text, and a button that says "download" must download). */
+export function installerFor(platform: string | null | undefined): { name: string; url: string } | null {
+  const key = (platform ?? "").toLowerCase();
+  const name = key.startsWith("win")
+    ? "ProtectGo-Setup.exe"
+    : key === "darwin" || key.startsWith("mac")
+      ? "ProtectGo-arm64.dmg"
+      : key.startsWith("linux")
+        ? "ProtectGo-amd64.deb"
+        : null;
+  return name ? { name, url: LATEST_DOWNLOAD + name } : null;
+}
+
+/** The platform the page runs on: the shell says, else the browser's hint. */
+export async function detectPlatform(): Promise<string> {
+  const bridge = typeof window === "undefined" ? undefined : window.protectGo;
+  if (bridge) return bridge.getPlatform();
+  const hint = typeof navigator === "undefined" ? "" : navigator.userAgent;
+  return /Windows/i.test(hint) ? "win32" : /Mac/i.test(hint) ? "darwin" : /Linux/i.test(hint) ? "linux" : "";
+}
 
 export interface GitHubRelease {
   tag_name: string;

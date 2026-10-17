@@ -14,7 +14,6 @@
   "Could not check for updates. There may be no connection.": "Kon niet op updates controleren. Mogelijk is er geen verbinding.",
   "Download the new version": "De nieuwe versie downloaden",
   "Email": "E-mail",
-  "Install it over this one; your bundles and cards are kept.": "Installeer die over deze versie heen; je bundels en kaarten blijven bewaard.",
   "Not signed in. Sign in when you are online to load a bundle or upload cards.": "Niet aangemeld. Meld je aan wanneer je online bent om een bundel te laden of kaarten te uploaden.",
   "Password": "Wachtwoord",
   "Protect Go is up to date (v{{version}}).": "Protect Go is actueel (v{{version}}).",
@@ -251,5 +250,9 @@
   "Checking for updates": "Controleren op updates",
   "Show": "Tonen",
   "Dismiss": "Sluiten",
-  "Downloading the new version": "De nieuwe versie wordt gedownload"
+  "Downloading the new version": "De nieuwe versie wordt gedownload",
+  "Download {{name}}": "{{name}} downloaden",
+  "Run it over this version; your bundles and files are kept.": "Voer het uit over deze versie; je bundels en bestanden blijven bewaard.",
+  "All versions": "Alle versies",
+  "Download {{name}} by hand": "{{name}} met de hand downloaden"
 }

@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 
 import { Callout } from "@/components/common/Callout";
 import { Button } from "@/components/ui/button";
-import { DOWNLOAD_URL, useLatestRelease } from "@/hooks/useLatestRelease";
+import { ALL_RELEASES_URL, detectPlatform, installerFor, useLatestRelease } from "@/hooks/useLatestRelease";
 import { openExternal, shell, type UpdateStatus } from "@/lib/shell";
 
 /** "A new version is available" at the top of the first screen, as AddaxAI shows it at start
@@ -15,12 +15,15 @@ export function UpdateNotice({ currentVersion, forceShow = false }: { currentVer
   const { t } = useTranslation();
   const release = useLatestRelease(currentVersion);
   const [status, setStatus] = useState<UpdateStatus | null>(null);
+  const [platform, setPlatform] = useState<string>("");
   useEffect(() => {
+    void detectPlatform().then(setPlatform);
     const bridge = shell();
     if (!bridge?.onUpdateStatus || !bridge.updateStatus) return;
     void bridge.updateStatus().then(setStatus);
     return bridge.onUpdateStatus(setStatus);
   }, []);
+  const installer = installerFor(platform);
   const selfUpdating = status !== null && status.state !== "unsupported";
   if (release.isLoading) return null;
   if (!release.updateAvailable) {
@@ -47,22 +50,33 @@ export function UpdateNotice({ currentVersion, forceShow = false }: { currentVer
         <pre className="mt-1 max-h-40 overflow-auto whitespace-pre-wrap font-sans text-xs">{release.latestNotes}</pre>
       )}
       {selfUpdating ? (
-        <SelfUpdate status={status} />
+        <SelfUpdate status={status} installer={installer} />
       ) : (
-        <p className="mt-2 flex flex-wrap items-center gap-2">
-          <Button type="button" size="sm" onClick={() => openExternal(DOWNLOAD_URL)}>
-            {t("Download the new version")}
-          </Button>
-          <span className="text-xs text-muted-foreground">
-            {t("Install it over this one; your bundles and cards are kept.")}
-          </span>
-        </p>
+        <ManualDownload installer={installer} />
       )}
     </Callout>
   );
 }
 
-function SelfUpdate({ status }: { status: UpdateStatus }) {
+/** The newest installer for this computer as a download, and the list of all versions. */
+function ManualDownload({ installer }: { installer: { name: string; url: string } | null }) {
+  const { t } = useTranslation();
+  return (
+    <p className="mt-2 flex flex-wrap items-center gap-2">
+      <Button type="button" size="sm" onClick={() => openExternal(installer?.url ?? ALL_RELEASES_URL)}>
+        {installer ? t("Download {{name}}", { name: installer.name }) : t("Download the new version")}
+      </Button>
+      <span className="text-xs text-muted-foreground">
+        {t("Run it over this version; your bundles and files are kept.")}{" "}
+        <button type="button" className="underline underline-offset-4" onClick={() => openExternal(ALL_RELEASES_URL)}>
+          {t("All versions")}
+        </button>
+      </span>
+    </p>
+  );
+}
+
+function SelfUpdate({ status, installer }: { status: UpdateStatus; installer: { name: string; url: string } | null }) {
   const { t } = useTranslation();
   const bridge = shell();
   if (status.state === "downloaded") {
@@ -101,8 +115,8 @@ function SelfUpdate({ status }: { status: UpdateStatus }) {
       {status.state === "error" ? (
         <span className="text-xs text-destructive">
           {t("The update could not be fetched: {{message}}", { message: status.message ?? "" })}{" "}
-          <button type="button" className="underline underline-offset-4" onClick={() => openExternal(DOWNLOAD_URL)}>
-            {t("Download it by hand")}
+          <button type="button" className="underline underline-offset-4" onClick={() => openExternal(installer?.url ?? ALL_RELEASES_URL)}>
+            {installer ? t("Download {{name}} by hand", { name: installer.name }) : t("Download it by hand")}
           </button>
         </span>
       ) : (

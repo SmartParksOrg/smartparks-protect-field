@@ -6,6 +6,12 @@ All notable changes to Smart Parks Protect Go. The format follows Keep a Changel
 
 Nothing yet.
 
+## v0.8.4, 2026-10-17
+
+### Changed
+
+- The notice's download buttons fetch this computer's installer straight from the newest release (`ProtectGo-Setup.exe`, the dmg or the deb) instead of opening the user page, with "All versions" beside them; the user page starts its Install section with a table of the three downloads (Tim, 2026-10-17: the page's links were inside its text).
+
 ## v0.8.3, 2026-10-17
 
 ### Fixed

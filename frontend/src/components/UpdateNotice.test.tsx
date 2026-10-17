@@ -24,9 +24,10 @@ describe("UpdateNotice", () => {
     delete window.protectGo;
   });
 
-  it("leads to the download page where the app cannot update itself", async () => {
+  it("offers this computer's installer where the app cannot update itself", async () => {
+    vi.stubGlobal("navigator", { ...navigator, userAgent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64)" });
     renderNotice();
-    expect(await screen.findByText("Download the new version")).toBeInTheDocument();
+    expect(await screen.findByText("Download ProtectGo-Setup.exe")).toBeInTheDocument();
   });
 
   it("offers the download and then the restart inside a self-updating shell (D17)", async () => {
