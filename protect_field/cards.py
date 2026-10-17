@@ -8,6 +8,7 @@ The records are deduplicated the way Protect does it (ADR 0008): one key per dev
 record type, with the metric or the fingerprint, so a frame the station stored twice counts once.
 """
 
+import hashlib
 import json
 import sqlite3
 import uuid
@@ -26,10 +27,17 @@ from shared.station_files import (
     station_eui_from_name,
     unpack_card_zip,
 )
-from shared.storage import sha256
 from shared.trace import ApplicationError
 
 MEMBER_MAX_BYTES = 64 * 1024 * 1024
+
+
+def sha256(data: bytes) -> str:
+    """The digest Protect keys a frame and a file by; `shared.storage` has the same, but that
+    module wants the MinIO client, which the frozen backend leaves out."""
+    return hashlib.sha256(data).hexdigest()
+
+
 EARLIEST_RECEPTION = datetime(2020, 1, 1, tzinfo=UTC)
 LIST_LIMIT = 200
 POSITIONS_LIMIT = 5000
