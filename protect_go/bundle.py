@@ -34,6 +34,7 @@ class BundleSummary:
     credentials_included: bool
     stale: bool
     key_kept_in: str
+    revision: str = ""
 
 
 class BundleStore:
@@ -98,4 +99,5 @@ class BundleStore:
             credentials_included=bool(bundle.get("credentials_included")),
             stale=datetime.now(UTC) - fetched > STALE_AFTER,
             key_kept_in=kept_in,
+            revision=str(bundle.get("revision") or ""),
         )

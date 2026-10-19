@@ -3,7 +3,7 @@ in. `PUT /api/setup/server` probes the server before keeping it; `POST /api/sess
 with Protect's own login and keeps the token, never the password."""
 
 import asyncio
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from typing import Any
 
 import httpx
@@ -37,6 +37,13 @@ class ConnectionRead(BaseModel):
     protect_version: str | None
     account_ok: bool | None
     error: str | None
+    #: The project on the laptop against the server (decision D28): when its fingerprint was
+    #: last compared, whether the server has a newer one the app could not fetch, and when the
+    #: app last loaded the project again by itself
+    bundle_checked_at: str | None = None
+    bundle_outdated: bool = False
+    bundle_updated_at: str | None = None
+    frames_read_again: int = 0
 
 
 class ServerUpdate(BaseModel):
@@ -115,13 +122,70 @@ async def connection(request: Request) -> ConnectionRead:
             account_ok = me.status_code == 200
         except httpx.HTTPError:
             account_ok = False
+    refresh = await _follow_the_project(request, settings, transport, account_ok)
     return ConnectionRead(
         online=True,
         checked_at=checked_at,
         protect_version=protect_version,
         account_ok=account_ok,
         error=None,
+        **refresh,
     )
+
+
+#: How often the project's fingerprint is compared with the server's while the app is online.
+REVISION_CHECK_EVERY = timedelta(minutes=5)
+
+
+async def _follow_the_project(
+    request: Request, settings: Any, transport: Any, account_ok: bool | None
+) -> dict[str, Any]:
+    """The project on the laptop follows the server by itself (decision D29, Tim, 2026-10-19:
+    a station or a tracker added in Protect, or a map made, should reach the app without a hand
+    on Server). Every few minutes online, the bundle's fingerprint is compared with the
+    server's; when it moved, the project is loaded again, and the frames of trackers unknown
+    before are read again with it. The state of the last comparison is what the pages show."""
+    state = request.app.state
+    last = getattr(state, "bundle_follow", None) or {}
+    summary = request.app.state.bundle_store.summary()
+    if not account_ok or summary is None:
+        return {k: v for k, v in last.items() if k != "due"}
+    now = datetime.now(UTC)
+    due = last.get("due")
+    if due is not None and now < due:
+        return {k: v for k, v in last.items() if k != "due"}
+    result: dict[str, Any] = {
+        "bundle_checked_at": now.isoformat(),
+        "bundle_outdated": False,
+        "bundle_updated_at": last.get("bundle_updated_at"),
+        "frames_read_again": last.get("frames_read_again", 0),
+    }
+    try:
+        async with client(settings.server_url, transport) as http:
+            answer = await http.get(
+                f"/api/v1/projects/{summary.project_id}/field-bundle/revision",
+                headers={"Authorization": f"Bearer {settings.token}"},
+            )
+        if answer.status_code == 200:
+            revision = str(answer.json().get("revision") or "")
+            if revision and revision != summary.revision:
+                from protect_go.routers.bundle import LoadRequest, load_project
+
+                try:
+                    loaded = await load_project(
+                        LoadRequest(
+                            project_id=summary.project_id, project_name=summary.project_name
+                        ),
+                        request,
+                    )
+                    result["bundle_updated_at"] = loaded.bundle.fetched_at
+                    result["frames_read_again"] = loaded.frames_read_again
+                except HTTPException:
+                    result["bundle_outdated"] = True
+    except httpx.HTTPError:
+        pass  # offline in the middle of the probe: the next check tells
+    state.bundle_follow = {**result, "due": now + REVISION_CHECK_EVERY}
+    return result
 
 
 @router.put("/setup/server", response_model=SetupRead)

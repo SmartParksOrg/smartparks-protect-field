@@ -1,15 +1,23 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Menu, PanelLeftOpen } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Outlet } from "react-router";
 
-import { api, send, type Bundle, type Connection, type Setup } from "@/api/client";
+import {
+  api,
+  send,
+  type Bundle,
+  type Connection,
+  type Setup,
+} from "@/api/client";
 import { queryKeys } from "@/api/queryKeys";
 import logoLandscape from "@/assets/brand/logo-landscape.webp";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { ThemeSwitch } from "@/components/layout/ThemeSwitch";
+import { Callout } from "@/components/common/Callout";
 import { Button } from "@/components/ui/button";
+import { formatTime } from "@/lib/format";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { useLayoutStore } from "@/stores/layout";
 
@@ -27,13 +35,47 @@ export function AppLayout({ setup }: { setup: Setup }) {
   const [open, setOpen] = useState(false);
   const sidebarHidden = useLayoutStore((s) => s.sidebarHidden);
   const setSidebarHidden = useLayoutStore((s) => s.setSidebarHidden);
-  const bundle = useQuery({ queryKey: queryKeys.bundle, queryFn: () => api<Bundle>("/api/bundle") });
+  const bundle = useQuery({
+    queryKey: queryKeys.bundle,
+    queryFn: () => api<Bundle>("/api/bundle"),
+  });
   const connection = useQuery({
     queryKey: queryKeys.connection,
     queryFn: () => api<Connection>("/api/setup/connection"),
     refetchInterval: 60_000,
     retry: false,
   });
+  // the project followed the server (decision D28): every page reads the new bundle, and a line
+  // says so until it is dismissed
+  const updatedAt = connection.data?.bundle_updated_at ?? null;
+  const [seenUpdate, setSeenUpdate] = useState<string | null>(() => {
+    try {
+      return localStorage.getItem("protect-go-seen-bundle-update");
+    } catch {
+      return null;
+    }
+  });
+  const lastUpdate = useRef<string | null>(null);
+  useEffect(() => {
+    if (!updatedAt || updatedAt === lastUpdate.current) return;
+    lastUpdate.current = updatedAt;
+    void queryClient.invalidateQueries({ queryKey: queryKeys.bundle });
+    void queryClient.invalidateQueries({ queryKey: queryKeys.devices });
+    void queryClient.invalidateQueries({ queryKey: queryKeys.stations });
+    void queryClient.invalidateQueries({ queryKey: queryKeys.trackers });
+    void queryClient.invalidateQueries({ queryKey: queryKeys.unknownTrackers });
+    void queryClient.invalidateQueries({ queryKey: queryKeys.cards });
+    void queryClient.invalidateQueries({ queryKey: queryKeys.map });
+  }, [updatedAt, queryClient]);
+  const dismissUpdate = () => {
+    setSeenUpdate(updatedAt);
+    try {
+      if (updatedAt)
+        localStorage.setItem("protect-go-seen-bundle-update", updatedAt);
+    } catch {
+      // nothing to remember without storage
+    }
+  };
   const online = connection.data?.online;
   const held = setup.signed_in && connection.data?.account_ok !== false;
   const dotWords =
@@ -45,8 +87,19 @@ export function AppLayout({ setup }: { setup: Setup }) {
         ? t("{{server}} does not answer", { server: setup.server_url })
         : held
           ? t("Online, signed in to {{server}}", { server: setup.server_url })
-          : t("Online, not signed in to {{server}}", { server: setup.server_url });
-  const dotColour = online === false ? "bg-muted-foreground/40" : online && held ? "bg-emerald-500" : online ? "bg-amber-500" : setup.signed_in ? "bg-emerald-500" : "bg-muted-foreground/40";
+          : t("Online, not signed in to {{server}}", {
+              server: setup.server_url,
+            });
+  const dotColour =
+    online === false
+      ? "bg-muted-foreground/40"
+      : online && held
+        ? "bg-emerald-500"
+        : online
+          ? "bg-amber-500"
+          : setup.signed_in
+            ? "bg-emerald-500"
+            : "bg-muted-foreground/40";
   const signOut = useMutation({
     mutationFn: () => send<Setup>("DELETE", "/api/session"),
     onSuccess: (next) => queryClient.setQueryData(queryKeys.setup, next),
@@ -63,12 +116,20 @@ export function AppLayout({ setup }: { setup: Setup }) {
   );
   return (
     <div className="flex h-dvh">
-      <aside className={`hidden w-64 shrink-0 border-r bg-card ${sidebarHidden ? "" : "lg:block"}`}>
+      <aside
+        className={`hidden w-64 shrink-0 border-r bg-card ${sidebarHidden ? "" : "lg:block"}`}
+      >
         <div className="h-full">{sidebar(undefined, true)}</div>
       </aside>
       {sidebarHidden && (
         <div className="hidden w-10 shrink-0 flex-col items-center border-r bg-card py-2 lg:flex">
-          <Button variant="ghost" size="icon" aria-label={t("Show navigation")} title={t("Show navigation")} onClick={() => setSidebarHidden(false)}>
+          <Button
+            variant="ghost"
+            size="icon"
+            aria-label={t("Show navigation")}
+            title={t("Show navigation")}
+            onClick={() => setSidebarHidden(false)}
+          >
             <PanelLeftOpen className="size-5" />
           </Button>
         </div>
@@ -81,19 +142,68 @@ export function AppLayout({ setup }: { setup: Setup }) {
       </Sheet>
       <div className="flex min-w-0 flex-1 flex-col">
         <header className="sticky top-0 z-30 flex items-center gap-1 border-b bg-card px-2 py-1 sm:gap-2 sm:px-3 sm:py-2">
-          <Button variant="ghost" size="icon" className="size-8 shrink-0 sm:size-9 lg:hidden" aria-label={t("Open navigation")} onClick={() => setOpen(true)}>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="size-8 shrink-0 sm:size-9 lg:hidden"
+            aria-label={t("Open navigation")}
+            onClick={() => setOpen(true)}
+          >
             <Menu className="size-5" />
           </Button>
-          <img src={logoLandscape} alt="" className="h-6 w-auto shrink-0 sm:h-7" />
-          <span className="min-w-0 truncate text-sm font-medium whitespace-nowrap sm:text-base">{t("Protect Go")}</span>
+          <img
+            src={logoLandscape}
+            alt=""
+            className="h-6 w-auto shrink-0 sm:h-7"
+          />
+          <span className="min-w-0 truncate text-sm font-medium whitespace-nowrap sm:text-base">
+            {t("Protect Go")}
+          </span>
           {bundle.data?.present && (
-            <span className="hidden min-w-0 truncate text-sm text-muted-foreground sm:inline">· {bundle.data.project_name}</span>
+            <span className="hidden min-w-0 truncate text-sm text-muted-foreground sm:inline">
+              · {bundle.data.project_name}
+            </span>
           )}
           <span className="ml-auto flex shrink-0 items-center gap-1">
             <ThemeSwitch className="size-8 sm:size-9" />
-            <span role="status" aria-label={dotWords} title={dotWords} className={`mx-2 inline-block size-2.5 rounded-full ${dotColour}`} />
+            <span
+              role="status"
+              aria-label={dotWords}
+              title={dotWords}
+              className={`mx-2 inline-block size-2.5 rounded-full ${dotColour}`}
+            />
           </span>
         </header>
+        {updatedAt && updatedAt !== seenUpdate && (
+          <div className="px-4 pt-3">
+            <Callout kind="info">
+              <span className="flex flex-wrap items-center justify-between gap-2">
+                <span>
+                  {connection.data?.frames_read_again
+                    ? t(
+                        "The project changed on the server and was loaded again at {{time}}; {{count}} frames of trackers unknown before were read.",
+                        {
+                          time: formatTime(updatedAt),
+                          count: connection.data.frames_read_again,
+                        },
+                      )
+                    : t(
+                        "The project changed on the server and was loaded again at {{time}}.",
+                        { time: formatTime(updatedAt) },
+                      )}
+                </span>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="ghost"
+                  onClick={dismissUpdate}
+                >
+                  {t("Dismiss")}
+                </Button>
+              </span>
+            </Callout>
+          </div>
+        )}
         <main className="flex min-h-0 flex-1 flex-col overflow-y-auto">
           <Outlet />
         </main>

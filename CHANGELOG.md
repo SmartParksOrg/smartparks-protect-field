@@ -2,6 +2,12 @@
 
 All notable changes to Smart Parks Protect Go. The format follows Keep a Changelog; versions are git tags. Each entry names the Protect commit the release decodes with.
 
+## v0.14.0, 2026-10-19
+
+### Added
+
+- **The project follows the server by itself** (decision D29, Tim, 2026-10-19: a station or tracker added in Protect, or a map made, should reach the app without a hand on Server). While the app is online and signed in, the connection probe compares the loaded project's revision with the server's every five minutes (Protect's `GET /projects/{id}/field-bundle/revision`, Protect's decision D344) and, when it moved, loads the project again and reads the frames of trackers unknown before. A notice at the top of the page says when it happened and how many frames were read; the Server page's Project line says when the last comparison ran, or that the server's newer project could not be loaded. `GET /api/setup/connection` answers `bundle_checked_at`, `bundle_updated_at`, `bundle_outdated` and `frames_read_again`; the bundle summary carries `revision`. Protect pinned at d79ffaf still; a server without the revision endpoint is left as it is.
+
 ## v0.13.0, 2026-10-19
 
 ### Added

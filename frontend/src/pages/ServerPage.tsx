@@ -7,7 +7,13 @@ import { queryKeys } from "@/api/queryKeys";
 import { Callout } from "@/components/common/Callout";
 import { Page, PageHeader } from "@/components/common/PageHeader";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { formatTime } from "@/lib/format";
 import { LoadSection } from "@/pages/LoadPage";
 import { SetupPage } from "@/pages/SetupPage";
@@ -41,42 +47,95 @@ export function ServerPage({ current }: { current: Setup }) {
   const state = connection.data;
   return (
     <>
-      <PageHeader title={t("Server")} description={t("The Protect server this laptop works with, your account on it, and the project loaded from it.")} />
+      <PageHeader
+        title={t("Server")}
+        description={t(
+          "The Protect server this laptop works with, your account on it, and the project loaded from it.",
+        )}
+      />
       <Page>
         <div className="mx-auto flex w-full max-w-xl flex-col gap-4">
           {changingServer ? (
-            <SetupPage current={current} onCancel={() => setChangingServer(false)} />
+            <SetupPage
+              current={current}
+              onCancel={() => setChangingServer(false)}
+            />
           ) : (
             <Card>
               <CardHeader>
-                <CardTitle>{t("Connected to {{server}}", { server: current.server_url })}</CardTitle>
+                <CardTitle>
+                  {t("Connected to {{server}}", { server: current.server_url })}
+                </CardTitle>
                 <CardDescription>
                   {current.protect_version
-                    ? t("Protect {{version}}. The app downloads the project's bundle from it and uploads the files to it.", { version: current.protect_version })
-                    : t("The app downloads the project's bundle from it and uploads the files to it.")}
+                    ? t(
+                        "Protect {{version}}. The app downloads the project's bundle from it and uploads the files to it.",
+                        { version: current.protect_version },
+                      )
+                    : t(
+                        "The app downloads the project's bundle from it and uploads the files to it.",
+                      )}
                 </CardDescription>
               </CardHeader>
               <CardContent className="flex flex-col gap-3">
                 <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-sm">
                   <dt className="text-muted-foreground">{t("Connection")}</dt>
                   <dd className="flex items-center gap-2" role="status">
-                    <span className={`inline-block size-2.5 rounded-full ${state === undefined ? "bg-muted-foreground/40" : state.online ? "bg-emerald-500" : "bg-amber-500"}`} />
+                    <span
+                      className={`inline-block size-2.5 rounded-full ${state === undefined ? "bg-muted-foreground/40" : state.online ? "bg-emerald-500" : "bg-amber-500"}`}
+                    />
                     {state === undefined
                       ? connection.isError
                         ? t("Could not check")
                         : t("Checking")
                       : state.online
                         ? t("Online")
-                        : t("Offline: {{reason}}", { reason: state.error ?? "" })}
+                        : t("Offline: {{reason}}", {
+                            reason: state.error ?? "",
+                          })}
                   </dd>
                   <dt className="text-muted-foreground">{t("Last checked")}</dt>
                   <dd>{state ? formatTime(state.checked_at) : t("Not yet")}</dd>
+                  <dt className="text-muted-foreground">{t("Project")}</dt>
+                  <dd>
+                    {!state?.bundle_checked_at
+                      ? t(
+                          "Compared with the server every five minutes while online",
+                        )
+                      : state.bundle_outdated
+                        ? t(
+                            "The server has a newer project; it could not be loaded, try Load again",
+                          )
+                        : state.bundle_updated_at
+                          ? t(
+                              "Loaded again by itself at {{time}}; compared at {{checked}}",
+                              {
+                                time: formatTime(state.bundle_updated_at),
+                                checked: formatTime(state.bundle_checked_at),
+                              },
+                            )
+                          : t(
+                              "Up to date with the server, compared at {{checked}}",
+                              { checked: formatTime(state.bundle_checked_at) },
+                            )}
+                  </dd>
                 </dl>
                 <div className="flex flex-wrap gap-2">
-                  <Button type="button" size="sm" variant="outline" disabled={connection.isFetching} onClick={() => void connection.refetch()}>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    disabled={connection.isFetching}
+                    onClick={() => void connection.refetch()}
+                  >
                     {connection.isFetching ? t("Checking") : t("Check now")}
                   </Button>
-                  <Button type="button" size="sm" variant="ghost" onClick={() => setChangingServer(true)}>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => setChangingServer(true)}
+                  >
                     {t("Another server")}
                   </Button>
                 </div>
@@ -84,27 +143,58 @@ export function ServerPage({ current }: { current: Setup }) {
             </Card>
           )}
           {!current.signed_in || changingAccount ? (
-            <SignInPage setup={current} onCancel={current.signed_in ? () => setChangingAccount(false) : undefined} />
+            <SignInPage
+              setup={current}
+              onCancel={
+                current.signed_in ? () => setChangingAccount(false) : undefined
+              }
+            />
           ) : (
             <Card>
               <CardHeader>
-                <CardTitle>{t("Signed in as {{email}}", { email: current.email })}</CardTitle>
+                <CardTitle>
+                  {t("Signed in as {{email}}", { email: current.email })}
+                </CardTitle>
                 <CardDescription>
                   {current.token_expires_at
-                    ? t("The sign-in holds until {{time}}; after that the app asks for your password, or open it from Protect's Offload page again.", { time: formatTime(current.token_expires_at) })
-                    : t("The app keeps the server's sign-in and never your password.")}
+                    ? t(
+                        "The sign-in holds until {{time}}; after that the app asks for your password, or open it from Protect's Offload page again.",
+                        { time: formatTime(current.token_expires_at) },
+                      )
+                    : t(
+                        "The app keeps the server's sign-in and never your password.",
+                      )}
                 </CardDescription>
               </CardHeader>
               <CardContent className="flex flex-col gap-3">
                 {state?.account_ok === false && (
-                  <Callout kind="error">{t("The server no longer accepts this sign-in. Sign in again.")}</Callout>
+                  <Callout kind="error">
+                    {t(
+                      "The server no longer accepts this sign-in. Sign in again.",
+                    )}
+                  </Callout>
                 )}
-                {state?.account_ok === true && <p className="text-sm text-muted-foreground">{t("The server accepts the sign-in.")}</p>}
+                {state?.account_ok === true && (
+                  <p className="text-sm text-muted-foreground">
+                    {t("The server accepts the sign-in.")}
+                  </p>
+                )}
                 <div className="flex flex-wrap gap-2">
-                  <Button type="button" size="sm" variant="outline" onClick={() => signOut.mutate()} disabled={signOut.isPending}>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    onClick={() => signOut.mutate()}
+                    disabled={signOut.isPending}
+                  >
                     {t("Sign out")}
                   </Button>
-                  <Button type="button" size="sm" variant="ghost" onClick={() => setChangingAccount(true)}>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => setChangingAccount(true)}
+                  >
                     {t("Sign in as someone else")}
                   </Button>
                 </div>

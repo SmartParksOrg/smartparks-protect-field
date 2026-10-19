@@ -386,5 +386,12 @@
   "Tracker EUI": "Tracker-EUI",
   "Trackers ({{count}} unknown)_one": "Trackers ({{count}} onbekend)",
   "Trackers ({{count}} unknown)_other": "Trackers ({{count}} onbekend)",
-  "Unknown trackers": "Onbekende trackers"
+  "Unknown trackers": "Onbekende trackers",
+  "Compared with the server every five minutes while online": "Online elke vijf minuten met de server vergeleken",
+  "Loaded again by itself at {{time}}; compared at {{checked}}": "Vanzelf opnieuw geladen om {{time}}; vergeleken om {{checked}}",
+  "The project changed on the server and was loaded again at {{time}}; {{count}} frames of trackers unknown before were read._one": "Het project is op de server veranderd en om {{time}} opnieuw geladen; {{count}} frame van eerder onbekende trackers is gelezen.",
+  "The project changed on the server and was loaded again at {{time}}; {{count}} frames of trackers unknown before were read._other": "Het project is op de server veranderd en om {{time}} opnieuw geladen; {{count}} frames van eerder onbekende trackers zijn gelezen.",
+  "The project changed on the server and was loaded again at {{time}}.": "Het project is op de server veranderd en om {{time}} opnieuw geladen.",
+  "The server has a newer project; it could not be loaded, try Load again": "De server heeft een nieuwer project; het kon niet worden geladen, probeer Opnieuw laden",
+  "Up to date with the server, compared at {{checked}}": "Gelijk aan de server, vergeleken om {{checked}}"
 }

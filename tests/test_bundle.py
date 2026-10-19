@@ -4,6 +4,7 @@ in the same call."""
 
 import json
 from datetime import UTC, datetime, timedelta
+from typing import Any
 
 import httpx
 import pytest
@@ -98,10 +99,16 @@ BUNDLE = {
 }
 
 
+#: The server's project as the mock serves it; a test moves it to see the app follow (D29).
+SERVED: dict[str, Any] = {"bundle": BUNDLE, "revision": "rev-one"}
+
+
 def server(request: httpx.Request) -> httpx.Response:
+    if request.url.path == f"/api/v1/projects/{PROJECT}/field-bundle/revision":
+        return httpx.Response(200, json={"revision": SERVED["revision"], "checked_at": "now"})
     if request.url.path == f"/api/v1/projects/{PROJECT}/field-bundle":
         assert request.headers["Authorization"] in (f"Bearer {TOKEN}", f"Bearer {LONG_TOKEN}")
-        return httpx.Response(200, json=BUNDLE)
+        return httpx.Response(200, json={**SERVED["bundle"], "revision": SERVED["revision"]})
     if request.url.path == f"/api/v1/projects/{PROJECT}/field-bundle/map":
         return (
             httpx.Response(404, json={"detail": "No offline map yet"})
@@ -193,3 +200,42 @@ async def test_the_metric_definitions_come_from_the_bundle(app, tmp_path):
         BundleStore(tmp_path / "data", "file").save(BUNDLE)
         rows = (await client.get("/api/bundle/metrics")).json()
         assert rows == BUNDLE["metrics"]
+
+
+async def test_the_project_follows_the_server_by_itself(app):
+    """A station added in Protect reaches the laptop without a hand on Server (D29): the
+    connection probe compares the bundle's revision with the server's and loads again."""
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        app.state.http_transport = httpx.MockTransport(protect_server)
+        await client.put(
+            "/api/setup/server", json={"server_url": "https://dev-protect.example.org"}
+        )
+        await client.post("/api/session", json={"email": "ranger@example.org", "password": "right"})
+        app.state.http_transport = httpx.MockTransport(server)
+        SERVED["revision"] = "rev-one"
+        loaded = await client.post(
+            "/api/bundle/fetch", json={"project_id": PROJECT, "project_name": "LP0"}
+        )
+        assert loaded.json()["bundle"]["revision"] == "rev-one"
+
+        # the same revision: checked, nothing loaded
+        first = (await client.get("/api/setup/connection")).json()
+        assert first["bundle_checked_at"] and first["bundle_updated_at"] is None
+        assert first["bundle_outdated"] is False
+
+        # the project changes on the server: a third device; the next due check loads it
+        third = {**BUNDLE["devices"][1], "id": "d3", "name": "SP050102", "entity_id": None}
+        SERVED["bundle"] = {**BUNDLE, "devices": [*BUNDLE["devices"], third]}
+        SERVED["revision"] = "rev-two"
+        app.state.bundle_follow = {**app.state.bundle_follow, "due": None}
+        second = (await client.get("/api/setup/connection")).json()
+        assert second["bundle_updated_at"] is not None and second["bundle_outdated"] is False
+        again = (await client.get("/api/bundle")).json()
+        assert again["devices"] == 3 and again["revision"] == "rev-two"
+
+        # within the five minutes: the last comparison is told again, the server not asked
+        SERVED["revision"] = "rev-three"
+        third_probe = (await client.get("/api/setup/connection")).json()
+        assert third_probe["bundle_checked_at"] == second["bundle_checked_at"]
+        SERVED["bundle"] = BUNDLE
+        SERVED["revision"] = "rev-one"

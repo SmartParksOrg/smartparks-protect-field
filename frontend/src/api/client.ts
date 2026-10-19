@@ -69,10 +69,16 @@ export interface Connection {
   protect_version: string | null;
   account_ok: boolean | null;
   error: string | null;
+  /** The project on the laptop against the server (decision D28). */
+  bundle_checked_at?: string | null;
+  bundle_outdated?: boolean;
+  bundle_updated_at?: string | null;
+  frames_read_again?: number;
 }
 
 export interface Bundle {
   present: boolean;
+  revision?: string;
   project_id: string | null;
   project_name: string | null;
   generated_at: string | null;

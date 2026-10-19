@@ -20,6 +20,7 @@ router = APIRouter(prefix="/api")
 
 class BundleRead(BaseModel):
     present: bool
+    revision: str = Field(default="", description="The server's fingerprint of the content")
     project_id: str | None = None
     project_name: str | None = None
     generated_at: str | None = None
