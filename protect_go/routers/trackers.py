@@ -28,6 +28,17 @@ class TrackerRead(BaseModel):
     last_lon: float | None
 
 
+class UnknownTrackerRead(BaseModel):
+    """An LP0 address the cards hold frames for that no device of the bundle has (D338)."""
+
+    dev_addr: str
+    source_eui: str | None
+    frames: int
+    first_at: str | None
+    last_at: str | None
+    stations: list[str]
+
+
 class MetricRead(BaseModel):
     metric: str
     count: int
@@ -57,6 +68,13 @@ def _cards(request: Request) -> CardStore:
 @router.get("/trackers", response_model=list[TrackerRead])
 def list_trackers(request: Request) -> list[dict[str, Any]]:
     return _cards(request).trackers()
+
+
+@router.get("/trackers/unknown", response_model=list[UnknownTrackerRead])
+def unknown_trackers(request: Request) -> list[dict[str, Any]]:
+    """The addresses the cards hold frames for that no device of the project has: Protect's
+    Offload page adds the tracker (D338), and the bundle, loaded again, brings it here."""
+    return _cards(request).unknown_trackers()
 
 
 @router.get("/positions", response_model=list[PositionRead])

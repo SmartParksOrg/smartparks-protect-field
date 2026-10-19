@@ -23,7 +23,11 @@ export async function api<T>(path: string, init?: RequestInit): Promise<T> {
 }
 
 /** A JSON body on a request: PUT, POST or DELETE. */
-export function send<T>(method: "PUT" | "POST" | "DELETE", path: string, body?: unknown): Promise<T> {
+export function send<T>(
+  method: "PUT" | "POST" | "DELETE",
+  path: string,
+  body?: unknown,
+): Promise<T> {
   return api<T>(path, {
     method,
     headers: body === undefined ? {} : { "Content-Type": "application/json" },
@@ -107,7 +111,16 @@ export interface Card {
 }
 
 export interface CardDetail extends Card {
-  files_list: { id: string; name: string; folder: string; size: number; station_eui: string | null; lines: number; frames: number; errors: number }[];
+  files_list: {
+    id: string;
+    name: string;
+    folder: string;
+    size: number;
+    station_eui: string | null;
+    lines: number;
+    frames: number;
+    errors: number;
+  }[];
   trackers: {
     device_id: string;
     device_name: string;
@@ -121,7 +134,15 @@ export interface CardDetail extends Card {
     first_time: string | null;
     last_time: string | null;
   }[];
-  failures: { line: number; file: string; dev_addr: string | null; device_name: string | null; status: string; code: string | null; reason: string | null }[];
+  failures: {
+    line: number;
+    file: string;
+    dev_addr: string | null;
+    device_name: string | null;
+    status: string;
+    code: string | null;
+    reason: string | null;
+  }[];
 }
 
 export interface Position {
@@ -178,6 +199,16 @@ export interface Tracker {
   last_lon: number | null;
 }
 
+/** An LP0 address the cards hold frames for that no device of the bundle has (Protect's D338). */
+export interface UnknownTracker {
+  dev_addr: string;
+  source_eui: string | null;
+  frames: number;
+  first_at: string | null;
+  last_at: string | null;
+  stations: string[];
+}
+
 /** A metric's definition from Protect's registry, carried in the bundle (Protect's D334). */
 export interface MetricDefinition {
   key: string;
@@ -226,8 +257,21 @@ export interface FileRow {
 }
 
 export interface FileDetail extends FileRow {
-  trackers: { device_id: string; device_name: string; frames: number; decoded: number; positions: number }[];
-  failures: { line: number; dev_addr: string | null; device_name: string | null; status: string; code: string | null; reason: string | null }[];
+  trackers: {
+    device_id: string;
+    device_name: string;
+    frames: number;
+    decoded: number;
+    positions: number;
+  }[];
+  failures: {
+    line: number;
+    dev_addr: string | null;
+    device_name: string | null;
+    status: string;
+    code: string | null;
+    reason: string | null;
+  }[];
 }
 
 /** A removable volume of this computer with the station files found on it (decision D16). */

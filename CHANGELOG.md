@@ -2,9 +2,12 @@
 
 All notable changes to Smart Parks Protect Go. The format follows Keep a Changelog; versions are git tags. Each entry names the Protect commit the release decodes with.
 
-## Unreleased
+## v0.13.0, 2026-10-19
 
-Nothing yet.
+### Added
+
+- **Unknown trackers** (Protect's decision D338, Tim, 2026-10-19: a card may name trackers Protect does not know yet). The Trackers page ends with the LP0 addresses the cards hold frames for that no device of the project has: the address, the tracker EUI when a v5 station wrote it, the frames, the stations that heard them, the last reception. "Add in Protect" opens the project's Offload page on the address, where the tracker is made with the DevEUI the card named; the Overview's Trackers button counts them. `GET /api/trackers/unknown`; the frames keep the tracker EUI (`source_eui`).
+- **The frames of a tracker added since decode after the next load.** Loading the project again reads the frames of addresses unknown before from the kept files, for every address the fresh bundle knows now, and sums the cards' counts anew; no second import of the card. `POST /api/bundle/fetch` answers `frames_read_again`.
 
 ## v0.12.1, 2026-10-17
 

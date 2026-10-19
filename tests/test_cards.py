@@ -332,3 +332,46 @@ async def test_the_stations_and_the_devices_for_their_pages(app, tmp_path):
         tracker = next(d for d in devices if d["name"] == "SP100001")
         assert tracker["has_address"] is True and tracker["has_keys"] is True
         assert any(d["is_station"] for d in devices)
+
+
+async def test_an_unknown_tracker_is_listed_and_read_again_once_the_bundle_knows_it(app, tmp_path):
+    """Protect's D338 on the laptop: the address nobody has is listed with its frames, so the
+    person adds the tracker in Protect; the bundle loaded again knows it, and its frames are
+    read again from the kept files without a second import."""
+    data = tmp_path / "data"
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        BundleStore(data, "file").save(BUNDLE)
+        card = (
+            await client.post(
+                "/api/cards", files=[("files", ("card.zip", card_zip(), "application/zip"))]
+            )
+        ).json()
+        assert card["unknown"] == 1 and card["decoded"] == 1 and card["positions"] == 3
+        unknown = (await client.get("/api/trackers/unknown")).json()
+        assert [u["dev_addr"] for u in unknown] == ["26010299"]
+        assert unknown[0]["frames"] == 1 and unknown[0]["stations"] == ["Station 1"]
+        assert unknown[0]["source_eui"] is None and unknown[0]["last_at"] is not None
+
+        # the tracker added in Protect: the next bundle carries it, with its keys
+        known = json.loads(json.dumps(BUNDLE))
+        known["devices"].append(
+            {
+                **BUNDLE["devices"][0],
+                "id": "d3",
+                "name": "SP100003",
+                "serial_number": "0016C001F0100003",
+                "dev_eui": "0016C001F0100003",
+                "entity_id": None,
+                "entity_name": None,
+                "lp0": {**BUNDLE["devices"][0]["lp0"], "dev_addr": "26010299"},
+            }
+        )
+        BundleStore(data, "file").save(known)
+        read_again = CardStore(data).read_unknown_again(known)
+        assert read_again == 1
+        after = (await client.get(f"/api/cards/{card['id']}")).json()
+        assert after["unknown"] == 0 and after["decoded"] == 2 and after["positions"] == 6
+        assert (await client.get("/api/trackers/unknown")).json() == []
+        trackers = (await client.get("/api/trackers")).json()
+        assert {t["device_id"] for t in trackers} == {"d1", "d3"}
+        assert CardStore(data).read_unknown_again(known) == 0

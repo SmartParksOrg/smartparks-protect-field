@@ -70,7 +70,8 @@ CREATE TABLE IF NOT EXISTS frames (
     file_id TEXT NOT NULL REFERENCES card_files(id) ON DELETE CASCADE,
     line INTEGER NOT NULL, dev_addr TEXT, f_cnt INTEGER, f_port INTEGER, received_at TEXT,
     device_id TEXT, device_name TEXT, status TEXT NOT NULL, code TEXT, reason TEXT,
-    phy_sha256 TEXT, positions INTEGER NOT NULL DEFAULT 0, measurements INTEGER NOT NULL DEFAULT 0
+    phy_sha256 TEXT, positions INTEGER NOT NULL DEFAULT 0, measurements INTEGER NOT NULL DEFAULT 0,
+    source_eui TEXT
 );
 CREATE INDEX IF NOT EXISTS frames_card ON frames(card_id, status);
 CREATE INDEX IF NOT EXISTS frames_phy ON frames(phy_sha256);
@@ -180,7 +181,8 @@ class CardStore:
 
     @staticmethod
     def _migrate(db: sqlite3.Connection) -> None:
-        """Columns added after a database was made: the upload's state per file (F4)."""
+        """Columns added after a database was made: the upload's state per file (F4), the
+        tracker EUI a v5 station wrote beside a frame (Protect's D338)."""
         have = {row["name"] for row in db.execute("PRAGMA table_info(card_files)").fetchall()}
         for column, definition in (
             ("upload_status", "TEXT NOT NULL DEFAULT 'pending'"),
@@ -191,6 +193,9 @@ class CardStore:
         ):
             if column not in have:
                 db.execute(f"ALTER TABLE card_files ADD COLUMN {column} {definition}")
+        frame_columns = {row["name"] for row in db.execute("PRAGMA table_info(frames)").fetchall()}
+        if "source_eui" not in frame_columns:
+            db.execute("ALTER TABLE frames ADD COLUMN source_eui TEXT")
 
     def _connect(self) -> sqlite3.Connection:
         db = sqlite3.connect(self.path)
@@ -322,6 +327,7 @@ class CardStore:
             "line": frame.line,
             "received_at": frame.received_at.isoformat() if frame.received_at else None,
             "phy_sha256": digest,
+            "source_eui": frame.source_eui.upper() if frame.source_eui else None,
         }
         try:
             uplink = parse_uplink(frame.data)
@@ -420,8 +426,8 @@ class CardStore:
     ) -> int:
         cursor = db.execute(
             "INSERT INTO frames (card_id, file_id, line, dev_addr, f_cnt, f_port, received_at, "
-            "device_id, device_name, status, code, reason, phy_sha256) "
-            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            "device_id, device_name, status, code, reason, phy_sha256, source_eui) "
+            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
             (
                 base["card_id"],
                 base["file_id"],
@@ -436,6 +442,7 @@ class CardStore:
                 code,
                 reason,
                 base["phy_sha256"],
+                base.get("source_eui"),
             ),
         )
         return int(cursor.lastrowid or 0)
@@ -886,6 +893,109 @@ class CardStore:
                     }
                 )
         return result
+
+    def unknown_trackers(self) -> list[dict[str, Any]]:
+        """The LP0 addresses the cards hold frames for that no device of the bundle has
+        (Protect's D338): the address, the tracker EUI when a v5 station wrote it, how many
+        frames, the span of their reception and the stations that heard them. What Protect's
+        Offload page lists as "Addresses no device has", here from the files on the laptop."""
+        with self._connect() as db:
+            rows = db.execute(
+                "SELECT f.dev_addr, MAX(f.source_eui) AS source_eui, COUNT(*) AS frames, "
+                "MIN(f.received_at) AS first_at, MAX(f.received_at) AS last_at, "
+                "GROUP_CONCAT(DISTINCT COALESCE(c.station_name, c.station_eui)) AS stations "
+                "FROM frames f JOIN cards c ON c.id = f.card_id "
+                "WHERE f.status = 'unknown_address' AND f.dev_addr IS NOT NULL "
+                "GROUP BY f.dev_addr ORDER BY MAX(f.received_at) DESC"
+            ).fetchall()
+        return [
+            {
+                **dict(row),
+                "stations": sorted(set((row["stations"] or "").split(",")))
+                if row["stations"]
+                else [],
+            }
+            for row in rows
+        ]
+
+    def read_unknown_again(self, bundle: dict[str, Any], *, now: datetime | None = None) -> int:
+        """Read the frames of unknown addresses again with a fresh bundle (Protect's D338): a
+        tracker added in Protect since is in the bundle now, with its keys when the account may
+        see them, so its frames decode here without a second import. The kept files are read
+        line by line, only the lines that were unknown and whose address the bundle knows now;
+        each card's counts are summed anew from its frames. Returns how many frames were read."""
+        now = now or datetime.now(UTC)
+        trackers = trackers_of(bundle)
+        if not trackers:
+            return 0
+        read = 0
+        with self._connect() as db:
+            pending = db.execute(
+                "SELECT f.id, f.card_id, f.file_id, f.line, f.dev_addr, cf.path "
+                "FROM frames f JOIN card_files cf ON cf.id = f.file_id "
+                "WHERE f.status = 'unknown_address' AND f.dev_addr IS NOT NULL "
+                "ORDER BY f.card_id, f.file_id, f.line"
+            ).fetchall()
+            wanted = [row for row in pending if row["dev_addr"].upper() in trackers]
+            by_file: dict[str, list[sqlite3.Row]] = {}
+            for row in wanted:
+                by_file.setdefault(row["file_id"], []).append(row)
+            touched: set[str] = set()
+            for file_id, rows in by_file.items():
+                path = Path(rows[0]["path"])
+                if not path.exists():
+                    continue
+                parsed = parse_station_jsonl(path.read_text(encoding="utf-8", errors="replace"))
+                by_line = {frame.line: frame for frame in parsed.frames}
+                for row in rows:
+                    frame = by_line.get(row["line"])
+                    if frame is None:
+                        continue
+                    db.execute("DELETE FROM frames WHERE id = ?", (row["id"],))
+                    counts = Counts()
+                    self._read_frame(db, row["card_id"], file_id, frame, trackers, counts, now)
+                    read += 1
+                    touched.add(row["card_id"])
+            for card_id in touched:
+                self._recount(db, card_id)
+        return read
+
+    @staticmethod
+    def _recount(db: sqlite3.Connection, card_id: str) -> None:
+        """A card's counts summed anew from its frames and records."""
+        totals = db.execute(
+            "SELECT COALESCE(SUM(status = 'decoded'), 0) AS decoded, "
+            "COALESCE(SUM(status = 'repeated'), 0) AS repeated, "
+            "COALESCE(SUM(status = 'refused'), 0) AS refused, "
+            "COALESCE(SUM(status = 'unknown_address'), 0) AS unknown, "
+            "COALESCE(SUM(status = 'line_error'), 0) AS line_errors "
+            "FROM frames WHERE card_id = ?",
+            (card_id,),
+        ).fetchone()
+        records = db.execute(
+            "SELECT COALESCE(SUM(kind = 'position'), 0) AS positions, "
+            "COALESCE(SUM(kind = 'measurement'), 0) AS measurements, "
+            "COALESCE(SUM(kind = 'state'), 0) AS states, "
+            "COALESCE(SUM(kind = 'event'), 0) AS events FROM records WHERE card_id = ?",
+            (card_id,),
+        ).fetchone()
+        db.execute(
+            "UPDATE cards SET decoded = ?, repeated = ?, refused = ?, unknown = ?, "
+            "line_errors = ?, positions = ?, measurements = ?, states = ?, events = ? "
+            "WHERE id = ?",
+            (
+                totals["decoded"],
+                totals["repeated"],
+                totals["refused"],
+                totals["unknown"],
+                totals["line_errors"],
+                records["positions"],
+                records["measurements"],
+                records["states"],
+                records["events"],
+                card_id,
+            ),
+        )
 
     def metrics(self, device_id: str) -> list[dict[str, Any]]:
         """The metrics a tracker reported, each with its count, span and newest value."""

@@ -11,6 +11,7 @@ from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel, Field
 
 from protect_go.bundle import BundleStore, BundleSummary
+from protect_go.cards import CardStore
 from protect_go.routers.map import MapFetch, MapRead, fetch_map
 from protect_go.store import Store
 
@@ -42,6 +43,10 @@ class LoadRequest(BaseModel):
 class LoadResult(BaseModel):
     bundle: BundleRead
     map: MapRead
+    frames_read_again: int = Field(
+        default=0,
+        description="Frames of addresses unknown before that the fresh bundle knows (D338)",
+    )
 
 
 def _bundle_store(request: Request) -> BundleStore:
@@ -199,6 +204,9 @@ async def load_project(body: LoadRequest, request: Request) -> LoadResult:
     if not isinstance(bundle, dict) or bundle.get("format_version") != 1:
         raise HTTPException(502, "The server's bundle has a shape this version does not read")
     summary = _bundle_store(request).save(bundle)
+    # a tracker added in Protect since the cards were read: its frames decode now (D338)
+    cards: CardStore | None = getattr(request.app.state, "card_store", None)
+    read_again = cards.read_unknown_again(bundle) if cards is not None else 0
     name = body.project_name or summary.project_name
     try:
         map_state = await fetch_map(
@@ -206,4 +214,4 @@ async def load_project(body: LoadRequest, request: Request) -> LoadResult:
         )
     except HTTPException as exc:
         map_state = MapRead(present=False, server_state=f"The map did not come: {exc.detail}")
-    return LoadResult(bundle=_read(summary), map=map_state)
+    return LoadResult(bundle=_read(summary), map=map_state, frames_read_again=read_again)

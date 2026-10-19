@@ -374,5 +374,17 @@
   "Download": "Downloaden",
   "GeoJSON": "GeoJSON",
   "GPX": "GPX",
-  "The Protect server this laptop works with, your account on it, and the project loaded from it.": "De Protect-server waarmee deze laptop werkt, je account erop en het project dat ervan geladen is."
+  "The Protect server this laptop works with, your account on it, and the project loaded from it.": "De Protect-server waarmee deze laptop werkt, je account erop en het project dat ervan geladen is.",
+  "Add in Protect": "Toevoegen in Protect",
+  "Every address has its tracker.": "Elk adres heeft zijn tracker.",
+  "Last heard": "Laatst gehoord",
+  "LP0 address": "LP0-adres",
+  "not on the card": "niet op de kaart",
+  "sign in to a server to add it": "meld u aan bij een server om hem toe te voegen",
+  "Stations": "Stations",
+  "The cards hold frames of these LP0 addresses, and no device of the project has them. \"Add in Protect\" opens the project's Offload page on the address, where the tracker is made with the DevEUI the card named; then load the project again here and the frames decode.": "De kaarten bevatten frames van deze LP0-adressen, en geen apparaat van het project heeft ze. \"Toevoegen in Protect\" opent de Offload-pagina van het project op het adres, waar de tracker wordt gemaakt met de DevEUI die de kaart noemde; laad daarna het project hier opnieuw en de frames worden gedecodeerd.",
+  "Tracker EUI": "Tracker-EUI",
+  "Trackers ({{count}} unknown)_one": "Trackers ({{count}} onbekend)",
+  "Trackers ({{count}} unknown)_other": "Trackers ({{count}} onbekend)",
+  "Unknown trackers": "Onbekende trackers"
 }
