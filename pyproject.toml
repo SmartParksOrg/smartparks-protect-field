@@ -20,7 +20,7 @@ dependencies = [
 protect-go = "protect_go.main:run"
 
 [tool.uv.sources]
-smartparks-protect-shared = { git = "https://github.com/SmartParksOrg/smartparks-protect", subdirectory = "shared", rev = "d79ffafedc3a918d8288c3dc9aeb0ae24c20d361" }
+smartparks-protect-shared = { git = "https://github.com/SmartParksOrg/smartparks-protect", subdirectory = "shared", rev = "b8c1c1cdb725aba7891f1eca7e9aab919db3f741" }
 
 [dependency-groups]
 dev = [
