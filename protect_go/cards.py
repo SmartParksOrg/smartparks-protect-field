@@ -40,6 +40,21 @@ def sha256(data: bytes) -> str:
 
 
 EARLIEST_RECEPTION = datetime(2020, 1, 1, tzinfo=UTC)
+#: The counts a card row carries, all zero in the answer to a drop with nothing new in it.
+COUNT_COLUMNS = (
+    "files",
+    "lines",
+    "frames",
+    "decoded",
+    "repeated",
+    "refused",
+    "unknown",
+    "line_errors",
+    "positions",
+    "measurements",
+    "states",
+    "events",
+)
 LIST_LIMIT = 200
 RECORDS_LIMIT = 50_000
 POSITIONS_LIMIT = 20000
@@ -215,8 +230,12 @@ class CardStore:
         now: datetime | None = None,
     ) -> dict[str, Any]:
         """Parse, open and read every frame of the dropped files; one card row with the counts,
-        the files kept under `cards/<id>/`. Raises ValueError when nothing in the drop is a
-        station file."""
+        the files kept under `cards/<id>/`. A file whose bytes were read before, on an earlier
+        card or earlier in this drop, is left out and named in `read_before` (decision D30):
+        the same card read twice, or a card read again after it grew, adds what is new and
+        nothing else, and nothing waits twice for the upload. When nothing in the drop is new
+        the answer carries no card (`id` None) and every file under `read_before`. Raises
+        ValueError when nothing in the drop is a station file."""
         members, skipped = members_of(files)
         if not members:
             raise ValueError(
@@ -230,6 +249,44 @@ class CardStore:
             for s in bundle.get("stations", [])
             if s.get("station_eui")
         }
+        ordered = sorted(members, key=lambda m: (m.folder, m.name))
+        fresh: list[Member] = []
+        read_before: list[dict[str, Any]] = []
+        with self._connect() as db:
+            seen_here: set[str] = set()
+            for member in ordered:
+                digest = sha256(member.data)
+                earlier = db.execute(
+                    "SELECT c.name AS card_name, c.imported_at "
+                    "FROM card_files f JOIN cards c ON c.id = f.card_id WHERE f.sha256 = ? "
+                    "ORDER BY c.imported_at LIMIT 1",
+                    (digest,),
+                ).fetchone()
+                if earlier is not None or digest in seen_here:
+                    read_before.append(
+                        {
+                            "name": member.name,
+                            "folder": member.folder,
+                            "card_name": earlier["card_name"] if earlier else name,
+                            "imported_at": earlier["imported_at"] if earlier else now.isoformat(),
+                        }
+                    )
+                    continue
+                seen_here.add(digest)
+                fresh.append(member)
+        if not fresh:
+            nothing: dict[str, Any] = {column: 0 for column in COUNT_COLUMNS}
+            nothing.update(
+                id=None,
+                name=name,
+                imported_at=now.isoformat(),
+                station_eui=None,
+                station_device_id=None,
+                station_name=None,
+                skipped=skipped,
+                read_before=read_before,
+            )
+            return nothing
         card_id = str(uuid.uuid4())
         folder = self.files_dir / card_id
         counts = Counts()
@@ -239,7 +296,7 @@ class CardStore:
                 "INSERT INTO cards (id, name, imported_at) VALUES (?, ?, ?)",
                 (card_id, name, now.isoformat()),
             )
-            for member in sorted(members, key=lambda m: (m.folder, m.name)):
+            for member in fresh:
                 file_id = str(uuid.uuid4())
                 kept = folder / (member.folder or "LOG") / member.name
                 kept.parent.mkdir(parents=True, exist_ok=True)
@@ -287,7 +344,7 @@ class CardStore:
                     station_eui,
                     station.get("device_id") if station else None,
                     (station.get("entity_name") or station.get("device_name")) if station else None,
-                    len(members),
+                    len(fresh),
                     counts.lines,
                     counts.frames,
                     counts.decoded,
@@ -305,6 +362,7 @@ class CardStore:
         summary = self.card(card_id)
         assert summary is not None
         summary["skipped"] = skipped
+        summary["read_before"] = read_before
         return summary
 
     def _read_frame(

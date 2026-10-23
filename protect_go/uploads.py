@@ -100,9 +100,11 @@ async def run_uploads(
 def _settle(
     store: CardStore, item: dict[str, Any], response: httpx.Response, run: UploadRun
 ) -> None:
-    """The server's answer on the file: 201 with the file row is uploaded (or the one member
-    skipped with its reason), 422 naming "uploaded before" is a duplicate, other 422s a refusal,
-    401 and 403 stop the run, anything else is a failure to try again."""
+    """The server's answer on the file: 201 with the file row is uploaded; 201 with the one
+    member skipped is a duplicate when the member says so (`duplicate`, Protect's D353, or the
+    words "uploaded before" from an older server), else a refusal with the reason; a 422 naming
+    "uploaded before" is a duplicate too (servers before D353), other 422s a refusal, 401 and
+    403 stop the run, anything else is a failure to try again."""
     if response.status_code == 201:
         body = response.json()
         files = body.get("files") or []
@@ -117,7 +119,9 @@ def _settle(
             )
         elif skipped:
             reason = str(skipped[0].get("reason") or "")
-            if "uploaded before" in reason:
+            # Protect names a duplicate with `duplicate` since its D353; an older server
+            # says "uploaded before" in the reason
+            if skipped[0].get("duplicate") or "uploaded before" in reason:
                 run.duplicate += 1
                 store.mark_upload(item["id"], "duplicate", "The server had this file already")
             else:

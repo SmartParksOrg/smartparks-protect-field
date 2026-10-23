@@ -3,13 +3,14 @@ import { useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router";
 
-import { api, send, type Bundle, type Card, type Volume } from "@/api/client";
+import { api, send, type Bundle, type Card, type CardReadOutcome, type Volume } from "@/api/client";
 import { queryKeys } from "@/api/queryKeys";
 import { Callout } from "@/components/common/Callout";
 import { Page, PageHeader } from "@/components/common/PageHeader";
 import { Button } from "@/components/ui/button";
 import { FilesExplorer } from "@/components/files/FilesExplorer";
 import { sizeLabel } from "@/lib/files";
+import { formatTime } from "@/lib/format";
 import { shell } from "@/lib/shell";
 
 /** The SD card files read on this laptop (phase 2 F2; "files", not "cards", since Tim,
@@ -23,7 +24,7 @@ export function FilesPage() {
   const cards = useQuery({ queryKey: queryKeys.cards, queryFn: () => api<Card[]>("/api/cards") });
   const bundle = useQuery({ queryKey: queryKeys.bundle, queryFn: () => api<Bundle>("/api/bundle") });
   const [dragging, setDragging] = useState(false);
-  const [last, setLast] = useState<Card | null>(null);
+  const [last, setLast] = useState<CardReadOutcome | null>(null);
   const [filter, setFilter] = useState("");
   const folderInput = useRef<HTMLInputElement>(null);
   const zipInput = useRef<HTMLInputElement>(null);
@@ -39,7 +40,7 @@ export function FilesPage() {
         const body = (await response.json().catch(() => ({}))) as { detail?: string };
         throw new Error(body.detail ?? `${response.status}`);
       }
-      return (await response.json()) as Card;
+      return (await response.json()) as CardReadOutcome;
     },
     onSuccess: (card) => {
       setLast(card);
@@ -60,7 +61,7 @@ export function FilesPage() {
     refetchInterval: 5000,
   });
   const readPath = useMutation({
-    mutationFn: (body: { path: string; name?: string }) => send<Card>("POST", "/api/cards/path", body),
+    mutationFn: (body: { path: string; name?: string }) => send<CardReadOutcome>("POST", "/api/cards/path", body),
     onSuccess: (card) => {
       setLast(card);
       void queryClient.invalidateQueries({ queryKey: queryKeys.cards });
@@ -157,7 +158,19 @@ export function FilesPage() {
         <input ref={zipInput} type="file" accept=".zip,.jsonl" multiple className="hidden" aria-label={t("A zip of the card")} onChange={(event) => onFiles(event.target.files)} />
         {busy && <p className="text-muted-foreground">{t("Reading the files")}</p>}
         {error && <Callout kind="error">{error.message}</Callout>}
-        {last && (
+        {last && last.read_before.length > 0 && (
+          <Callout kind="info">
+            {last.id === null
+              ? t("Nothing new: all {{count}} files of {{name}} were read before; nothing was read or kept twice.", { count: last.read_before.length, name: last.name })
+              : t("{{count}} files were read before and were left out.", { count: last.read_before.length })}{" "}
+            {last.read_before
+              .slice(0, 5)
+              .map((f) => t("{{name}} (SD card {{card}}, read {{when}})", { name: f.name, card: f.card_name, when: formatTime(f.imported_at) }))
+              .join("; ")}
+            {last.read_before.length > 5 && t(", and {{count}} more", { count: last.read_before.length - 5 })}
+          </Callout>
+        )}
+        {last && last.id !== null && (
           <Callout kind="success">
             {t("{{name}} read: {{frames}} frames, {{decoded}} decoded, {{positions}} new positions; {{refused}} refused, {{unknown}} of unknown trackers, {{repeated}} repeats.", {
               name: last.name,

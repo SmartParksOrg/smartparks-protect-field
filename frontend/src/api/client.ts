@@ -116,6 +116,18 @@ export interface Card {
   skipped: string[];
 }
 
+/** A file of a drop whose bytes were read before (decision D30): left out and named. */
+export interface FileReadBefore {
+  name: string;
+  folder: string;
+  card_name: string;
+  imported_at: string;
+}
+
+/** The answer to a read: the card made of what was new, or `id` null when every file was
+ * read before, with those files under `read_before`. */
+export type CardReadOutcome = Omit<Card, "id"> & { id: string | null; read_before: FileReadBefore[] };
+
 export interface CardDetail extends Card {
   files_list: {
     id: string;

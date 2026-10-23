@@ -56,7 +56,23 @@ async def test_each_file_goes_up_once_and_the_answer_is_kept(app, tmp_path):
                 return httpx.Response(
                     201, json={"files": [{"id": "lf-1", "original_filename": name}], "skipped": []}
                 )
-            return httpx.Response(422, json={"detail": f"{name}: uploaded before"})
+            # the server holds the bytes already: left out and flagged, no files, no error
+            # (Protect's decision D353; a server before it answered 422 "uploaded before")
+            return httpx.Response(
+                201,
+                json={
+                    "files": [],
+                    "skipped": [
+                        {
+                            "name": name,
+                            "reason": "uploaded before",
+                            "duplicate": True,
+                            "uploaded_at": "2026-10-20T10:00:00Z",
+                            "log_file_id": "lf-1",
+                        }
+                    ],
+                },
+            )
         return protect_server(request)
 
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:

@@ -5,7 +5,7 @@ and what could not be read, and their positions for the map."""
 from pathlib import Path
 from typing import Annotated, Any
 
-from fastapi import APIRouter, File, Form, HTTPException, Request, UploadFile
+from fastapi import APIRouter, File, Form, HTTPException, Request, Response, UploadFile
 from pydantic import BaseModel, Field
 
 from protect_go import volumes
@@ -15,8 +15,20 @@ from protect_go.cards import POSITIONS_LIMIT, CardStore
 router = APIRouter(prefix="/api")
 
 
+class FileReadBefore(BaseModel):
+    """A file of the drop whose bytes were read before (decision D30): left out, with the card
+    that holds it and when that card was read."""
+
+    name: str
+    folder: str
+    card_name: str
+    imported_at: str
+
+
 class CardRead(BaseModel):
-    id: str
+    id: str | None = Field(
+        description="The card made of what was new; None when every file was read before"
+    )
     name: str
     imported_at: str
     station_eui: str | None
@@ -35,6 +47,7 @@ class CardRead(BaseModel):
     states: int
     events: int
     skipped: list[str] = []
+    read_before: list[FileReadBefore] = []
 
 
 class CardFileRead(BaseModel):
@@ -99,11 +112,13 @@ def list_cards(request: Request) -> list[dict[str, Any]]:
 @router.post("/cards", response_model=CardRead, status_code=201)
 async def read_card(
     request: Request,
+    response: Response,
     files: Annotated[list[UploadFile], File()],
     name: Annotated[str | None, Form()] = None,
 ) -> dict[str, Any]:
     """Read a card: the files of its `LOG_*` folders, or a zip of them, with the loaded bundle's
-    keys. The bundle must be on the laptop; a drop with no station file in it is refused."""
+    keys. The bundle must be on the laptop; a drop with no station file in it is refused. A drop
+    whose every file was read before makes no card and answers 200 with them named (D30)."""
     bundle_store: BundleStore = request.app.state.bundle_store
     loaded = bundle_store.load()
     if loaded is None:
@@ -114,9 +129,16 @@ async def read_card(
         dropped.append((upload.filename or "file", await upload.read()))
     label = name or (dropped[0][0].split("/")[0] if len(dropped) > 1 else dropped[0][0])
     try:
-        return _cards(request).import_card(label, dropped, bundle)
+        return _answer(response, _cards(request).import_card(label, dropped, bundle))
     except ValueError as exc:
         raise HTTPException(422, str(exc)) from None
+
+
+def _answer(response: Response, outcome: dict[str, Any]) -> dict[str, Any]:
+    """201 for a card made; 200 when nothing was new and no card was made."""
+    if outcome.get("id") is None:
+        response.status_code = 200
+    return outcome
 
 
 class VolumeStation(BaseModel):
@@ -188,7 +210,7 @@ def list_volumes(request: Request) -> list[dict[str, Any]]:
 
 
 @router.post("/cards/path", response_model=CardRead, status_code=201)
-def read_card_from_path(body: PathRead, request: Request) -> dict[str, Any]:
+def read_card_from_path(body: PathRead, request: Request, response: Response) -> dict[str, Any]:
     """Read a card from a path on this computer: the SD card itself or a folder it was copied
     to (decision D16). The station files under it are found a few levels deep."""
     bundle_store: BundleStore = request.app.state.bundle_store
@@ -208,7 +230,7 @@ def read_card_from_path(body: PathRead, request: Request) -> dict[str, Any]:
         )
     label = body.name or root.name or str(root)
     try:
-        return _cards(request).import_card(label, files, bundle)
+        return _answer(response, _cards(request).import_card(label, files, bundle))
     except ValueError as exc:
         raise HTTPException(422, str(exc)) from None
 

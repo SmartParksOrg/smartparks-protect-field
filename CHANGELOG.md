@@ -4,6 +4,10 @@ All notable changes to Smart Parks Protect Go. The format follows Keep a Changel
 
 ## Unreleased
 
+### Added
+
+- **A file read before is left out, and the page says so** (Tim, 2026-10-23, decision D30: the duplicate check must hold on the laptop too, not only on the server). Reading a card looks every file up by its content over everything read so far, and within the same drop: a file read before is not kept, not read again and never waits for the upload a second time; the Files page says "N files were read before and were left out" with each file's name, the SD card that holds it and when it was read, and a card whose every file was read before makes no card at all and says "Nothing new". A card read again after it grew adds its new files alone. On the upload, the app reads Protect's new `duplicate` flag on a skipped file (Protect's decision D353) beside the words "uploaded before" of older servers.
+
 ### Changed
 
 - **Protect pinned at b8c1c1c** (Protect's `main` of 2026-10-20, decisions up to D345). The pinned driver reads an offload station's port 23 report in its versions 2 and 3 (the firmware branch of 2026-10-20: the card's size and free share, the observations `sd_card_missing` and `sdfs_error`), so a card that holds such a report decodes here as on the server instead of failing the frame. The card's new root-level `sdcheck.bin`, the station's storage test file, is no station file and the card walk leaves it aside, as before. No code of the app changed.

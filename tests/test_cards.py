@@ -156,14 +156,43 @@ async def test_a_card_is_read_with_the_bundles_keys_and_every_frame_has_an_outco
         kept = sorted(p.name for p in (data / "cards" / card["id"]).rglob("*.jsonl"))
         assert kept == [f"{STATION}_1791795031.jsonl", f"{STATION}_1791796000.jsonl"]
 
-        # the same card again: every frame a repeat, no new record
-        again = (
-            await client.post(
-                "/api/cards", files=[("files", ("card.zip", card_zip(), "application/zip"))]
+        # the same card again: every file was read before, so no card is made and nothing
+        # is read or kept twice; the answer names the files and the card that holds them (D30)
+        again = await client.post(
+            "/api/cards", files=[("files", ("card.zip", card_zip(), "application/zip"))]
+        )
+        assert again.status_code == 200, again.text
+        assert again.json()["id"] is None and again.json()["files"] == 0
+        assert [(f["name"], f["card_name"]) for f in again.json()["read_before"]] == [
+            (f"{STATION}_1791795031.jsonl", "card.zip"),
+            (f"{STATION}_1791796000.jsonl", "card.zip"),
+        ]
+        assert again.json()["read_before"][0]["imported_at"] == card["imported_at"]
+        assert len((await client.get("/api/cards")).json()) == 1
+        assert len((await client.get("/api/files")).json()) == 2
+
+        # the card read again after it grew: the file read before is left out, the new one read
+        grown = io.BytesIO()
+        with (
+            zipfile.ZipFile(io.BytesIO(card_zip())) as old_zip,
+            zipfile.ZipFile(grown, "w") as new_zip,
+        ):
+            new_zip.writestr(
+                f"LOG_1/{STATION}_1791795031.jsonl",
+                old_zip.read(f"LOG_1/{STATION}_1791795031.jsonl"),
             )
-        ).json()
-        assert again["decoded"] == 0 and again["repeated"] == 2 and again["positions"] == 0
-        assert len((await client.get("/api/cards")).json()) == 2
+            new_zip.writestr(
+                f"LOG_3/{STATION}_1791799000.jsonl",
+                "\n" + line(build_uplink(CREDENTIALS, 7, 29, FLASH), time="2026-10-13T08:00:00Z"),
+            )
+        more = await client.post(
+            "/api/cards", files=[("files", ("card.zip", grown.getvalue(), "application/zip"))]
+        )
+        assert more.status_code == 201, more.text
+        assert more.json()["files"] == 1 and more.json()["frames"] == 1
+        assert [f["name"] for f in more.json()["read_before"]] == [f"{STATION}_1791795031.jsonl"]
+        assert len((await client.get("/api/files")).json()) == 3
+        assert (await client.delete(f"/api/cards/{more.json()['id']}")).status_code == 204
 
         gone = await client.delete(f"/api/cards/{card['id']}")
         assert gone.status_code == 204 and not (data / "cards" / card["id"]).exists()
