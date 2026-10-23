@@ -2,6 +2,12 @@
 
 All notable changes to Smart Parks Protect Go. The format follows Keep a Changelog; versions are git tags. Each entry names the Protect commit the release decodes with.
 
+## v0.15.1, 2026-10-23
+
+### Fixed
+
+- **The empty strip along the right edge of the window is gone** (Tim, 2026-10-23, as in Protect the same day). The stylesheet copied from Protect reserved room for a page scrollbar on the root (`scrollbar-gutter: stable`) while only the main column scrolls, so the shell on Windows showed 15 px of empty background beside every page. The rule is gone. Protect pinned at d2d356a still.
+
 ## v0.15.0, 2026-10-23
 
 ### Added
