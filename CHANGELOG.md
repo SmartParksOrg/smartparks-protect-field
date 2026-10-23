@@ -10,6 +10,7 @@ All notable changes to Smart Parks Protect Go. The format follows Keep a Changel
 
 ### Changed
 
+- **Protect pinned at d2d356a** (Protect's `main` of 2026-10-23, decisions up to D353). The shared package is unchanged in what the app imports; the pin moves for the dependency audit: Pillow 13.0.0 and certifi 2026.10.23 (both flagged on 2026-10-23), brotli 1.2.1 and the OpenTelemetry family 1.45.1, so the app ships the same versions as the server.
 - **Protect pinned at b8c1c1c** (Protect's `main` of 2026-10-20, decisions up to D345). The pinned driver reads an offload station's port 23 report in its versions 2 and 3 (the firmware branch of 2026-10-20: the card's size and free share, the observations `sd_card_missing` and `sdfs_error`), so a card that holds such a report decodes here as on the server instead of failing the frame. The card's new root-level `sdcheck.bin`, the station's storage test file, is no station file and the card walk leaves it aside, as before. No code of the app changed.
 
 ## v0.14.0, 2026-10-19
