@@ -3,7 +3,7 @@ import { useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router";
 
-import { api, send, type Bundle, type Card, type CardReadOutcome, type Volume } from "@/api/client";
+import { api, send, type Bundle, type Card, type CardReadOutcome, type LaptopProject, type Volume } from "@/api/client";
 import { queryKeys } from "@/api/queryKeys";
 import { Callout } from "@/components/common/Callout";
 import { Page, PageHeader } from "@/components/common/PageHeader";
@@ -23,6 +23,9 @@ export function FilesPage() {
   const queryClient = useQueryClient();
   const cards = useQuery({ queryKey: queryKeys.cards, queryFn: () => api<Card[]>("/api/cards") });
   const bundle = useQuery({ queryKey: queryKeys.bundle, queryFn: () => api<Bundle>("/api/bundle") });
+  // the cards of the other projects on the laptop are not in this list (D32)
+  const laptop = useQuery({ queryKey: queryKeys.laptopProjects, queryFn: () => api<LaptopProject[]>("/api/bundle/projects") });
+  const elsewhere = (laptop.data ?? []).filter((p) => !p.current).reduce((sum, p) => sum + p.cards, 0);
   const [dragging, setDragging] = useState(false);
   const [last, setLast] = useState<CardReadOutcome | null>(null);
   const [filter, setFilter] = useState("");
@@ -213,6 +216,11 @@ export function FilesPage() {
         )}
       </div>
       <FilesExplorer cardId={filter || null} />
+      {elsewhere > 0 && (
+        <p className="text-xs text-muted-foreground">
+          {t("{{count}} SD cards read for other projects on this laptop are not shown here; choose the project at the top to see them.", { count: elsewhere })}
+        </p>
+      )}
       </Page>
     </>
   );

@@ -7,6 +7,7 @@ from fastapi import APIRouter, Request
 from pydantic import BaseModel, Field
 
 from protect_go.cards import CardStore
+from protect_go.routers.common import current_project_id
 from protect_go.store import Store
 from protect_go.uploads import run_uploads
 
@@ -56,8 +57,9 @@ def _cards(request: Request) -> CardStore:
     return store
 
 
-def _state(store: CardStore) -> UploadsRead:
-    rows: list[dict[str, Any]] = store.upload_summary()
+def _state(store: CardStore, project_id: str | None) -> UploadsRead:
+    """The loaded project's queue (D32); empty without a project."""
+    rows: list[dict[str, Any]] = store.upload_summary(project_id) if project_id else []
     return UploadsRead(
         cards=[UploadCardRead(**row) for row in rows],
         pending=sum(int(r["pending"] or 0) for r in rows),
@@ -67,18 +69,23 @@ def _state(store: CardStore) -> UploadsRead:
 
 @router.get("/uploads", response_model=UploadsRead)
 def read_uploads(request: Request) -> UploadsRead:
-    return _state(_cards(request))
+    return _state(_cards(request), current_project_id(request))
 
 
 @router.post("/uploads/run", response_model=UploadRunRead)
 async def run(body: UploadRequest, request: Request) -> UploadRunRead:
-    """Send the pending and failed files of one card or all cards to the server, one file a
-    request, and say what the server made of each."""
+    """Send the pending and failed files of one card or of every card of the loaded project
+    to the server, one file a request, and say what the server made of each."""
     store: Store = request.app.state.store
     settings = store.load()
     transport: httpx.AsyncBaseTransport | None = getattr(request.app.state, "http_transport", None)
+    project = current_project_id(request)
     outcome = await run_uploads(
-        _cards(request), settings, card_id=body.card_id, transport=transport
+        _cards(request),
+        settings,
+        card_id=body.card_id,
+        project_id=project or "",
+        transport=transport,
     )
     return UploadRunRead(
         attempted=outcome.attempted,
@@ -88,5 +95,5 @@ async def run(body: UploadRequest, request: Request) -> UploadRunRead:
         failed=outcome.failed,
         skipped_no_station=outcome.skipped_no_station,
         stopped=outcome.stopped,
-        state=_state(_cards(request)),
+        state=_state(_cards(request), project),
     )

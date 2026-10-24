@@ -404,3 +404,70 @@ async def test_an_unknown_tracker_is_listed_and_read_again_once_the_bundle_knows
         trackers = (await client.get("/api/trackers")).json()
         assert {t["device_id"] for t in trackers} == {"d1", "d3"}
         assert CardStore(data).read_unknown_again(known) == 0
+
+
+async def test_a_card_belongs_to_the_project_it_was_read_for(app, tmp_path):
+    """D32: the lists, the files, the uploads and the explorer show the loaded project's cards
+    alone; a card of before, of no project, is adopted when its station's project is loaded."""
+    from tests.test_bundle import OTHER, _other_bundle
+
+    data = tmp_path / "data"
+    store = BundleStore(data, "file")
+    store.save(BUNDLE)
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        read = await client.post(
+            "/api/cards", files=[("files", ("card.zip", card_zip(), "application/zip"))]
+        )
+        assert read.status_code == 201, read.text
+        card_id = read.json()["id"]
+        assert CardStore(data).card(card_id)["project_id"] == BUNDLE["project"]["id"]
+        assert len((await client.get("/api/cards")).json()) == 1
+        assert len((await client.get("/api/trackers")).json()) == 1
+
+        # the other project loaded: nothing of the first shows, the other's card does
+        store.save(_other_bundle())
+        for path in (
+            "/api/cards",
+            "/api/trackers",
+            "/api/stations",
+            "/api/files",
+            "/api/positions",
+            "/api/records",
+            "/api/records/metrics",
+            "/api/trackers/unknown",
+        ):
+            assert (await client.get(path)).json() == [], path
+        uploads = (await client.get("/api/uploads")).json()
+        assert uploads["cards"] == [] and uploads["pending"] == 0
+        other_card = await client.post(
+            "/api/cards",
+            files=[
+                ("files", ("other.zip", card_zip(station="0016C001F0520104"), "application/zip"))
+            ],
+        )
+        assert other_card.status_code == 201 and other_card.json()["station_name"] == "Station 2"
+        assert [c["id"] for c in (await client.get("/api/cards")).json()] == [
+            other_card.json()["id"]
+        ]
+        projects = (await client.get("/api/bundle/projects")).json()
+        assert {p["project_name"]: p["cards"] for p in projects} == {
+            "LP0": 1,
+            "Smart Parks - LP0": 1,
+        }
+
+        # back to the first: its card again, and nothing of the other
+        await client.post("/api/bundle/switch", json={"project_id": BUNDLE["project"]["id"]})
+        assert [c["id"] for c in (await client.get("/api/cards")).json()] == [card_id]
+        (station,) = (await client.get("/api/stations")).json()
+        assert station["station_eui"] == STATION
+
+        # a card of no project (read before D32) is adopted by its station's project
+        with CardStore(data)._connect() as db:
+            db.execute("UPDATE cards SET project_id = NULL")
+        assert (await client.get("/api/cards")).json() == []
+        adopted = await client.post("/api/bundle/switch", json={"project_id": OTHER})
+        assert adopted.json()["cards_adopted"] == 1
+        assert [c["id"] for c in (await client.get("/api/cards")).json()] == [
+            other_card.json()["id"]
+        ]
+        assert CardStore(data).card(card_id)["project_id"] is None

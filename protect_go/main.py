@@ -21,6 +21,7 @@ from protect_go.decoding import decoders
 from protect_go.routers.bundle import router as bundle_router
 from protect_go.routers.cards import router as cards_router
 from protect_go.routers.files import router as files_router
+from protect_go.routers.map import migrate_legacy_map
 from protect_go.routers.map import router as map_router
 from protect_go.routers.setup import router as setup_router
 from protect_go.routers.trackers import router as trackers_router
@@ -45,6 +46,7 @@ def create_app() -> FastAPI:
     app = FastAPI(title="Smart Parks Protect Go", version=__version__, docs_url="/api/docs")
     app.state.store = Store(settings.data_dir)
     app.state.bundle_store = BundleStore(settings.data_dir, settings.key_store)
+    migrate_legacy_map(settings.data_dir)
     app.state.card_store = CardStore(settings.data_dir)
     app.state.http_transport = None  # the tests hand in a mock transport
     app.include_router(setup_router)

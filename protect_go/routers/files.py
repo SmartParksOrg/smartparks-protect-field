@@ -8,6 +8,7 @@ from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel
 
 from protect_go.cards import CardStore
+from protect_go.routers.common import current_project_id
 
 router = APIRouter(prefix="/api")
 
@@ -65,7 +66,9 @@ def _cards(request: Request) -> CardStore:
 
 @router.get("/files", response_model=list[FileRead])
 def list_files(request: Request) -> list[dict[str, Any]]:
-    return _cards(request).files()
+    """The files read for the loaded project (D32); none without one."""
+    project = current_project_id(request)
+    return _cards(request).files(project) if project else []
 
 
 @router.get("/files/{file_id}", response_model=FileDetailRead)

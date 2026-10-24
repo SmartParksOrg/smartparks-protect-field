@@ -13,6 +13,7 @@ import {
 } from "@/api/client";
 import { queryKeys } from "@/api/queryKeys";
 import logoLandscape from "@/assets/brand/logo-landscape.webp";
+import { ProjectSwitcher } from "@/components/layout/ProjectSwitcher";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { ThemeSwitch } from "@/components/layout/ThemeSwitch";
 import { Callout } from "@/components/common/Callout";
@@ -24,8 +25,10 @@ import { useLayoutStore } from "@/stores/layout";
 /**
  * The shell, after Protect's (decision D13): a fixed sidebar from 1024 px and a drawer below,
  * one viewport high with the main area scrolling, so the map page takes the full height with
- * `flex-1`. The top bar carries the landscape logo with the product name on the left and the
- * theme switch and the connection dot on the right. The dot follows the live state (decision
+ * `flex-1`. The top bar carries the landscape logo with the product name and the project
+ * switcher (decision D33, as Protect's top bar) on the left and the theme switch and the
+ * connection dot on the right; below `sm` the product name gives way to the switcher, which
+ * truncates. The dot follows the live state (decision
  * D18): green when the server answers and the sign-in holds, amber when it answers without a
  * sign-in, grey when it does not answer, the words in its title.
  */
@@ -48,6 +51,15 @@ export function AppLayout({ setup }: { setup: Setup }) {
   // the project followed the server (decision D28): every page reads the new bundle, and a line
   // says so until it is dismissed
   const updatedAt = connection.data?.bundle_updated_at ?? null;
+  // the map the server was still cutting at the load came by itself (D32): the maps redraw
+  const mapUpdatedAt = connection.data?.map_updated_at ?? null;
+  const lastMapUpdate = useRef<string | null>(null);
+  useEffect(() => {
+    if (!mapUpdatedAt || mapUpdatedAt === lastMapUpdate.current) return;
+    lastMapUpdate.current = mapUpdatedAt;
+    void queryClient.invalidateQueries({ queryKey: queryKeys.map });
+    void queryClient.invalidateQueries({ queryKey: queryKeys.laptopProjects });
+  }, [mapUpdatedAt, queryClient]);
   const [seenUpdate, setSeenUpdate] = useState<string | null>(() => {
     try {
       return localStorage.getItem("protect-go-seen-bundle-update");
@@ -156,14 +168,14 @@ export function AppLayout({ setup }: { setup: Setup }) {
             alt=""
             className="h-6 w-auto shrink-0 sm:h-7"
           />
-          <span className="min-w-0 truncate text-sm font-medium whitespace-nowrap sm:text-base">
+          <span className="hidden min-w-0 truncate text-sm font-medium whitespace-nowrap sm:inline sm:text-base">
             {t("Protect Go")}
           </span>
-          {bundle.data?.present && (
-            <span className="hidden min-w-0 truncate text-sm text-muted-foreground sm:inline">
-              · {bundle.data.project_name}
-            </span>
-          )}
+          <ProjectSwitcher
+            signedIn={setup.signed_in}
+            online={connection.data?.online}
+            className="h-8 min-w-0 flex-1 sm:ml-2 sm:h-9 sm:max-w-xs sm:flex-none"
+          />
           <span className="ml-auto flex shrink-0 items-center gap-1">
             <ThemeSwitch className="size-8 sm:size-9" />
             <span

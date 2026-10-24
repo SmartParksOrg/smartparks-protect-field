@@ -15,7 +15,8 @@ function renderPage(responses: Record<string, unknown>) {
       const url = String(input);
       const key = Object.keys(responses).find((k) => url.endsWith(k));
       if (!key) return new Response("down", { status: 503 });
-      return new Response(JSON.stringify(responses[key]), { status: 200, headers: { "Content-Type": "application/json" } });
+      const body = responses[key];
+      return new Response(JSON.stringify(typeof body === "function" ? body() : body), { status: 200, headers: { "Content-Type": "application/json" } });
     }),
   );
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
@@ -31,7 +32,9 @@ function renderPage(responses: Record<string, unknown>) {
 afterEach(() => vi.unstubAllGlobals());
 
 test("loads the chosen project and says what came", async () => {
-  renderPage({ "/api/bundle": EMPTY, "/api/projects": [{ id: "p1", name: "LP0", stations: 3 }, { id: "p2", name: "Cows", stations: 0 }], "/api/bundle/fetch": { bundle: LOADED, map: MAP } });
+  // the backend answers the loaded bundle once the load went through
+  const state = { bundle: EMPTY as typeof LOADED | typeof EMPTY };
+  renderPage({ "/api/bundle": () => state.bundle, "/api/projects": [{ id: "p1", name: "LP0", stations: 3 }, { id: "p2", name: "Cows", stations: 0 }], "/api/bundle/fetch": () => { state.bundle = LOADED; return { bundle: LOADED, map: MAP, frames_read_again: 0, cards_adopted: 0 }; }, "/api/bundle/projects": [] });
   await screen.findByRole("option", { name: "LP0 (3 stations)" });
   expect(screen.queryByRole("option", { name: /Cows/ })).not.toBeInTheDocument();
   expect(screen.getByText("1 projects without an offload station are not offered.")).toBeInTheDocument();
@@ -42,6 +45,8 @@ test("loads the chosen project and says what came", async () => {
 });
 
 test("warns about a stale bundle", async () => {
-  renderPage({ "/api/bundle": { ...LOADED, stale: true }, "/api/projects": [{ id: "p1", name: "LP0", stations: 3 }] });
+  renderPage({ "/api/bundle": { ...LOADED, stale: true }, "/api/projects": [{ id: "p1", name: "LP0", stations: 3 }], "/api/bundle/projects": [{ project_id: "p1", project_name: "LP0", fetched_at: new Date().toISOString(), stale: true, current: true, map_present: true, cards: 2 }, { project_id: "p2", project_name: "Okonjima", fetched_at: new Date().toISOString(), stale: false, current: false, map_present: false, cards: 0 }] });
+  expect(await screen.findByRole("button", { name: "Use" })).toBeInTheDocument();
+  expect(screen.getByText("loaded")).toBeInTheDocument();
   expect(await screen.findByText(/older than a week/)).toBeInTheDocument();
 });

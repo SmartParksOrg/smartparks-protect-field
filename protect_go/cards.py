@@ -6,6 +6,10 @@ themselves are kept beside it, untouched, for the upload (F4). Nothing decoded h
 
 The records are deduplicated the way Protect does it (ADR 0008): one key per device, time and
 record type, with the metric or the fingerprint, so a frame the station stored twice counts once.
+
+Every card belongs to the project that was loaded when it was read (decision D32), and every
+read the pages make is that project's: a card of another project's station stays out of its
+lists, its explorer, its files and its uploads until that project is loaded again.
 """
 
 import contextlib
@@ -63,6 +67,7 @@ FAILURES_LIMIT = 100
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS cards (
     id TEXT PRIMARY KEY, name TEXT NOT NULL, imported_at TEXT NOT NULL,
+    project_id TEXT,
     station_eui TEXT, station_device_id TEXT, station_name TEXT,
     files INTEGER NOT NULL DEFAULT 0, lines INTEGER NOT NULL DEFAULT 0,
     frames INTEGER NOT NULL DEFAULT 0, decoded INTEGER NOT NULL DEFAULT 0,
@@ -197,7 +202,12 @@ class CardStore:
     @staticmethod
     def _migrate(db: sqlite3.Connection) -> None:
         """Columns added after a database was made: the upload's state per file (F4), the
-        tracker EUI a v5 station wrote beside a frame (Protect's D338)."""
+        tracker EUI a v5 station wrote beside a frame (Protect's D338), the project a card was
+        read for (D32; a card from before carries none until `adopt_cards` names it)."""
+        card_columns = {row["name"] for row in db.execute("PRAGMA table_info(cards)").fetchall()}
+        if "project_id" not in card_columns:
+            db.execute("ALTER TABLE cards ADD COLUMN project_id TEXT")
+        db.execute("CREATE INDEX IF NOT EXISTS cards_project ON cards(project_id)")
         have = {row["name"] for row in db.execute("PRAGMA table_info(card_files)").fetchall()}
         for column, definition in (
             ("upload_status", "TEXT NOT NULL DEFAULT 'pending'"),
@@ -218,6 +228,14 @@ class CardStore:
         db.execute("PRAGMA foreign_keys = ON")
         db.execute("PRAGMA journal_mode = WAL")
         return db
+
+    @staticmethod
+    def _scope(column: str, project_id: str | None) -> tuple[list[str], list[Any]]:
+        """The clause that keeps a read to one project's cards (D32): `column` names the card
+        id to judge; None reads across every project (the store's own repairs)."""
+        if project_id is None:
+            return [], []
+        return [f"{column} IN (SELECT id FROM cards WHERE project_id = ?)"], [project_id]
 
     # --- reading a card
 
@@ -243,6 +261,7 @@ class CardStore:
                 "STATIONEUI_timestamp.jsonl files, or a zip of them"
             )
         now = now or datetime.now(UTC)
+        project_id = str(bundle["project"]["id"])
         trackers = trackers_of(bundle)
         stations = {
             str(s["station_eui"]).upper(): s
@@ -293,8 +312,8 @@ class CardStore:
         station_eui: str | None = None
         with self._connect() as db:
             db.execute(
-                "INSERT INTO cards (id, name, imported_at) VALUES (?, ?, ?)",
-                (card_id, name, now.isoformat()),
+                "INSERT INTO cards (id, name, imported_at, project_id) VALUES (?, ?, ?, ?)",
+                (card_id, name, now.isoformat(), project_id),
             )
             for member in fresh:
                 file_id = str(uuid.uuid4())
@@ -609,12 +628,43 @@ class CardStore:
 
     # --- what the pages ask
 
-    def cards(self, limit: int = LIST_LIMIT) -> list[dict[str, Any]]:
+    def cards(self, project_id: str | None = None, limit: int = LIST_LIMIT) -> list[dict[str, Any]]:
+        clauses, params = self._scope("id", project_id)
+        where = f"WHERE {' AND '.join(clauses)} " if clauses else ""
         with self._connect() as db:
             rows = db.execute(
-                "SELECT * FROM cards ORDER BY imported_at DESC LIMIT ?", (limit,)
+                f"SELECT * FROM cards {where}ORDER BY imported_at DESC LIMIT ?", (*params, limit)
             ).fetchall()
         return [dict(row) for row in rows]
+
+    def cards_per_project(self) -> dict[str | None, int]:
+        """How many cards each project has on the laptop; None for the cards of no project
+        yet (read before D32 for a station no loaded project has)."""
+        with self._connect() as db:
+            rows = db.execute("SELECT project_id, COUNT(*) AS n FROM cards GROUP BY project_id")
+            return {row["project_id"]: int(row["n"]) for row in rows.fetchall()}
+
+    def adopt_cards(self, bundle: dict[str, Any]) -> int:
+        """Give the cards of no project yet to this bundle's project when their station is one
+        of its stations (D32): a card read before the projects were kept apart finds its
+        project the first time that project is loaded. Returns how many cards moved."""
+        project_id = str(bundle["project"]["id"])
+        euis = {
+            str(s["station_eui"]).upper()
+            for s in bundle.get("stations", [])
+            if s.get("station_eui")
+        }
+        device_ids = {str(s["device_id"]) for s in bundle.get("stations", []) if s.get("device_id")}
+        if not euis and not device_ids:
+            return 0
+        with self._connect() as db:
+            moved = db.execute(
+                "UPDATE cards SET project_id = ? WHERE project_id IS NULL AND ("
+                f"UPPER(station_eui) IN ({','.join('?' * len(euis)) or 'NULL'}) "
+                f"OR station_device_id IN ({','.join('?' * len(device_ids)) or 'NULL'}))",
+                (project_id, *sorted(euis), *sorted(device_ids)),
+            ).rowcount
+        return int(moved)
 
     def card(self, card_id: str) -> dict[str, Any] | None:
         with self._connect() as db:
@@ -680,14 +730,16 @@ class CardStore:
         self,
         device_ids: list[str] | None,
         *,
+        project_id: str | None = None,
         since: str | None = None,
         until: str | None = None,
         limit: int = RECORDS_LIMIT,
     ) -> list[dict[str, Any]]:
         """The rows of the Data explorer (decision D25), as Protect's records: one row per
         tracker and moment with the fix, when there was one, and every measurement of that
-        moment as a column; newest first, bounded."""
-        clauses, params = ["kind IN ('position', 'measurement')"], []
+        moment as a column; newest first, bounded, the project's alone (D32)."""
+        scope, params = self._scope("card_id", project_id)
+        clauses: list[str] = ["kind IN ('position', 'measurement')", *scope]
         if device_ids:
             clauses.append(f"device_id IN ({','.join('?' * len(device_ids))})")
             params.extend(device_ids)
@@ -698,13 +750,7 @@ class CardStore:
             clauses.append("time <= ?")
             params.append(until)
         with self._connect() as db:
-            names = {
-                row["device_id"]: row["device_name"]
-                for row in db.execute(
-                    "SELECT device_id, MAX(device_name) AS device_name FROM frames "
-                    "WHERE device_id IS NOT NULL GROUP BY device_id"
-                ).fetchall()
-            }
+            names = self._names(db, project_id)
             rows = db.execute(
                 "SELECT device_id, entity_id, kind, time, lat, lon, metric, value, data "
                 f"FROM records WHERE {' AND '.join(clauses)} ORDER BY time DESC",
@@ -741,12 +787,14 @@ class CardStore:
         self,
         device_ids: list[str] | None,
         *,
+        project_id: str | None = None,
         since: str | None = None,
         until: str | None = None,
     ) -> list[dict[str, Any]]:
         """The metrics the chosen trackers reported in the window, with counts, for the
         explorer's picker (as Protect's analytics metrics)."""
-        clauses, params = ["kind = 'measurement'", "metric IS NOT NULL"], []
+        scope, params = self._scope("card_id", project_id)
+        clauses: list[str] = ["kind = 'measurement'", "metric IS NOT NULL", *scope]
         if device_ids:
             clauses.append(f"device_id IN ({','.join('?' * len(device_ids))})")
             params.extend(device_ids)
@@ -764,9 +812,11 @@ class CardStore:
             ).fetchall()
         return [{"key": row["metric"], "count": int(row["count"])} for row in rows]
 
-    def stations(self) -> list[dict[str, Any]]:
-        """Every offload station whose files were read, by EUI: the batches and files read,
-        the frames and what became of them, the files still to upload, and the last read."""
+    def stations(self, project_id: str | None = None) -> list[dict[str, Any]]:
+        """Every offload station whose files were read for the project, by EUI: the batches and
+        files read, the frames and what became of them, the files still to upload, and the
+        last read."""
+        clauses, params = self._scope("c.id", project_id)
         with self._connect() as db:
             rows = db.execute(
                 "SELECT c.station_eui, MAX(c.station_device_id) AS station_device_id, "
@@ -779,7 +829,9 @@ class CardStore:
                 "COALESCE(SUM(f.upload_status = 'duplicate'), 0) AS duplicate, "
                 "MAX(c.imported_at) AS last_read "
                 "FROM cards c LEFT JOIN card_files f ON f.card_id = c.id "
-                "WHERE c.station_eui IS NOT NULL GROUP BY c.station_eui ORDER BY c.station_eui"
+                f"WHERE {' AND '.join(['c.station_eui IS NOT NULL', *clauses])} "
+                "GROUP BY c.station_eui ORDER BY c.station_eui",
+                params,
             ).fetchall()
         return [dict(row) for row in rows]
 
@@ -789,12 +841,14 @@ class CardStore:
         device_id: str | None,
         limit: int = POSITIONS_LIMIT,
         *,
+        project_id: str | None = None,
         since: str | None = None,
         until: str | None = None,
     ) -> list[dict[str, Any]]:
-        """Positions of a batch of files, a device or everything, within a window, newest first,
-        bounded."""
-        clauses, params = ["kind = 'position'"], []
+        """Positions of a batch of files, a device or everything of the project, within a
+        window, newest first, bounded."""
+        scope, params = self._scope("card_id", project_id)
+        clauses: list[str] = ["kind = 'position'", *scope]
         if card_id:
             clauses.append("card_id = ?")
             params.append(card_id)
@@ -818,8 +872,11 @@ class CardStore:
 
     # --- the files, one row each, as a file explorer shows them (F2, Tim 2026-10-17)
 
-    def files(self) -> list[dict[str, Any]]:
-        """Every file read, newest batch first, with its outcome counts and its upload state."""
+    def files(self, project_id: str | None = None) -> list[dict[str, Any]]:
+        """Every file read for the project, newest batch first, with its outcome counts and
+        its upload state."""
+        clauses, params = self._scope("c.id", project_id)
+        where = f"WHERE {' AND '.join(clauses)} " if clauses else ""
         with self._connect() as db:
             rows = db.execute(
                 "SELECT f.id, f.card_id, c.name AS card_name, c.station_name, c.station_eui, "
@@ -833,8 +890,8 @@ class CardStore:
                 "COALESCE(SUM(fr.measurements), 0) AS measurements "
                 "FROM card_files f JOIN cards c ON c.id = f.card_id "
                 "LEFT JOIN frames fr ON fr.file_id = f.id "
-                "GROUP BY f.id ORDER BY c.imported_at DESC, f.folder, f.name LIMIT ?",
-                (LIST_LIMIT * 100,),
+                f"{where}GROUP BY f.id ORDER BY c.imported_at DESC, f.folder, f.name LIMIT ?",
+                (*params, LIST_LIMIT * 100),
             ).fetchall()
         return [dict(row) for row in rows]
 
@@ -863,11 +920,13 @@ class CardStore:
 
     # --- the upload (F4)
 
-    def pending_files(self, card_id: str | None = None) -> list[dict[str, Any]]:
-        """The files still to upload, or to try again: pending and failed ones, oldest card
-        first, with the card's station."""
-        clauses = ["f.upload_status IN ('pending', 'failed')"]
-        params: list[Any] = []
+    def pending_files(
+        self, card_id: str | None = None, *, project_id: str | None = None
+    ) -> list[dict[str, Any]]:
+        """The files still to upload, or to try again: pending and failed ones of one card, or
+        of every card of the project, oldest card first, with the card's station."""
+        scope, params = self._scope("c.id", project_id)
+        clauses: list[str] = ["f.upload_status IN ('pending', 'failed')", *scope]
         if card_id:
             clauses.append("f.card_id = ?")
             params.append(card_id)
@@ -894,8 +953,11 @@ class CardStore:
                 (status, answer, status, datetime.now(UTC).isoformat(), log_file_id, file_id),
             )
 
-    def upload_summary(self) -> list[dict[str, Any]]:
-        """Per card: how many files wait, went up, were there already, were refused or failed."""
+    def upload_summary(self, project_id: str | None = None) -> list[dict[str, Any]]:
+        """Per card of the project: how many files wait, went up, were there already, were
+        refused or failed."""
+        clauses, params = self._scope("c.id", project_id)
+        where = f"WHERE {' AND '.join(clauses)} " if clauses else ""
         with self._connect() as db:
             rows = db.execute(
                 "SELECT c.id AS card_id, c.name, c.station_name, c.station_eui, "
@@ -910,37 +972,47 @@ class CardStore:
                 " AND upload_status IN ('failed', 'refused') ORDER BY uploaded_at DESC LIMIT 1) "
                 "AS last_problem "
                 "FROM cards c JOIN card_files f ON f.card_id = c.id "
-                "GROUP BY c.id ORDER BY c.imported_at DESC LIMIT ?",
-                (LIST_LIMIT,),
+                f"{where}GROUP BY c.id ORDER BY c.imported_at DESC LIMIT ?",
+                (*params, LIST_LIMIT),
             ).fetchall()
         return [dict(row) for row in rows]
 
     # --- the trackers across every batch of files (F3)
 
-    def trackers(self) -> list[dict[str, Any]]:
-        """Every tracker that appears in the records: its name, entity, how many positions and
-        measurements, the span of its positions and its newest position."""
+    def _names(self, db: sqlite3.Connection, project_id: str | None) -> dict[str, str]:
+        """Each device's name as the project's frames last named it."""
+        clauses, params = self._scope("card_id", project_id)
+        return {
+            row["device_id"]: row["device_name"]
+            for row in db.execute(
+                "SELECT device_id, MAX(device_name) AS device_name FROM frames "
+                f"WHERE {' AND '.join(['device_id IS NOT NULL', *clauses])} GROUP BY device_id",
+                params,
+            ).fetchall()
+        }
+
+    def trackers(self, project_id: str | None = None) -> list[dict[str, Any]]:
+        """Every tracker that appears in the project's records: its name, entity, how many
+        positions and measurements, the span of its positions and its newest position."""
+        scope, params = self._scope("card_id", project_id)
+        where = f"WHERE {' AND '.join(scope)} " if scope else ""
         with self._connect() as db:
-            names = {
-                row["device_id"]: row["device_name"]
-                for row in db.execute(
-                    "SELECT device_id, MAX(device_name) AS device_name FROM frames "
-                    "WHERE device_id IS NOT NULL GROUP BY device_id"
-                ).fetchall()
-            }
+            names = self._names(db, project_id)
             rows = db.execute(
                 "SELECT device_id, entity_id, "
                 "SUM(kind = 'position') AS positions, SUM(kind = 'measurement') AS measurements, "
                 "MIN(CASE WHEN kind = 'position' THEN time END) AS first_time, "
                 "MAX(CASE WHEN kind = 'position' THEN time END) AS last_time "
-                "FROM records GROUP BY device_id, entity_id ORDER BY device_id"
+                f"FROM records {where}GROUP BY device_id, entity_id ORDER BY device_id",
+                params,
             ).fetchall()
             result = []
             for row in rows:
                 last = db.execute(
-                    "SELECT time, lat, lon FROM records WHERE device_id = ? AND kind = 'position' "
+                    "SELECT time, lat, lon FROM records "
+                    f"WHERE {' AND '.join(['device_id = ?', "kind = 'position'", *scope])} "
                     "ORDER BY time DESC LIMIT 1",
-                    (row["device_id"],),
+                    (row["device_id"], *params),
                 ).fetchone()
                 result.append(
                     {
@@ -952,11 +1024,12 @@ class CardStore:
                 )
         return result
 
-    def unknown_trackers(self) -> list[dict[str, Any]]:
-        """The LP0 addresses the cards hold frames for that no device of the bundle has
-        (Protect's D338): the address, the tracker EUI when a v5 station wrote it, how many
+    def unknown_trackers(self, project_id: str | None = None) -> list[dict[str, Any]]:
+        """The LP0 addresses the project's cards hold frames for that no device of the bundle
+        has (Protect's D338): the address, the tracker EUI when a v5 station wrote it, how many
         frames, the span of their reception and the stations that heard them. What Protect's
-        Offload page lists as "Addresses no device has", here from the files on the laptop."""
+        Offload page lists as "Unknown devices", here from the files on the laptop."""
+        scope, params = self._scope("c.id", project_id)
         with self._connect() as db:
             rows = db.execute(
                 "SELECT f.dev_addr, MAX(f.source_eui) AS source_eui, COUNT(*) AS frames, "
@@ -964,7 +1037,9 @@ class CardStore:
                 "GROUP_CONCAT(DISTINCT COALESCE(c.station_name, c.station_eui)) AS stations "
                 "FROM frames f JOIN cards c ON c.id = f.card_id "
                 "WHERE f.status = 'unknown_address' AND f.dev_addr IS NOT NULL "
-                "GROUP BY f.dev_addr ORDER BY MAX(f.received_at) DESC"
+                f"{''.join(' AND ' + clause for clause in scope)}"
+                "GROUP BY f.dev_addr ORDER BY MAX(f.received_at) DESC",
+                params,
             ).fetchall()
         return [
             {
@@ -991,8 +1066,10 @@ class CardStore:
             pending = db.execute(
                 "SELECT f.id, f.card_id, f.file_id, f.line, f.dev_addr, cf.path "
                 "FROM frames f JOIN card_files cf ON cf.id = f.file_id "
+                "JOIN cards c ON c.id = f.card_id "
                 "WHERE f.status = 'unknown_address' AND f.dev_addr IS NOT NULL "
-                "ORDER BY f.card_id, f.file_id, f.line"
+                "AND c.project_id = ? ORDER BY f.card_id, f.file_id, f.line",
+                (str(bundle["project"]["id"]),),
             ).fetchall()
             wanted = [row for row in pending if row["dev_addr"].upper() in trackers]
             by_file: dict[str, list[sqlite3.Row]] = {}

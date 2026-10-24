@@ -48,19 +48,24 @@ async def run_uploads(
     settings: Settings,
     *,
     card_id: str | None = None,
+    project_id: str | None = None,
     transport: httpx.AsyncBaseTransport | None = None,
 ) -> UploadRun:
-    """Upload every pending or failed file of one card, or of all cards. A file whose card has
-    no station of the project is left pending with a word; a 401 or 403 stops the run."""
+    """Upload every pending or failed file of one card, or of every card of the project
+    (`project_id`; an empty one is no project, so nothing goes). A file whose card has no
+    station of the project is left pending with a word; a 401 or 403 stops the run."""
     run = UploadRun()
     if settings.server_url is None or settings.token is None:
         run.stopped = "Sign in to the server first"
+        return run
+    if card_id is None and project_id == "":
+        run.stopped = "Load a project first; the upload sends its files"
         return run
     headers = {"Authorization": f"Bearer {settings.token}"}
     async with httpx.AsyncClient(
         base_url=settings.server_url, timeout=TIMEOUT, transport=transport
     ) as http:
-        for item in store.pending_files(card_id):
+        for item in store.pending_files(card_id, project_id=project_id or None):
             run.cards.add(item["card_id"])
             if not item["station_device_id"]:
                 run.skipped_no_station += 1

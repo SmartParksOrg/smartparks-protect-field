@@ -11,6 +11,7 @@ from pydantic import BaseModel, Field
 from protect_go import volumes
 from protect_go.bundle import BundleStore
 from protect_go.cards import POSITIONS_LIMIT, CardStore
+from protect_go.routers.common import current_project_id
 
 router = APIRouter(prefix="/api")
 
@@ -106,7 +107,9 @@ def _cards(request: Request) -> CardStore:
 
 @router.get("/cards", response_model=list[CardRead])
 def list_cards(request: Request) -> list[dict[str, Any]]:
-    return _cards(request).cards()
+    """The cards read for the loaded project (D32); none without one."""
+    project = current_project_id(request)
+    return _cards(request).cards(project) if project else []
 
 
 @router.post("/cards", response_model=CardRead, status_code=201)
@@ -188,8 +191,9 @@ class StationStatsRead(BaseModel):
 
 @router.get("/stations", response_model=list[StationStatsRead])
 def list_stations(request: Request) -> list[dict[str, Any]]:
-    """What the files brought per offload station, for the Offload stations page."""
-    return _cards(request).stations()
+    """What the files brought per offload station of the loaded project (D32)."""
+    project = current_project_id(request)
+    return _cards(request).stations(project) if project else []
 
 
 @router.get("/cards/volumes", response_model=list[VolumeRead])

@@ -1,6 +1,8 @@
-"""Loading a project for the field (decisions D2 and D11): one call fetches the bundle from the
-Protect server and keeps it encrypted, then fetches the project's map the same way, so a person
-presses one button before leaving. The bundle is read back by the card pages (phase 2 F2)."""
+"""Loading a project for the field (decisions D2, D11, D31 and D32): one call fetches the bundle
+from the Protect server and keeps it encrypted under the project's own file, then fetches the
+project's map the same way, so a person presses one button before leaving. The laptop holds a
+bundle per project and one of them is loaded; the top bar's switcher lists them (D33) and
+switches without a connection. Every page reads the loaded project's bundle, cards and map."""
 
 import contextlib
 from dataclasses import asdict
@@ -10,9 +12,9 @@ import httpx
 from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel, Field
 
-from protect_go.bundle import BundleStore, BundleSummary
+from protect_go.bundle import PROJECT_ID, BundleStore, BundleSummary
 from protect_go.cards import CardStore
-from protect_go.routers.map import MapFetch, MapRead, fetch_map
+from protect_go.routers.map import MapFetch, MapRead, fetch_map, read_map
 from protect_go.store import Store
 
 router = APIRouter(prefix="/api")
@@ -36,9 +38,26 @@ class BundleRead(BaseModel):
     key_kept_in: str | None = Field(default=None, description="keychain or file")
 
 
+class LaptopProject(BaseModel):
+    """A project on the laptop (D31): its bundle, whether it is the loaded one, its map and
+    its cards."""
+
+    project_id: str
+    project_name: str
+    fetched_at: str
+    stale: bool
+    current: bool
+    map_present: bool
+    cards: int = 0
+
+
 class LoadRequest(BaseModel):
-    project_id: str = Field(min_length=1, max_length=64)
+    project_id: str = Field(min_length=1, max_length=64, pattern=PROJECT_ID.pattern)
     project_name: str | None = Field(default=None, max_length=200)
+
+
+class SwitchRequest(BaseModel):
+    project_id: str = Field(min_length=1, max_length=64, pattern=PROJECT_ID.pattern)
 
 
 class LoadResult(BaseModel):
@@ -48,11 +67,19 @@ class LoadResult(BaseModel):
         default=0,
         description="Frames of addresses unknown before that the fresh bundle knows (D338)",
     )
+    cards_adopted: int = Field(
+        default=0, description="Cards of no project yet that this project's stations wrote (D32)"
+    )
 
 
 def _bundle_store(request: Request) -> BundleStore:
     store: BundleStore = request.app.state.bundle_store
     return store
+
+
+def _card_store(request: Request) -> CardStore | None:
+    cards: CardStore | None = getattr(request.app.state, "card_store", None)
+    return cards
 
 
 def _read(summary: BundleSummary | None) -> BundleRead:
@@ -61,15 +88,65 @@ def _read(summary: BundleSummary | None) -> BundleRead:
     return BundleRead(present=True, **asdict(summary))
 
 
+def _settled(request: Request, bundle: dict[str, Any]) -> int:
+    """After a bundle is kept or switched to: the cards of no project yet that belong to it
+    (D32), and the follow-the-server state starts over so the next probe compares at once."""
+    request.app.state.bundle_follow = None
+    cards = _card_store(request)
+    return cards.adopt_cards(bundle) if cards is not None else 0
+
+
 @router.get("/bundle", response_model=BundleRead)
 async def read_bundle(request: Request) -> BundleRead:
+    """The loaded project's bundle."""
     return _read(_bundle_store(request).summary())
 
 
+@router.get("/bundle/projects", response_model=list[LaptopProject])
+async def laptop_projects(request: Request) -> list[LaptopProject]:
+    """Every project on the laptop (D31), by name, for the switcher and the Server page."""
+    store = _bundle_store(request)
+    current = store.current_project_id()
+    cards = _card_store(request)
+    counts = cards.cards_per_project() if cards is not None else {}
+    return [
+        LaptopProject(
+            project_id=s.project_id,
+            project_name=s.project_name,
+            fetched_at=s.fetched_at,
+            stale=s.stale,
+            current=s.project_id == current,
+            map_present=read_map(request, s.project_id).present,
+            cards=counts.get(s.project_id, 0),
+        )
+        for s in store.summaries()
+    ]
+
+
+@router.post("/bundle/switch", response_model=LoadResult)
+async def switch_project(body: SwitchRequest, request: Request) -> LoadResult:
+    """Make a project on the laptop the loaded one (D31): no connection needed, nothing
+    fetched; the map and the cards shown are that project's from then on."""
+    store = _bundle_store(request)
+    summary = store.switch(body.project_id)
+    if summary is None:
+        raise HTTPException(404, "This project is not on the laptop; load it while online")
+    loaded = store.load(body.project_id)
+    adopted = _settled(request, loaded[0]) if loaded else 0
+    return LoadResult(
+        bundle=_read(summary), map=read_map(request, body.project_id), cards_adopted=adopted
+    )
+
+
 @router.delete("/bundle", response_model=BundleRead)
-async def clear_bundle(request: Request) -> BundleRead:
-    _bundle_store(request).clear()
-    return BundleRead(present=False)
+async def clear_bundle(request: Request, project_id: str | None = None) -> BundleRead:
+    """Remove a project's bundle from the laptop (the loaded one without `project_id`)."""
+    store = _bundle_store(request)
+    if project_id is not None and not PROJECT_ID.match(project_id):
+        raise HTTPException(422, "Not a project id")
+    store.clear(project_id)
+    request.app.state.bundle_follow = None
+    return _read(store.summary())
 
 
 class MetricDefinition(BaseModel):
@@ -174,8 +251,8 @@ async def stations(request: Request) -> list[dict[str, Any]]:
 
 @router.post("/bundle/fetch", response_model=LoadResult)
 async def load_project(body: LoadRequest, request: Request) -> LoadResult:
-    """Fetch the project's bundle and keep it, then its map; the server's own words when
-    either does not come."""
+    """Fetch the project's bundle and keep it as the loaded project, then its map; the
+    server's own words when either does not come."""
     store: Store = request.app.state.store
     settings = store.load()
     if settings.server_url is None or not settings.signed_in:
@@ -204,9 +281,12 @@ async def load_project(body: LoadRequest, request: Request) -> LoadResult:
         raise HTTPException(502, "The server's bundle is not JSON") from None
     if not isinstance(bundle, dict) or bundle.get("format_version") != 1:
         raise HTTPException(502, "The server's bundle has a shape this version does not read")
+    if str(bundle.get("project", {}).get("id")) != body.project_id:
+        raise HTTPException(502, "The server's bundle names another project than the one asked")
     summary = _bundle_store(request).save(bundle)
+    adopted = _settled(request, bundle)
     # a tracker added in Protect since the cards were read: its frames decode now (D338)
-    cards: CardStore | None = getattr(request.app.state, "card_store", None)
+    cards = _card_store(request)
     read_again = cards.read_unknown_again(bundle) if cards is not None else 0
     name = body.project_name or summary.project_name
     try:
@@ -214,5 +294,11 @@ async def load_project(body: LoadRequest, request: Request) -> LoadResult:
             MapFetch(project_id=body.project_id, project_name=name), request
         )
     except HTTPException as exc:
-        map_state = MapRead(present=False, server_state=f"The map did not come: {exc.detail}")
-    return LoadResult(bundle=_read(summary), map=map_state, frames_read_again=read_again)
+        map_state = read_map(request, body.project_id)
+        map_state.server_state = f"The map did not come: {exc.detail}"
+    return LoadResult(
+        bundle=_read(summary),
+        map=map_state,
+        frames_read_again=read_again,
+        cards_adopted=adopted,
+    )

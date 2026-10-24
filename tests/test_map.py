@@ -10,8 +10,11 @@ from httpx import ASGITransport, AsyncClient
 from pmtiles.tile import Compression, TileType, zxy_to_tileid
 from pmtiles.writer import Writer
 
+from protect_go.bundle import BundleStore
 from protect_go.config import get_settings
 from protect_go.main import create_app
+from protect_go.routers.map import migrate_legacy_map
+from tests.test_bundle import BUNDLE
 from tests.test_setup import LONG_TOKEN, TOKEN, protect_server
 
 PROJECT = "11111111-1111-1111-1111-111111111111"
@@ -51,6 +54,7 @@ def small_map(path: Path) -> bytes:
 @pytest.fixture
 def app(tmp_path, monkeypatch):
     monkeypatch.setenv("PROTECT_GO_DATA_DIR", str(tmp_path / "data"))
+    monkeypatch.setenv("PROTECT_GO_KEY_STORE", "file")
     get_settings.cache_clear()
     application = create_app()
     yield application
@@ -117,7 +121,15 @@ async def test_the_map_is_asked_for_then_fetched_then_served_in_ranges(app, tmp_
         assert body["present"] and body["build"] == "20261015" and body["project_name"] == "LP0"
         assert body["size_bytes"] == len(planet) and body["max_zoom"] == 2
         assert round(body["west"], 1) == -11.0 and round(body["north"], 1) == 7.9
-        assert json.loads((tmp_path / "data" / "map.json").read_text())["project_id"] == PROJECT
+        note = tmp_path / "data" / "maps" / f"{PROJECT}.json"
+        assert json.loads(note.read_text())["project_id"] == PROJECT
+        # the tiles served are the loaded project's (D32): none is loaded yet
+        assert (await client.get("/api/map/tiles.pmtiles")).status_code == 404
+        assert (await client.get("/api/map")).json()["present"] is False
+        BundleStore(tmp_path / "data", "file").save(
+            {**BUNDLE, "project": {"id": PROJECT, "name": "LP0"}}
+        )
+        assert (await client.get("/api/map")).json()["present"] is True
 
         whole = await client.get("/api/map/tiles.pmtiles")
         assert whole.status_code == 200 and whole.content == planet
@@ -133,3 +145,65 @@ async def test_the_map_is_asked_for_then_fetched_then_served_in_ranges(app, tmp_
             "/api/map/tiles.pmtiles", headers={"Range": f"bytes={len(planet) + 5}-"}
         )
         assert beyond.status_code == 416
+
+
+def test_the_one_map_of_before_moves_under_its_project(tmp_path):
+    """Versions before D32 kept one `map.pmtiles`; it becomes the project's own file, named by
+    the note beside it, and a file without a note is dropped."""
+    data = tmp_path / "data"
+    data.mkdir()
+    (data / "map.pmtiles").write_bytes(b"tiles")
+    (data / "map.json").write_text(json.dumps({"project_id": PROJECT, "build": "20261017"}))
+    migrate_legacy_map(data)
+    assert not (data / "map.pmtiles").exists() and not (data / "map.json").exists()
+    assert (data / "maps" / f"{PROJECT}.pmtiles").read_bytes() == b"tiles"
+    assert json.loads((data / "maps" / f"{PROJECT}.json").read_text())["build"] == "20261017"
+    (data / "map.pmtiles").write_bytes(b"orphan")
+    migrate_legacy_map(data)
+    assert not (data / "map.pmtiles").exists()
+    assert (data / "maps" / f"{PROJECT}.pmtiles").read_bytes() == b"tiles"
+
+
+async def test_a_map_the_server_was_still_cutting_comes_with_the_next_probe(app, tmp_path):
+    """D32: the load found the server cutting the map; the connection probe fetches it once it
+    is ready, so the Overview draws the right tiles without a hand on Server."""
+    planet = small_map(tmp_path / "server-map.pmtiles")
+    state = {"ready": False}
+
+    def server(request: httpx.Request) -> httpx.Response:
+        if request.url.path == f"/api/v1/projects/{PROJECT}/field-bundle":
+            return httpx.Response(
+                200,
+                json={**BUNDLE, "project": {"id": PROJECT, "name": "LP0"}, "revision": "r1"},
+            )
+        if request.url.path == f"/api/v1/projects/{PROJECT}/field-bundle/revision":
+            return httpx.Response(200, json={"revision": "r1"})
+        if request.url.path == f"/api/v1/projects/{PROJECT}/field-bundle/map":
+            if request.method == "POST":
+                return httpx.Response(202, json={"status": "running"})
+            if not state["ready"]:
+                return httpx.Response(202, json={"status": "running"})
+            return httpx.Response(200, content=planet, headers={"X-Map-Build": "20261024"})
+        return protect_server(request)
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        await _signed_in(client, app)
+        app.state.http_transport = httpx.MockTransport(server)
+        loaded = (
+            await client.post(
+                "/api/bundle/fetch", json={"project_id": PROJECT, "project_name": "LP0"}
+            )
+        ).json()
+        assert loaded["map"]["present"] is False
+        assert "fetches it by itself" in loaded["map"]["server_state"]
+        # the pages read the server's words until the map comes
+        assert "fetches it by itself" in (await client.get("/api/map")).json()["server_state"]
+        probe = (await client.get("/api/setup/connection")).json()
+        assert probe["map_updated_at"] is None
+        state["ready"] = True
+        app.state.bundle_follow = {**app.state.bundle_follow, "due": None}
+        probe = (await client.get("/api/setup/connection")).json()
+        assert probe["map_updated_at"] is not None
+        after = (await client.get("/api/map")).json()
+        assert after["present"] is True and after["build"] == "20261024"
+        assert after["server_state"] is None

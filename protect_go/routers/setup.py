@@ -44,6 +44,9 @@ class ConnectionRead(BaseModel):
     bundle_outdated: bool = False
     bundle_updated_at: str | None = None
     frames_read_again: int = 0
+    #: When the loaded project's map last came by itself (D32): a map the server was still
+    #: cutting at the load is fetched by the probe once it is ready
+    map_updated_at: str | None = None
 
 
 class ServerUpdate(BaseModel):
@@ -144,7 +147,11 @@ async def _follow_the_project(
     a station or a tracker added in Protect, or a map made, should reach the app without a hand
     on Server). Every few minutes online, the bundle's fingerprint is compared with the
     server's; when it moved, the project is loaded again, and the frames of trackers unknown
-    before are read again with it. The state of the last comparison is what the pages show."""
+    before are read again with it. A project whose map is not on the laptop yet (the server
+    was still cutting it at the load, D32) gets it fetched here too. The state of the last
+    comparison is what the pages show; a switch to another project starts it over."""
+    from protect_go.routers.map import MapFetch, fetch_map, read_map
+
     state = request.app.state
     last = getattr(state, "bundle_follow", None) or {}
     summary = request.app.state.bundle_store.summary()
@@ -159,7 +166,18 @@ async def _follow_the_project(
         "bundle_outdated": False,
         "bundle_updated_at": last.get("bundle_updated_at"),
         "frames_read_again": last.get("frames_read_again", 0),
+        "map_updated_at": last.get("map_updated_at"),
     }
+    if not read_map(request, summary.project_id).present:
+        try:
+            fetched = await fetch_map(
+                MapFetch(project_id=summary.project_id, project_name=summary.project_name),
+                request,
+            )
+            if fetched.present:
+                result["map_updated_at"] = now.isoformat()
+        except HTTPException:
+            pass  # the server's words are kept for the pages by the map router
     try:
         async with client(settings.server_url, transport) as http:
             answer = await http.get(

@@ -12,6 +12,7 @@ from pydantic import BaseModel
 
 from protect_go import exports
 from protect_go.cards import POSITIONS_LIMIT, RECORDS_LIMIT, CardStore
+from protect_go.routers.common import current_project_id
 
 router = APIRouter(prefix="/api")
 
@@ -67,14 +68,17 @@ def _cards(request: Request) -> CardStore:
 
 @router.get("/trackers", response_model=list[TrackerRead])
 def list_trackers(request: Request) -> list[dict[str, Any]]:
-    return _cards(request).trackers()
+    """The loaded project's trackers from the files on the laptop (D32); none without one."""
+    project = current_project_id(request)
+    return _cards(request).trackers(project) if project else []
 
 
 @router.get("/trackers/unknown", response_model=list[UnknownTrackerRead])
 def unknown_trackers(request: Request) -> list[dict[str, Any]]:
     """The addresses the cards hold frames for that no device of the project has: Protect's
     Offload page adds the tracker (D338), and the bundle, loaded again, brings it here."""
-    return _cards(request).unknown_trackers()
+    project = current_project_id(request)
+    return _cards(request).unknown_trackers(project) if project else []
 
 
 @router.get("/positions", response_model=list[PositionRead])
@@ -85,10 +89,14 @@ def positions(
     until: str | None = None,
     limit: int = POSITIONS_LIMIT,
 ) -> list[dict[str, Any]]:
-    """Every position on the laptop, or one tracker's, within the window, newest first; at
-    most `limit` (20000), so a month of fixes every 15 minutes for a few trackers fits."""
+    """Every position of the loaded project on the laptop, or one tracker's, within the
+    window, newest first; at most `limit` (20000), so a month of fixes every 15 minutes for a
+    few trackers fits."""
+    project = current_project_id(request)
+    if project is None:
+        return []
     return _cards(request).positions(
-        None, device_id, min(limit, POSITIONS_LIMIT), since=since, until=until
+        None, device_id, min(limit, POSITIONS_LIMIT), project_id=project, since=since, until=until
     )
 
 
@@ -117,8 +125,15 @@ def records(
 ) -> list[dict[str, Any]]:
     """The Data explorer's rows (decision D25): one per tracker and moment with the fix and
     the measurements of that moment, newest first, at most `limit` (50,000)."""
+    project = current_project_id(request)
+    if project is None:
+        return []
     return _cards(request).records(
-        device_id or None, since=since, until=until, limit=min(limit, RECORDS_LIMIT)
+        device_id or None,
+        project_id=project,
+        since=since,
+        until=until,
+        limit=min(limit, RECORDS_LIMIT),
     )
 
 
@@ -130,7 +145,12 @@ def offered_metrics(
     until: str | None = None,
 ) -> list[dict[str, Any]]:
     """The metrics the chosen trackers reported in the window, with counts."""
-    return _cards(request).offered_metrics(device_id or None, since=since, until=until)
+    project = current_project_id(request)
+    if project is None:
+        return []
+    return _cards(request).offered_metrics(
+        device_id or None, project_id=project, since=since, until=until
+    )
 
 
 @router.get("/export")
@@ -146,7 +166,12 @@ def export(
     long, or the positions as GeoJSON or GPX; the browser saves it."""
     if format not in exports.FORMATS:
         raise HTTPException(422, f"Unknown format; one of {', '.join(exports.FORMATS)}")
-    rows = _cards(request).records(device_id or None, since=since, until=until)
+    project = current_project_id(request)
+    rows = (
+        _cards(request).records(device_id or None, project_id=project, since=since, until=until)
+        if project
+        else []
+    )
     body = exports.render(format, rows, metric or None)
     media_type, extension = exports.FORMATS[format]
     stamp = datetime.now(UTC).strftime("%Y%m%d-%H%M")
@@ -162,7 +187,8 @@ def export(
 @router.get("/trackers/{device_id}/metrics", response_model=list[MetricRead])
 def metrics(device_id: str, request: Request) -> list[dict[str, Any]]:
     rows = _cards(request).metrics(device_id)
-    if not rows and not any(t["device_id"] == device_id for t in _cards(request).trackers()):
+    project = current_project_id(request)
+    if not rows and not any(t["device_id"] == device_id for t in _cards(request).trackers(project)):
         raise HTTPException(404, "No such tracker on this laptop")
     return rows
 

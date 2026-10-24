@@ -74,6 +74,8 @@ export interface Connection {
   bundle_outdated?: boolean;
   bundle_updated_at?: string | null;
   frames_read_again?: number;
+  /** When the loaded project's map last came by itself (decision D32). */
+  map_updated_at?: string | null;
 }
 
 export interface Bundle {
@@ -92,6 +94,26 @@ export interface Bundle {
   credentials_included: boolean;
   stale: boolean;
   key_kept_in: string | null;
+}
+
+/** A project on the laptop (decision D31): its bundle, whether it is the loaded one, its map
+ * and its cards. */
+export interface LaptopProject {
+  project_id: string;
+  project_name: string;
+  fetched_at: string;
+  stale: boolean;
+  current: boolean;
+  map_present: boolean;
+  cards: number;
+}
+
+/** The answer to a load or a switch: the bundle now loaded and its map. */
+export interface LoadResult {
+  bundle: Bundle;
+  map: MapState;
+  frames_read_again: number;
+  cards_adopted: number;
 }
 
 export interface Card {

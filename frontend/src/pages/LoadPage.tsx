@@ -3,8 +3,7 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router";
 
-import { api, send, type Bundle } from "@/api/client";
-import type { MapState } from "@/api/client";
+import { api, send, type Bundle, type LaptopProject, type LoadResult } from "@/api/client";
 import { queryKeys } from "@/api/queryKeys";
 import { Callout } from "@/components/common/Callout";
 import { Page, PageHeader } from "@/components/common/PageHeader";
@@ -15,11 +14,6 @@ interface Project {
   id: string;
   name: string;
   stations: number;
-}
-
-interface LoadResult {
-  bundle: Bundle;
-  map: MapState;
 }
 
 /** Loading a project before leaving (decisions D2 and D11): one button fetches the project's
@@ -44,6 +38,7 @@ export function LoadSection({ signedIn }: { signedIn: boolean }) {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
   const bundle = useQuery({ queryKey: queryKeys.bundle, queryFn: () => api<Bundle>("/api/bundle") });
+  const laptop = useQuery({ queryKey: queryKeys.laptopProjects, queryFn: () => api<LaptopProject[]>("/api/bundle/projects") });
   const projects = useQuery({
     queryKey: queryKeys.projects,
     queryFn: () => api<Project[]>("/api/projects"),
@@ -51,14 +46,21 @@ export function LoadSection({ signedIn }: { signedIn: boolean }) {
   });
   const [choice, setChoice] = useState("");
   const [result, setResult] = useState<LoadResult | null>(null);
+  // a project loaded or switched: every page reads the new one (D31)
+  const settle = (loaded: LoadResult) => {
+    queryClient.setQueryData(queryKeys.bundle, loaded.bundle);
+    queryClient.setQueryData(queryKeys.map, loaded.map);
+    void queryClient.invalidateQueries();
+    setResult(loaded);
+  };
   const load = useMutation({
     mutationFn: (project: Project) =>
       send<LoadResult>("POST", "/api/bundle/fetch", { project_id: project.id, project_name: project.name }),
-    onSuccess: (loaded) => {
-      queryClient.setQueryData(queryKeys.bundle, loaded.bundle);
-      queryClient.setQueryData(queryKeys.map, loaded.map);
-      setResult(loaded);
-    },
+    onSuccess: settle,
+  });
+  const switchTo = useMutation({
+    mutationFn: (project: LaptopProject) => send<LoadResult>("POST", "/api/bundle/switch", { project_id: project.project_id }),
+    onSuccess: settle,
   });
   const current = bundle.data;
   // only a project with an offload station has a card to read (Tim, 2026-10-17)
@@ -131,8 +133,9 @@ export function LoadSection({ signedIn }: { signedIn: boolean }) {
               <p className="mt-1">
                 {result.map.present
                   ? t("The map came too ({{size}} MB).", { size: ((result.map.size_bytes ?? 0) / 1048576).toFixed(1) })
-                  : (result.map.server_state ?? t("The map did not come; fetch it from the Map page later."))}
+                  : (result.map.server_state ?? t("The map did not come; the app fetches it by itself while online, or from the Overview."))}
               </p>
+              {result.cards_adopted > 0 && <p className="mt-1">{t("{{count}} SD cards read before now belong to this project.", { count: result.cards_adopted })}</p>}
             </Callout>
           )}
         </CardContent>
@@ -142,7 +145,7 @@ export function LoadSection({ signedIn }: { signedIn: boolean }) {
           <CardHeader>
             <CardTitle>{t("On this laptop")}</CardTitle>
             <CardDescription>
-              {t("{{project}}, fetched {{when}} from {{server}}; Protect {{version}}.", {
+              {t("{{project}} is loaded, fetched {{when}} from {{server}}; Protect {{version}}.", {
                 project: current.project_name,
                 when: new Date(current.fetched_at ?? "").toLocaleString(),
                 server: current.server_url,
@@ -152,6 +155,30 @@ export function LoadSection({ signedIn }: { signedIn: boolean }) {
           </CardHeader>
           <CardContent className="flex flex-col gap-2 text-sm">
             {current.stale && <Callout kind="warning">{t("This bundle is older than a week; load the project again while you are online.")}</Callout>}
+            {laptop.data && laptop.data.length > 1 && (
+              <ul className="flex flex-col divide-y rounded-md border" aria-label={t("Projects on this laptop")}>
+                {laptop.data.map((project) => (
+                  <li key={project.project_id} className="flex flex-wrap items-center justify-between gap-2 px-3 py-2">
+                    <div className="min-w-0">
+                      <p className="truncate font-medium">{project.project_name}</p>
+                      <p className="truncate text-xs text-muted-foreground">
+                        {project.map_present
+                          ? t("fetched {{when}}; {{cards}} SD cards; map on this laptop", { when: new Date(project.fetched_at).toLocaleString(), cards: project.cards })
+                          : t("fetched {{when}}; {{cards}} SD cards; no map yet", { when: new Date(project.fetched_at).toLocaleString(), cards: project.cards })}
+                      </p>
+                    </div>
+                    {project.current ? (
+                      <span className="text-xs text-muted-foreground">{t("loaded")}</span>
+                    ) : (
+                      <Button type="button" size="sm" variant="outline" disabled={switchTo.isPending} onClick={() => switchTo.mutate(project)}>
+                        {t("Use")}
+                      </Button>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            )}
+            {switchTo.isError && <Callout kind="error">{switchTo.error.message}</Callout>}
             <p className="text-muted-foreground">
               {current.key_kept_in === "keychain"
                 ? t("The keys are protected by this laptop's keychain: your login is the password.")

@@ -1,10 +1,12 @@
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router";
 
-import { api, type MapState, type Station, type Tracker } from "@/api/client";
+import { api, send, type Bundle, type MapState, type Station, type Tracker } from "@/api/client";
 import { queryKeys } from "@/api/queryKeys";
+import { Callout } from "@/components/common/Callout";
+import { Button } from "@/components/ui/button";
 import { bindStationClicks, bindTrackPointClicks, colourTrackers, ensureStationLayers, ensureTrackLayers, setStations, setTracks, type StationMarker, type TrackLayer } from "@/components/map/trackLayers";
 import { type Flavour, useMap } from "@/components/map/useMap";
 import { useTheme } from "@/hooks/useTheme";
@@ -13,7 +15,9 @@ import { useTheme } from "@/hooks/useTheme";
  * stations stand, with Protect's marker, and the last known position of every tracker the app
  * knows, each in the colour it has everywhere else; a click on a station or a tracker opens its
  * page. `trackerIds` and `stationIds` narrow it to an entity's own page. Without the project's
- * map on the laptop the panel says so. */
+ * map on the laptop the panel says what the server said of it and fetches it on a button (D32:
+ * a map the server was still cutting at the load stayed away, and the stations stood on the
+ * tiles of the project loaded before). */
 export function OverviewMap({ trackerIds, stationIds, className = "h-56" }: { trackerIds?: string[]; stationIds?: string[]; className?: string } = {}) {
   const { t } = useTranslation();
   const { resolved } = useTheme();
@@ -51,14 +55,41 @@ export function OverviewMap({ trackerIds, stationIds, className = "h-56" }: { tr
     return [Math.min(...lons) - pad, Math.min(...lats) - pad, Math.max(...lons) + pad, Math.max(...lats) + pad];
   }, [stations, last, map.data]);
   const present = map.data?.present === true;
+  if (map.data && !present) {
+    return <MissingMap state={map.data} />;
+  }
   if (!present || bounds === null) {
-    return (
-      <p className="text-sm text-muted-foreground">
-        {map.data && !present ? t("No map on this laptop yet. Load the project while you are online; the map comes with it.") : t("Nothing to place on the map yet.")}
-      </p>
-    );
+    return <p className="text-sm text-muted-foreground">{t("Nothing to place on the map yet.")}</p>;
   }
   return <OverviewMapCanvas flavour={flavour} bounds={bounds} stations={stations} last={last} className={className} />;
+}
+
+/** The loaded project has no map on the laptop: the server's last word on it, and a button
+ * that asks the server now rather than waiting for the probe. */
+function MissingMap({ state }: { state: MapState }) {
+  const { t } = useTranslation();
+  const queryClient = useQueryClient();
+  const bundle = useQuery({ queryKey: queryKeys.bundle, queryFn: () => api<Bundle>("/api/bundle") });
+  const fetchMap = useMutation({
+    mutationFn: () => send<MapState>("POST", "/api/map/fetch", { project_id: bundle.data?.project_id, project_name: bundle.data?.project_name }),
+    onSuccess: (next) => {
+      queryClient.setQueryData(queryKeys.map, next);
+      void queryClient.invalidateQueries({ queryKey: queryKeys.laptopProjects });
+    },
+  });
+  return (
+    <div className="flex flex-col gap-2 text-sm">
+      <p className="text-muted-foreground">{state.server_state ?? t("No map of this project on this laptop yet. The app fetches it from the server while online; the stations and trackers are listed below meanwhile.")}</p>
+      {bundle.data?.present && (
+        <div>
+          <Button type="button" size="sm" variant="outline" disabled={fetchMap.isPending} onClick={() => fetchMap.mutate()}>
+            {fetchMap.isPending ? t("Asking the server") : t("Fetch the map now")}
+          </Button>
+        </div>
+      )}
+      {fetchMap.isError && <Callout kind="error">{fetchMap.error.message}</Callout>}
+    </div>
+  );
 }
 
 function OverviewMapCanvas({ flavour, bounds, stations, last, className }: { flavour: Flavour; bounds: [number, number, number, number]; stations: StationMarker[]; last: TrackLayer[]; className: string }) {

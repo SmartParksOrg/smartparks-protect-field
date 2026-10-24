@@ -1,7 +1,8 @@
 """The offline map (Protect Go's decision D4; Protect's phase 43 P3): the project's PMTiles file,
 downloaded from the Protect server while online and served to MapLibre here with range requests,
-so the map draws without a connection. One map at a time, the project's, in `map.pmtiles` in the
-data folder with `map.json` beside it saying which project and build it is."""
+so the map draws without a connection. One map per project (decision D32), in
+`maps/<project id>.pmtiles` in the data folder with `maps/<project id>.json` beside it saying
+which build it is; the loaded project's map is the one served."""
 
 import json
 import re
@@ -14,6 +15,8 @@ from fastapi import APIRouter, HTTPException, Request, Response
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 
+from protect_go.bundle import PROJECT_ID
+from protect_go.routers.common import current_project_id
 from protect_go.store import Store
 
 router = APIRouter(prefix="/api")
@@ -40,27 +43,78 @@ class MapRead(BaseModel):
 
 
 class MapFetch(BaseModel):
-    project_id: str = Field(min_length=1, max_length=64)
+    project_id: str = Field(min_length=1, max_length=64, pattern=PROJECT_ID.pattern)
     project_name: str | None = Field(default=None, max_length=200)
 
 
-def _paths(request: Request) -> tuple[Path, Path]:
+def map_paths(data_dir: Path, project_id: str) -> tuple[Path, Path]:
+    """The project's map file and the note beside it."""
+    if not PROJECT_ID.match(project_id):
+        raise ValueError(f"Not a project id: {project_id!r}")
+    folder = data_dir / "maps"
+    return folder / f"{project_id}.pmtiles", folder / f"{project_id}.json"
+
+
+def migrate_legacy_map(data_dir: Path) -> None:
+    """The one `map.pmtiles` of versions before D32 moves under the project it was cut for,
+    which its `map.json` names; a file without that note is dropped."""
+    legacy_file, legacy_meta = data_dir / "map.pmtiles", data_dir / "map.json"
+    if not legacy_file.is_file():
+        if legacy_meta.is_file():
+            legacy_meta.unlink()
+        return
+    project_id = None
+    if legacy_meta.is_file():
+        try:
+            project_id = str(json.loads(legacy_meta.read_text(encoding="utf-8"))["project_id"])
+        except (ValueError, KeyError, TypeError):
+            project_id = None
+    if project_id is None or not PROJECT_ID.match(project_id):
+        legacy_file.unlink()
+        if legacy_meta.is_file():
+            legacy_meta.unlink()
+        return
+    file, meta = map_paths(data_dir, project_id)
+    file.parent.mkdir(parents=True, exist_ok=True)
+    if file.exists():
+        legacy_file.unlink()
+        legacy_meta.unlink()
+    else:
+        legacy_file.replace(file)
+        legacy_meta.replace(meta)
+
+
+def _data_dir(request: Request) -> Path:
     store: Store = request.app.state.store
-    folder = store.path.parent
-    return folder / "map.pmtiles", folder / "map.json"
+    return store.path.parent
 
 
-def _read(request: Request) -> MapRead:
-    file, meta = _paths(request)
-    if not file.is_file() or not meta.is_file():
+def _words(request: Request) -> dict[str, str]:
+    """The server's last words per project about a map that did not come, kept for the pages
+    while the app runs."""
+    words: dict[str, str] | None = getattr(request.app.state, "map_words", None)
+    if words is None:
+        words = {}
+        request.app.state.map_words = words
+    return words
+
+
+def read_map(request: Request, project_id: str | None) -> MapRead:
+    if project_id is None or not PROJECT_ID.match(project_id):
         return MapRead(present=False)
+    file, meta = map_paths(_data_dir(request), project_id)
+    if not file.is_file() or not meta.is_file():
+        return MapRead(
+            present=False, project_id=project_id, server_state=_words(request).get(project_id)
+        )
     info: dict[str, Any] = json.loads(meta.read_text(encoding="utf-8"))
     return MapRead(present=True, size_bytes=file.stat().st_size, **info)
 
 
 @router.get("/map", response_model=MapRead)
-async def read_map(request: Request) -> MapRead:
-    return _read(request)
+async def map_state(request: Request, project_id: str | None = None) -> MapRead:
+    """The map on the laptop for the loaded project, or for `project_id`."""
+    return read_map(request, project_id or current_project_id(request))
 
 
 @router.post("/map/fetch", response_model=MapRead)
@@ -76,7 +130,8 @@ async def fetch_map(body: MapFetch, request: Request) -> MapRead:
     transport: httpx.AsyncBaseTransport | None = getattr(request.app.state, "http_transport", None)
     headers = {"Authorization": f"Bearer {settings.token}"}
     path = f"/api/v1/projects/{body.project_id}/field-bundle/map"
-    file, meta = _paths(request)
+    file, meta = map_paths(_data_dir(request), body.project_id)
+    words = _words(request)
     try:
         async with httpx.AsyncClient(
             base_url=settings.server_url,
@@ -85,6 +140,7 @@ async def fetch_map(body: MapFetch, request: Request) -> MapRead:
         ) as http:
             async with http.stream("GET", path, headers=headers) as response:
                 if response.status_code == 200:
+                    file.parent.mkdir(parents=True, exist_ok=True)
                     tmp = file.with_suffix(".pmtiles.part")
                     with tmp.open("wb") as handle:
                         async for chunk in response.aiter_bytes(CHUNK):
@@ -103,26 +159,25 @@ async def fetch_map(body: MapFetch, request: Request) -> MapRead:
                         ),
                         encoding="utf-8",
                     )
-                    return _read(request)
+                    words.pop(body.project_id, None)
+                    return read_map(request, body.project_id)
                 detail = await _detail(response)
             if response.status_code in (404, 202):
                 asked = await http.post(path, json={}, headers=headers)
                 if asked.status_code == 403:
-                    read = _read(request)
-                    read.server_state = (
+                    words[body.project_id] = (
                         "The server has no map of this project yet, and your account may not "
                         "ask for one; ask an analyst or an administrator of the project to open "
                         "the Offload page and prepare the map"
                     )
-                    return read
+                    return read_map(request, body.project_id)
                 if asked.status_code == 202:
                     state = asked.json()
-                    read = _read(request)
-                    read.server_state = (
-                        f"The server is making the map ({state.get('status')}); "
-                        "try again in a few minutes"
+                    words[body.project_id] = (
+                        f"The server is making the map ({state.get('status')}); the app fetches "
+                        "it by itself within a few minutes while online"
                     )
-                    return read
+                    return read_map(request, body.project_id)
                 raise HTTPException(
                     502, f"The server answered {asked.status_code}: {await _detail(asked)}"
                 )
@@ -159,11 +214,14 @@ def _bounds(file: Path) -> dict[str, Any]:
 
 @router.get("/map/tiles.pmtiles", include_in_schema=False)
 async def serve_map(request: Request) -> Response:
-    """The PMTiles file for the pmtiles protocol of MapLibre, which reads it with range
-    requests: the header first, then the directories, then the tiles in view."""
-    file, _meta = _paths(request)
+    """The loaded project's PMTiles file for the pmtiles protocol of MapLibre, which reads it
+    with range requests: the header first, then the directories, then the tiles in view."""
+    project_id = current_project_id(request)
+    if project_id is None:
+        raise HTTPException(404, "No project is loaded")
+    file, _meta = map_paths(_data_dir(request), project_id)
     if not file.is_file():
-        raise HTTPException(404, "No map on this laptop yet")
+        raise HTTPException(404, "No map of this project on this laptop yet")
     size = file.stat().st_size
     header = request.headers.get("range")
     headers = {"Accept-Ranges": "bytes", "Cache-Control": "no-cache"}
