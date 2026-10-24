@@ -8,6 +8,10 @@ All notable changes to Smart Parks Protect Go. The format follows Keep a Changel
 
 - **The project at the top, and the laptop organised per project** (Tim, 2026-10-24, decisions D31 to D33: with the LP0 demo project on the laptop he loaded Smart Parks - LP0 from the Server page; the app did not say which project it used, the Overview drew the real station on the demo project's map tiles, and the Offload stations and Trackers pages listed both projects' devices). The top bar now carries the project switcher as Protect's does: the loaded project's name as a button, the projects on this laptop, which switch at once without a connection, and, online and signed in, the server's projects with an offload station, which are loaded with their devices, keys and map when chosen. The laptop keeps a bundle and a map per project, and every page is the loaded project's: its SD card files, trackers, stations, data explorer, uploads and map, nothing of another; a card read before this version finds its project the first time that project is loaded. A map the server was still cutting when the project was loaded comes by itself within a few minutes while online, and the Overview says so meanwhile and offers "Fetch the map now". The Server page's project section lists the projects on the laptop with Use, and the Files page says how many SD cards of other projects it leaves out. The one bundle and map of earlier versions are moved under their project at the first start. `GET /api/bundle/projects`, `POST /api/bundle/switch`, `GET /api/map?project_id=`, `cards_adopted` and `map_updated_at` in the answers. Protect pinned at d2d356a still.
 
+### Changed
+
+- **The audit's advisories of 2026-10-24**: Electron 44.9.3 in the shell (GHSA-jr5w-w6x2-84p9 on 44.0 to 44.9.0, with fast-uri 3.1.9 in its tree) and setuptools 84.2.1 in the Python lock (GHSA-xmj3-9gf7-h52w; a transitive dependency the app never imports). No code of the app changed.
+
 ## v0.15.1, 2026-10-23
 
 ### Fixed
