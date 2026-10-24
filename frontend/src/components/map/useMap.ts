@@ -25,9 +25,17 @@ class StripHost implements IControl {
   }
 }
 
+/** The address a project's PMTiles file is read from. One address per project (Tim,
+ * 2026-10-24: a switch between projects kept the old tiles, since MapLibre's pmtiles reader
+ * caches an archive, its header and directories, by address). */
+export function tilesUrl(projectId: string | null): string {
+  const origin = window.location.origin;
+  return projectId ? `pmtiles://${origin}/api/map/${encodeURIComponent(projectId)}/tiles.pmtiles` : `pmtiles://${origin}/api/map/tiles.pmtiles`;
+}
+
 /** The offline map's style: the project's PMTiles, the glyphs and sprites shipped with the
  * app, drawn in a Protomaps flavour. */
-export function offlineStyle(flavour: Flavour): StyleSpecification {
+export function offlineStyle(flavour: Flavour, projectId: string | null = null): StyleSpecification {
   const origin = window.location.origin;
   const dark = flavour === "dark" || flavour === "black";
   return {
@@ -37,7 +45,7 @@ export function offlineStyle(flavour: Flavour): StyleSpecification {
     sources: {
       protomaps: {
         type: "vector",
-        url: `pmtiles://${origin}/api/map/tiles.pmtiles`,
+        url: tilesUrl(projectId),
         attribution: '<a href="https://www.openstreetmap.org/copyright">© OpenStreetMap contributors</a>, <a href="https://protomaps.com">Protomaps</a>',
       },
     },
@@ -45,7 +53,7 @@ export function offlineStyle(flavour: Flavour): StyleSpecification {
   };
 }
 
-export function useMap(container: RefObject<HTMLDivElement | null>, flavour: Flavour, bounds: [number, number, number, number] | null) {
+export function useMap(container: RefObject<HTMLDivElement | null>, flavour: Flavour, bounds: [number, number, number, number] | null, projectId: string | null = null) {
   const mapRef = useRef<MapLibreMap | null>(null);
   const [ready, setReady] = useState(false);
   const [stripHost, setStripHost] = useState<HTMLElement | null>(null);
@@ -59,7 +67,7 @@ export function useMap(container: RefObject<HTMLDivElement | null>, flavour: Fla
     }
     const map = new maplibregl.Map({
       container: container.current,
-      style: offlineStyle(flavour),
+      style: offlineStyle(flavour, projectId),
       ...(bounds ? { bounds, fitBoundsOptions: { padding: 24 } } : { center: [0, 0] as [number, number], zoom: 1 }),
       attributionControl: { compact: true },
     });
@@ -82,7 +90,7 @@ export function useMap(container: RefObject<HTMLDivElement | null>, flavour: Fla
       setStripHost(null);
       setCornerHost(null);
     };
-    // the map is created once; a new flavour goes through setStyle below
+    // the map is created once; a new flavour or project goes through setStyle below
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [container]);
 
@@ -90,10 +98,10 @@ export function useMap(container: RefObject<HTMLDivElement | null>, flavour: Fla
     const map = mapRef.current;
     if (!map || !ready) return;
     setReady(false);
-    map.setStyle(offlineStyle(flavour));
+    map.setStyle(offlineStyle(flavour, projectId));
     map.once("style.load", () => setReady(true));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [flavour]);
+  }, [flavour, projectId]);
 
   return { mapRef, ready, stripHost, cornerHost };
 }

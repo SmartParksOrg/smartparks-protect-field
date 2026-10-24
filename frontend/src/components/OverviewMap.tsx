@@ -61,7 +61,7 @@ export function OverviewMap({ trackerIds, stationIds, className = "h-56" }: { tr
   if (!present || bounds === null) {
     return <p className="text-sm text-muted-foreground">{t("Nothing to place on the map yet.")}</p>;
   }
-  return <OverviewMapCanvas flavour={flavour} bounds={bounds} stations={stations} last={last} className={className} />;
+  return <OverviewMapCanvas flavour={flavour} bounds={bounds} stations={stations} last={last} className={className} projectId={map.data?.project_id ?? null} />;
 }
 
 /** The loaded project has no map on the laptop: the server's last word on it, and a button
@@ -92,10 +92,10 @@ function MissingMap({ state }: { state: MapState }) {
   );
 }
 
-function OverviewMapCanvas({ flavour, bounds, stations, last, className }: { flavour: Flavour; bounds: [number, number, number, number]; stations: StationMarker[]; last: TrackLayer[]; className: string }) {
+function OverviewMapCanvas({ flavour, bounds, stations, last, className, projectId }: { flavour: Flavour; bounds: [number, number, number, number]; stations: StationMarker[]; last: TrackLayer[]; className: string; projectId: string | null }) {
   const navigate = useNavigate();
   const container = useRef<HTMLDivElement | null>(null);
-  const { mapRef, ready } = useMap(container, flavour, bounds);
+  const { mapRef, ready } = useMap(container, flavour, bounds, projectId);
   const stationsRef = useRef(stations);
   useEffect(() => {
     stationsRef.current = stations;

@@ -2,6 +2,7 @@ import { layers, namedFlavor } from "@protomaps/basemaps";
 import { Protocol } from "pmtiles";
 import { useEffect, useRef } from "react";
 
+import { tilesUrl } from "@/components/map/useMap";
 import { maplibregl } from "@/lib/maplibre";
 
 export interface MapBounds {
@@ -57,11 +58,14 @@ export function OfflineMap({
   bounds,
   dark,
   points = [],
+  projectId = null,
   className = "h-[60vh] min-h-80 w-full rounded-md border",
 }: {
   bounds: MapBounds;
   dark: boolean;
   points?: MapPoint[];
+  /** The project whose map is drawn; its tiles have an address of their own. */
+  projectId?: string | null;
   className?: string;
 }) {
   const container = useRef<HTMLDivElement>(null);
@@ -82,7 +86,7 @@ export function OfflineMap({
         sources: {
           protomaps: {
             type: "vector",
-            url: `pmtiles://${origin}/api/map/tiles.pmtiles`,
+            url: tilesUrl(projectId),
             attribution:
               '<a href="https://www.openstreetmap.org/copyright">© OpenStreetMap contributors</a>, <a href="https://protomaps.com">Protomaps</a>',
           },
@@ -135,9 +139,9 @@ export function OfflineMap({
       mapRef.current = null;
       map.remove();
     };
-    // the points are refreshed by the effect below; a new box or theme rebuilds the map
+    // the points are refreshed by the effect below; a new box, theme or project rebuilds the map
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [bounds, dark]);
+  }, [bounds, dark, projectId]);
   useEffect(() => {
     const map = mapRef.current;
     const source = map?.getSource("positions");

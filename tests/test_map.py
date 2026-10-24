@@ -211,3 +211,18 @@ async def test_a_map_the_server_was_still_cutting_comes_with_the_next_probe(app,
         after = (await client.get("/api/map")).json()
         assert after["present"] is True and after["build"] == "20261024"
         assert after["server_state"] is None
+
+
+async def test_each_projects_tiles_have_an_address_of_their_own(app, tmp_path):
+    """v0.17.1 (Tim, 2026-10-24: a switch between projects kept the old tiles): MapLibre's
+    pmtiles reader caches an archive by address, so every project's file is served at its own."""
+    planet = small_map(tmp_path / "server-map.pmtiles")
+    data = tmp_path / "data"
+    (data / "maps").mkdir(parents=True)
+    (data / "maps" / f"{PROJECT}.pmtiles").write_bytes(planet)
+    (data / "maps" / f"{PROJECT}.json").write_text(json.dumps({"project_id": PROJECT}))
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        own = await client.get(f"/api/map/{PROJECT}/tiles.pmtiles", headers={"Range": "bytes=0-9"})
+        assert own.status_code == 206 and own.content == planet[:10]
+        assert (await client.get("/api/map/other-project-0001/tiles.pmtiles")).status_code == 404
+        assert (await client.get("/api/map/not%20an%20id/tiles.pmtiles")).status_code == 404

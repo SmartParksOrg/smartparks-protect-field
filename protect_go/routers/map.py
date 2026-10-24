@@ -220,11 +220,26 @@ def _bounds(file: Path) -> dict[str, Any]:
 
 @router.get("/map/tiles.pmtiles", include_in_schema=False)
 async def serve_map(request: Request) -> Response:
-    """The loaded project's PMTiles file for the pmtiles protocol of MapLibre, which reads it
-    with range requests: the header first, then the directories, then the tiles in view."""
+    """The loaded project's PMTiles file (the address of versions before v0.17.1)."""
     project_id = current_project_id(request)
     if project_id is None:
         raise HTTPException(404, "No project is loaded")
+    return _serve(request, project_id)
+
+
+@router.get("/map/{project_id}/tiles.pmtiles", include_in_schema=False)
+async def serve_project_map(project_id: str, request: Request) -> Response:
+    """One project's PMTiles file at an address of its own (Tim, 2026-10-24: a switch between
+    projects kept the old tiles, since MapLibre's pmtiles reader caches the archive, its header
+    and directories, by address; one address per project gives it a fresh archive)."""
+    if not PROJECT_ID.match(project_id):
+        raise HTTPException(404, "Not a project id")
+    return _serve(request, project_id)
+
+
+def _serve(request: Request, project_id: str) -> Response:
+    """A project's PMTiles file for the pmtiles protocol of MapLibre, which reads it with
+    range requests: the header first, then the directories, then the tiles in view."""
     file, _meta = map_paths(_data_dir(request.app), project_id)
     if not file.is_file():
         raise HTTPException(404, "No map of this project on this laptop yet")

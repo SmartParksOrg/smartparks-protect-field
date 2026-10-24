@@ -91,7 +91,7 @@ export function BatchPage() {
             </CardHeader>
           </Panel>
           {bounds && map.data?.present ? (
-            <OfflineMap bounds={bounds} dark={dark} points={points} />
+            <OfflineMap bounds={bounds} dark={dark} points={points} projectId={map.data.project_id} />
           ) : (
             points.length > 0 && (
               <Callout kind="info">

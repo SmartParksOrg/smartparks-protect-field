@@ -1,3 +1,4 @@
+import { useQuery } from "@tanstack/react-query";
 import { Compass, Focus, Layers, Maximize, Minimize, Minus, Plus } from "lucide-react";
 import type { MapLayerMouseEvent } from "maplibre-gl";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -5,6 +6,8 @@ import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
 import { Link, useNavigate } from "react-router";
 
+import { api, type MapState } from "@/api/client";
+import { queryKeys } from "@/api/queryKeys";
 import { ControlStrip } from "@/components/map/ControlStrip";
 import { bindStationClicks, bindTrackPointClicks, ensureStationLayers, ensureTrackLayers, setStations, setTracks, type StationMarker, type TrackLayer, trackPointKey } from "@/components/map/trackLayers";
 import { type Flavour, useMap } from "@/components/map/useMap";
@@ -58,7 +61,9 @@ export function ExploreMap({
     // the first fit alone; later fits follow fitKey
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-  const { mapRef, ready, cornerHost } = useMap(container, flavour, initialBounds);
+  // the loaded project's map, at its own address (a switch rebuilds the style)
+  const mapState = useQuery({ queryKey: queryKeys.map, queryFn: () => api<MapState>("/api/map") });
+  const { mapRef, ready, cornerHost } = useMap(container, flavour, initialBounds, mapState.data?.project_id ?? null);
   const handlers = useRef({ onHover, onPick });
   useEffect(() => {
     handlers.current = { onHover, onPick };

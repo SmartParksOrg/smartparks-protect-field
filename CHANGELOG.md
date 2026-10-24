@@ -2,6 +2,12 @@
 
 All notable changes to Smart Parks Protect Go. The format follows Keep a Changelog; versions are git tags. Each entry names the Protect commit the release decodes with.
 
+## v0.17.1, 2026-10-24
+
+### Fixed
+
+- **The map follows a switch between projects** (Tim, 2026-10-24: after a switch at the top the map did not load; a fresh start of the app drew it). Every map read its tiles from one address, and the map library's PMTiles reader caches an archive, its header and directories, by address, so after a switch it kept serving the previous project's archive. Each project's tiles now have an address of their own (`GET /api/map/{project id}/tiles.pmtiles`), and the Overview's map, the Data explorer's map and a card's map rebuild their style when the project changes.
+
 ## v0.17.0, 2026-10-24
 
 ### Added
