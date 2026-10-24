@@ -10,7 +10,7 @@ All notable changes to Smart Parks Protect Go. The format follows Keep a Changel
 
 ### Changed
 
-- **The audit's advisories of 2026-10-24**: Electron 44.9.3 in the shell (GHSA-jr5w-w6x2-84p9 on 44.0 to 44.9.0, with fast-uri 3.1.9 in its tree) and setuptools 84.2.1 in the Python lock (GHSA-xmj3-9gf7-h52w; a transitive dependency the app never imports). No code of the app changed.
+- **The audit's advisories of 2026-10-24**: Electron 44.9.3 in the shell (GHSA-jr5w-w6x2-84p9 on 44.0 to 44.9.0, with fast-uri 3.1.9 in its tree) setuptools 84.2.1 and brotlicffi 1.2.1.0 in the Python lock (GHSA-xmj3-9gf7-h52w and the brotli advisory; transitive dependencies the app never imports), and vitest's mocker 4.1.12 in the frontend's tree. No code of the app changed.
 
 ## v0.15.1, 2026-10-23
 
