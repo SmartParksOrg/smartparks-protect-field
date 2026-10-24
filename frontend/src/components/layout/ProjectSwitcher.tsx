@@ -43,6 +43,7 @@ export function ProjectSwitcher({ signedIn, online, className }: { signedIn: boo
   const settle = (loaded: LoadResult) => {
     setOpen(false);
     queryClient.setQueryData(queryKeys.bundle, loaded.bundle);
+    queryClient.setQueryData(queryKeys.map, loaded.map);
     void queryClient.invalidateQueries();
     void navigate("/");
   };

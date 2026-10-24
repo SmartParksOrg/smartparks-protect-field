@@ -2,6 +2,12 @@
 
 All notable changes to Smart Parks Protect Go. The format follows Keep a Changelog; versions are git tags. Each entry names the Protect commit the release decodes with.
 
+## v0.17.3, 2026-10-24
+
+### Fixed
+
+- **The map follows a switch made from another page** (Tim, 2026-10-24: open the Overview on one project, go to Offload stations or any other page, choose another project at the top; the Overview opened without its map). The switch opens the Overview while the new project is still settling, so its map was created for the old project and the change came before the map had finished loading, where it was lost. A map now waits for its project before it is made, applies a project that changed while it was loading once it is ready, and the switch hands the new project's map state to the pages at once. Checked in a browser from the Offload stations, Trackers and Files pages, and on the Data explorer's map, a station's page and a card's page after a switch.
+
 ## v0.17.2, 2026-10-24
 
 ### Fixed

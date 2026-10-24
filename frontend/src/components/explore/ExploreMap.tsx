@@ -63,7 +63,7 @@ export function ExploreMap({
   }, []);
   // the loaded project's map, at its own address (a switch rebuilds the style)
   const mapState = useQuery({ queryKey: queryKeys.map, queryFn: () => api<MapState>("/api/map") });
-  const { mapRef, ready, cornerHost } = useMap(container, flavour, initialBounds, mapState.data?.project_id ?? null);
+  const { mapRef, ready, cornerHost } = useMap(container, flavour, initialBounds, mapState.data ? mapState.data.project_id : undefined);
   const handlers = useRef({ onHover, onPick });
   useEffect(() => {
     handlers.current = { onHover, onPick };
