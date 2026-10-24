@@ -98,7 +98,10 @@ export function useMap(container: RefObject<HTMLDivElement | null>, flavour: Fla
     const map = mapRef.current;
     if (!map || !ready) return;
     setReady(false);
-    map.setStyle(offlineStyle(flavour, projectId));
+    // a whole reload, never a diff: MapLibre applies a diff without firing `style.load`, so
+    // `ready` stayed false and the stations, tracks and tiles were never drawn again after
+    // a switch between projects (Tim, 2026-10-24); a reload also drops the old archive
+    map.setStyle(offlineStyle(flavour, projectId), { diff: false });
     map.once("style.load", () => setReady(true));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [flavour, projectId]);

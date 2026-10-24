@@ -2,6 +2,12 @@
 
 All notable changes to Smart Parks Protect Go. The format follows Keep a Changelog; versions are git tags. Each entry names the Protect commit the release decodes with.
 
+## v0.17.2, 2026-10-24
+
+### Fixed
+
+- **The map redraws after a switch between projects** (Tim, 2026-10-24, the second half of v0.17.1's fix). The tiles came from the right address, but the map library applied the new style as a difference against the old one and never reported it loaded, so the stations, the tracks and the tiles were not drawn again. The style is now reloaded whole on a switch and on a change of theme; checked in a browser with a switch between the two dev projects.
+
 ## v0.17.1, 2026-10-24
 
 ### Fixed
