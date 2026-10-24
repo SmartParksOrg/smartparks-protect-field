@@ -11,7 +11,7 @@ from pathlib import Path
 from typing import Any
 
 import httpx
-from fastapi import APIRouter, HTTPException, Request, Response
+from fastapi import APIRouter, FastAPI, HTTPException, Request, Response
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 
@@ -84,28 +84,28 @@ def migrate_legacy_map(data_dir: Path) -> None:
         legacy_meta.replace(meta)
 
 
-def _data_dir(request: Request) -> Path:
-    store: Store = request.app.state.store
+def _data_dir(app: FastAPI) -> Path:
+    store: Store = app.state.store
     return store.path.parent
 
 
-def _words(request: Request) -> dict[str, str]:
+def _words(app: FastAPI) -> dict[str, str]:
     """The server's last words per project about a map that did not come, kept for the pages
     while the app runs."""
-    words: dict[str, str] | None = getattr(request.app.state, "map_words", None)
+    words: dict[str, str] | None = getattr(app.state, "map_words", None)
     if words is None:
         words = {}
-        request.app.state.map_words = words
+        app.state.map_words = words
     return words
 
 
-def read_map(request: Request, project_id: str | None) -> MapRead:
+def read_map(app: FastAPI, project_id: str | None) -> MapRead:
     if project_id is None or not PROJECT_ID.match(project_id):
         return MapRead(present=False)
-    file, meta = map_paths(_data_dir(request), project_id)
+    file, meta = map_paths(_data_dir(app), project_id)
     if not file.is_file() or not meta.is_file():
         return MapRead(
-            present=False, project_id=project_id, server_state=_words(request).get(project_id)
+            present=False, project_id=project_id, server_state=_words(app).get(project_id)
         )
     info: dict[str, Any] = json.loads(meta.read_text(encoding="utf-8"))
     return MapRead(present=True, size_bytes=file.stat().st_size, **info)
@@ -114,24 +114,30 @@ def read_map(request: Request, project_id: str | None) -> MapRead:
 @router.get("/map", response_model=MapRead)
 async def map_state(request: Request, project_id: str | None = None) -> MapRead:
     """The map on the laptop for the loaded project, or for `project_id`."""
-    return read_map(request, project_id or current_project_id(request))
+    return read_map(request.app, project_id or current_project_id(request))
 
 
 @router.post("/map/fetch", response_model=MapRead)
 async def fetch_map(body: MapFetch, request: Request) -> MapRead:
+    """Ask the server for the project's map and keep it (`fetch_project_map`)."""
+    return await fetch_project_map(request.app, body)
+
+
+async def fetch_project_map(app: FastAPI, body: MapFetch) -> MapRead:
     """Ask the server for the project's map and keep it: the server's `GET
     /projects/{id}/field-bundle/map` streams the file when it is ready, answers 202 with its
     state while it is being cut (then this asks for it with POST and says so), 404 when none was
-    asked for yet (the same POST), and 409 when the last attempt failed."""
-    store: Store = request.app.state.store
+    asked for yet (the same POST), and 409 when the last attempt failed. Called by the route
+    and by the background sync (D34), so it takes the app and not a request."""
+    store: Store = app.state.store
     settings = store.load()
     if settings.server_url is None or not settings.signed_in:
         raise HTTPException(409, "Sign in to the server first")
-    transport: httpx.AsyncBaseTransport | None = getattr(request.app.state, "http_transport", None)
+    transport: httpx.AsyncBaseTransport | None = getattr(app.state, "http_transport", None)
     headers = {"Authorization": f"Bearer {settings.token}"}
     path = f"/api/v1/projects/{body.project_id}/field-bundle/map"
-    file, meta = map_paths(_data_dir(request), body.project_id)
-    words = _words(request)
+    file, meta = map_paths(_data_dir(app), body.project_id)
+    words = _words(app)
     try:
         async with httpx.AsyncClient(
             base_url=settings.server_url,
@@ -160,7 +166,7 @@ async def fetch_map(body: MapFetch, request: Request) -> MapRead:
                         encoding="utf-8",
                     )
                     words.pop(body.project_id, None)
-                    return read_map(request, body.project_id)
+                    return read_map(app, body.project_id)
                 detail = await _detail(response)
             if response.status_code in (404, 202):
                 asked = await http.post(path, json={}, headers=headers)
@@ -170,14 +176,14 @@ async def fetch_map(body: MapFetch, request: Request) -> MapRead:
                         "ask for one; ask an analyst or an administrator of the project to open "
                         "the Offload page and prepare the map"
                     )
-                    return read_map(request, body.project_id)
+                    return read_map(app, body.project_id)
                 if asked.status_code == 202:
                     state = asked.json()
                     words[body.project_id] = (
                         f"The server is making the map ({state.get('status')}); the app fetches "
                         "it by itself within a few minutes while online"
                     )
-                    return read_map(request, body.project_id)
+                    return read_map(app, body.project_id)
                 raise HTTPException(
                     502, f"The server answered {asked.status_code}: {await _detail(asked)}"
                 )
@@ -219,7 +225,7 @@ async def serve_map(request: Request) -> Response:
     project_id = current_project_id(request)
     if project_id is None:
         raise HTTPException(404, "No project is loaded")
-    file, _meta = map_paths(_data_dir(request), project_id)
+    file, _meta = map_paths(_data_dir(request.app), project_id)
     if not file.is_file():
         raise HTTPException(404, "No map of this project on this laptop yet")
     size = file.stat().st_size

@@ -112,8 +112,10 @@ class BundleStore:
 
     # --- one bundle
 
-    def save(self, bundle: dict[str, Any]) -> BundleSummary:
-        """Keep a bundle under its project's file and make that project the loaded one."""
+    def save(self, bundle: dict[str, Any], *, make_current: bool = True) -> BundleSummary:
+        """Keep a bundle under its project's file and make that project the loaded one; the
+        background sync (D34) keeps the other projects without taking the loaded one's place,
+        unless nothing is loaded yet."""
         project_id = str(bundle["project"]["id"])
         fernet, _ = self._fernet()
         envelope = {"fetched_at": datetime.now(UTC).isoformat(), "bundle": bundle}
@@ -123,8 +125,9 @@ class BundleStore:
         tmp.write_bytes(fernet.encrypt(json.dumps(envelope).encode()))
         os.chmod(tmp, 0o600)
         tmp.replace(path)
-        self._set_current(project_id)
-        summary = self.summary()
+        if make_current or self.current_project_id() is None:
+            self._set_current(project_id)
+        summary = self.summary(project_id)
         assert summary is not None
         return summary
 

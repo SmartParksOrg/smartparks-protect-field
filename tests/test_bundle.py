@@ -222,16 +222,20 @@ async def test_the_project_follows_the_server_by_itself(app):
         )
         assert loaded.json()["bundle"]["revision"] == "rev-one"
 
-        # the same revision: checked, nothing loaded
+        # the same revision: checked, nothing loaded (the sync runs in the background, D34)
+        first = (await client.get("/api/setup/connection")).json()
+        await app.state.bundle_sync_task
         first = (await client.get("/api/setup/connection")).json()
         assert first["bundle_checked_at"] and first["bundle_updated_at"] is None
-        assert first["bundle_outdated"] is False
+        assert first["bundle_outdated"] is False and first["projects_synced_at"]
 
         # the project changes on the server: a third device; the next due check loads it
         third = {**BUNDLE["devices"][1], "id": "d3", "name": "SP050102", "entity_id": None}
         SERVED["bundle"] = {**BUNDLE, "devices": [*BUNDLE["devices"], third]}
         SERVED["revision"] = "rev-two"
         app.state.bundle_follow = {**app.state.bundle_follow, "due": None}
+        await client.get("/api/setup/connection")
+        await app.state.bundle_sync_task
         second = (await client.get("/api/setup/connection")).json()
         assert second["bundle_updated_at"] is not None and second["bundle_outdated"] is False
         again = (await client.get("/api/bundle")).json()
@@ -327,3 +331,82 @@ async def test_the_projects_on_the_laptop_are_listed_and_switched(app, tmp_path)
             "/api/bundle/fetch", json={"project_id": PROJECT.replace("2", "3", 1)}
         )
         assert wrong.status_code == 502
+
+
+async def test_every_project_with_a_station_is_kept_on_the_laptop_in_the_background(app, tmp_path):
+    """D34 (Tim, 2026-10-24: switching projects should be a view change, nothing to fetch): the
+    connection probe starts a sync that loads every project with an offload station the account
+    may read, with its map, beside the loaded one, which stays the loaded one."""
+    other = _other_bundle()
+    planet = (
+        (tmp_path / "planet.pmtiles").read_bytes()
+        if (tmp_path / "planet.pmtiles").exists()
+        else None
+    )
+
+    def server_with_projects(request: httpx.Request) -> httpx.Response:
+        if request.url.path == "/api/v1/projects":
+            return httpx.Response(
+                200,
+                json={
+                    "items": [
+                        {"id": PROJECT, "name": "LP0"},
+                        {"id": OTHER, "name": "Smart Parks - LP0"},
+                        {"id": "no-station-0001", "name": "Cows"},
+                    ]
+                },
+            )
+        if request.url.path.endswith("/offload"):
+            with_station = request.url.path.split("/")[-2] in (PROJECT, OTHER)
+            return httpx.Response(
+                200, json={"stations": [{"device_id": "x"}] if with_station else []}
+            )
+        if request.url.path == f"/api/v1/projects/{OTHER}/field-bundle/revision":
+            return httpx.Response(200, json={"revision": "other-one"})
+        if request.url.path == f"/api/v1/projects/{OTHER}/field-bundle":
+            return httpx.Response(200, json={**other, "revision": "other-one"})
+        if request.url.path == f"/api/v1/projects/{OTHER}/field-bundle/map":
+            return (
+                httpx.Response(404, json={"detail": "No offline map yet"})
+                if request.method == "GET"
+                else httpx.Response(202, json={"status": "queued"})
+            )
+        return server(request)
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        app.state.http_transport = httpx.MockTransport(protect_server)
+        await client.put(
+            "/api/setup/server", json={"server_url": "https://dev-protect.example.org"}
+        )
+        await client.post("/api/session", json={"email": "ranger@example.org", "password": "right"})
+        app.state.http_transport = httpx.MockTransport(server_with_projects)
+        SERVED["revision"] = "rev-one"
+        loaded = await client.post(
+            "/api/bundle/fetch", json={"project_id": PROJECT, "project_name": "LP0"}
+        )
+        assert loaded.status_code == 200, loaded.text
+        assert [p["project_name"] for p in (await client.get("/api/bundle/projects")).json()] == [
+            "LP0"
+        ]
+
+        # the probe starts the sync; the other project comes beside the loaded one, Cows not
+        await client.get("/api/setup/connection")
+        await app.state.bundle_sync_task
+        projects = (await client.get("/api/bundle/projects")).json()
+        assert [(p["project_name"], p["current"]) for p in projects] == [
+            ("LP0", True),
+            ("Smart Parks - LP0", False),
+        ]
+        probe = (await client.get("/api/setup/connection")).json()
+        assert probe["projects_loaded"] == 1 and probe["projects_on_laptop"] == 2
+        assert probe["projects_synced_at"] and probe["bundle_updated_at"] is None
+        assert (await client.get("/api/bundle")).json()["project_id"] == PROJECT
+
+        # the next sync loads nothing anew; a switch is a view change
+        app.state.bundle_follow = {**app.state.bundle_follow, "due": None}
+        await client.get("/api/setup/connection")
+        await app.state.bundle_sync_task
+        assert (await client.get("/api/setup/connection")).json()["projects_loaded"] == 1
+        switched = await client.post("/api/bundle/switch", json={"project_id": OTHER})
+        assert switched.json()["bundle"]["project_name"] == "Smart Parks - LP0"
+        assert planet is None  # nothing of the map is asserted here; test_map covers it

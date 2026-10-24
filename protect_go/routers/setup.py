@@ -47,6 +47,11 @@ class ConnectionRead(BaseModel):
     #: When the loaded project's map last came by itself (D32): a map the server was still
     #: cutting at the load is fetched by the probe once it is ready
     map_updated_at: str | None = None
+    #: The background sync of every project with a station (D34): when it last ran through,
+    #: how many projects it loaded anew in all, and how many the laptop holds
+    projects_synced_at: str | None = None
+    projects_loaded: int = 0
+    projects_on_laptop: int = 0
 
 
 class ServerUpdate(BaseModel):
@@ -125,7 +130,7 @@ async def connection(request: Request) -> ConnectionRead:
             account_ok = me.status_code == 200
         except httpx.HTTPError:
             account_ok = False
-    refresh = await _follow_the_project(request, settings, transport, account_ok)
+    refresh = await _follow_the_projects(request, settings, transport, account_ok)
     return ConnectionRead(
         online=True,
         checked_at=checked_at,
@@ -136,74 +141,99 @@ async def connection(request: Request) -> ConnectionRead:
     )
 
 
-#: How often the project's fingerprint is compared with the server's while the app is online.
+#: How often the laptop's projects are compared with the server's while the app is online.
 REVISION_CHECK_EVERY = timedelta(minutes=5)
 
 
-async def _follow_the_project(
+def _public(state: dict[str, Any]) -> dict[str, Any]:
+    return {k: v for k, v in state.items() if k != "due"}
+
+
+async def _follow_the_projects(
     request: Request, settings: Any, transport: Any, account_ok: bool | None
 ) -> dict[str, Any]:
-    """The project on the laptop follows the server by itself (decision D29, Tim, 2026-10-19:
-    a station or a tracker added in Protect, or a map made, should reach the app without a hand
-    on Server). Every few minutes online, the bundle's fingerprint is compared with the
-    server's; when it moved, the project is loaded again, and the frames of trackers unknown
-    before are read again with it. A project whose map is not on the laptop yet (the server
-    was still cutting it at the load, D32) gets it fetched here too. The state of the last
-    comparison is what the pages show; a switch to another project starts it over."""
-    from protect_go.routers.map import MapFetch, fetch_map, read_map
-
+    """Every project with an offload station the account may read is kept on this laptop and
+    current (decision D34, Tim, 2026-10-24: switching projects should be a view change, with
+    nothing left to fetch; before it, decision D29 followed the loaded project alone). Every
+    few minutes online, a task in the background lists the server's projects, loads the ones
+    with a station that are not on the laptop yet, loads again the ones whose revision moved
+    (reading the frames of trackers unknown before, D28), and fetches a map that is missing;
+    the loaded project's own changes are what the pages are told. The probe answers at once
+    with the last state; a person's own load or switch starts the cycle over."""
     state = request.app.state
     last = getattr(state, "bundle_follow", None) or {}
-    summary = request.app.state.bundle_store.summary()
-    if not account_ok or summary is None:
-        return {k: v for k, v in last.items() if k != "due"}
+    if not account_ok:
+        return _public(last)
     now = datetime.now(UTC)
     due = last.get("due")
-    if due is not None and now < due:
-        return {k: v for k, v in last.items() if k != "due"}
-    result: dict[str, Any] = {
-        "bundle_checked_at": now.isoformat(),
-        "bundle_outdated": False,
-        "bundle_updated_at": last.get("bundle_updated_at"),
-        "frames_read_again": last.get("frames_read_again", 0),
-        "map_updated_at": last.get("map_updated_at"),
-    }
-    if not read_map(request, summary.project_id).present:
-        try:
-            fetched = await fetch_map(
-                MapFetch(project_id=summary.project_id, project_name=summary.project_name),
-                request,
-            )
-            if fetched.present:
-                result["map_updated_at"] = now.isoformat()
-        except HTTPException:
-            pass  # the server's words are kept for the pages by the map router
-    try:
-        async with client(settings.server_url, transport) as http:
-            answer = await http.get(
-                f"/api/v1/projects/{summary.project_id}/field-bundle/revision",
-                headers={"Authorization": f"Bearer {settings.token}"},
-            )
-        if answer.status_code == 200:
-            revision = str(answer.json().get("revision") or "")
-            if revision and revision != summary.revision:
-                from protect_go.routers.bundle import LoadRequest, load_project
+    task: asyncio.Task[None] | None = getattr(state, "bundle_sync_task", None)
+    if (due is not None and now < due) or (task is not None and not task.done()):
+        return _public(last)
+    state.bundle_follow = {**last, "due": now + REVISION_CHECK_EVERY}
+    state.bundle_sync_task = asyncio.create_task(
+        _sync_projects(request.app, settings, transport, now)
+    )
+    return _public(state.bundle_follow)
 
+
+async def _sync_projects(app: Any, settings: Any, transport: Any, started: datetime) -> None:
+    """One pass of decision D34 over the server's projects and the laptop's."""
+    from protect_go.routers.bundle import LoadRequest, load_bundle
+    from protect_go.routers.map import MapFetch, fetch_project_map, read_map
+
+    store = app.state.bundle_store
+    last = dict(getattr(app.state, "bundle_follow", None) or {})
+    result: dict[str, Any] = {
+        **last,
+        "bundle_checked_at": started.isoformat(),
+        "bundle_outdated": False,
+    }
+    loaded_id = store.current_project_id()
+    try:
+        wanted: dict[str, str] = {}
+        try:
+            for project in await server_projects(settings, transport):
+                if project.stations > 0:
+                    wanted[project.id] = project.name
+        except HTTPException:
+            pass  # the list did not come: the projects on the laptop are still kept current
+        on_laptop = {s.project_id: s for s in store.summaries()}
+        async with client(settings.server_url, transport) as http:
+            for project_id in sorted(set(wanted) | set(on_laptop)):
+                name = wanted.get(project_id) or on_laptop[project_id].project_name
+                body = LoadRequest(project_id=project_id, project_name=name)
                 try:
-                    loaded = await load_project(
-                        LoadRequest(
-                            project_id=summary.project_id, project_name=summary.project_name
-                        ),
-                        request,
+                    if project_id not in on_laptop:
+                        await load_bundle(app, body, make_current=False)
+                        result["projects_loaded"] = int(result.get("projects_loaded") or 0) + 1
+                        continue
+                    answer = await http.get(
+                        f"/api/v1/projects/{project_id}/field-bundle/revision",
+                        headers={"Authorization": f"Bearer {settings.token}"},
                     )
-                    result["bundle_updated_at"] = loaded.bundle.fetched_at
-                    result["frames_read_again"] = loaded.frames_read_again
+                    if answer.status_code == 200:
+                        revision = str(answer.json().get("revision") or "")
+                        if revision and revision != on_laptop[project_id].revision:
+                            loaded = await load_bundle(app, body, make_current=False)
+                            if project_id == loaded_id:
+                                result["bundle_updated_at"] = loaded.bundle.fetched_at
+                                result["frames_read_again"] = loaded.frames_read_again
+                            if loaded.map.present and project_id == loaded_id:
+                                result["map_updated_at"] = started.isoformat()
+                    if not read_map(app, project_id).present:
+                        fetched = await fetch_project_map(
+                            app, MapFetch(project_id=project_id, project_name=name)
+                        )
+                        if fetched.present and project_id == loaded_id:
+                            result["map_updated_at"] = started.isoformat()
                 except HTTPException:
-                    result["bundle_outdated"] = True
+                    if project_id == loaded_id:
+                        result["bundle_outdated"] = True
     except httpx.HTTPError:
-        pass  # offline in the middle of the probe: the next check tells
-    state.bundle_follow = {**result, "due": now + REVISION_CHECK_EVERY}
-    return result
+        pass  # offline in the middle of the sync: the next one tells
+    result["projects_synced_at"] = datetime.now(UTC).isoformat()
+    result["projects_on_laptop"] = len(store.project_ids())
+    app.state.bundle_follow = result
 
 
 @router.put("/setup/server", response_model=SetupRead)
@@ -285,12 +315,17 @@ async def list_projects(request: Request) -> list[ProjectRead]:
     stations it has (the Offload page's overview), so the Load page offers only projects with a
     station (Tim, 2026-10-17): a project without one has no card to read."""
     store = _store(request)
-    settings = store.load()
+    return await server_projects(store.load(), _transport(request))
+
+
+async def server_projects(settings: Settings, transport: Any) -> list[ProjectRead]:
+    """The account's projects on the server with their station counts; the route's answer and
+    the background sync's list (D34)."""
     if settings.server_url is None or not settings.signed_in:
         raise HTTPException(409, "Sign in to the server first")
     try:
         async with httpx.AsyncClient(
-            base_url=settings.server_url, timeout=httpx.Timeout(30.0), transport=_transport(request)
+            base_url=settings.server_url, timeout=httpx.Timeout(30.0), transport=transport
         ) as http:
             response = await http.get(
                 "/api/v1/projects",
@@ -308,7 +343,7 @@ async def list_projects(request: Request) -> list[ProjectRead]:
     projects = [ProjectRead(id=str(p["id"]), name=str(p["name"])) for p in items]
     try:
         async with httpx.AsyncClient(
-            base_url=settings.server_url, timeout=httpx.Timeout(30.0), transport=_transport(request)
+            base_url=settings.server_url, timeout=httpx.Timeout(30.0), transport=transport
         ) as http:
             overviews = await asyncio.gather(
                 *(

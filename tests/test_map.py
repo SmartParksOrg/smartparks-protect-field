@@ -198,10 +198,14 @@ async def test_a_map_the_server_was_still_cutting_comes_with_the_next_probe(app,
         assert "fetches it by itself" in loaded["map"]["server_state"]
         # the pages read the server's words until the map comes
         assert "fetches it by itself" in (await client.get("/api/map")).json()["server_state"]
+        await client.get("/api/setup/connection")
+        await app.state.bundle_sync_task
         probe = (await client.get("/api/setup/connection")).json()
         assert probe["map_updated_at"] is None
         state["ready"] = True
         app.state.bundle_follow = {**app.state.bundle_follow, "due": None}
+        await client.get("/api/setup/connection")
+        await app.state.bundle_sync_task
         probe = (await client.get("/api/setup/connection")).json()
         assert probe["map_updated_at"] is not None
         after = (await client.get("/api/map")).json()

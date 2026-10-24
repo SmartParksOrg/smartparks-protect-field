@@ -391,13 +391,11 @@
   "Trackers ({{count}} unknown)_one": "Trackers ({{count}} onbekend)",
   "Trackers ({{count}} unknown)_other": "Trackers ({{count}} onbekend)",
   "Unknown trackers": "Onbekende trackers",
-  "Compared with the server every five minutes while online": "Online elke vijf minuten met de server vergeleken",
   "Loaded again by itself at {{time}}; compared at {{checked}}": "Vanzelf opnieuw geladen om {{time}}; vergeleken om {{checked}}",
   "The project changed on the server and was loaded again at {{time}}; {{count}} frames of trackers unknown before were read._one": "Het project is op de server veranderd en om {{time}} opnieuw geladen; {{count}} frame van eerder onbekende trackers is gelezen.",
   "The project changed on the server and was loaded again at {{time}}; {{count}} frames of trackers unknown before were read._other": "Het project is op de server veranderd en om {{time}} opnieuw geladen; {{count}} frames van eerder onbekende trackers zijn gelezen.",
   "The project changed on the server and was loaded again at {{time}}.": "Het project is op de server veranderd en om {{time}} opnieuw geladen.",
   "The server has a newer project; it could not be loaded, try Load again": "De server heeft een nieuwer project; het kon niet worden geladen, probeer Opnieuw laden",
-  "Up to date with the server, compared at {{checked}}": "Gelijk aan de server, vergeleken om {{checked}}",
   "{{count}} SD cards read before now belong to this project._one": "{{count}} eerder gelezen SD-kaart hoort nu bij dit project.",
   "{{count}} SD cards read before now belong to this project._other": "{{count}} eerder gelezen SD-kaarten horen nu bij dit project.",
   "{{count}} SD cards read for other projects on this laptop are not shown here; choose the project at the top to see them._one": "{{count}} SD-kaart die voor een ander project op deze laptop is gelezen staat hier niet; kies bovenin het project om die te zien.",
@@ -405,7 +403,6 @@
   "{{count}} stations_one": "{{count}} station",
   "{{count}} stations_other": "{{count}} stations",
   "{{project}} is loaded, fetched {{when}} from {{server}}; Protect {{version}}.": "{{project}} is geladen, opgehaald {{when}} van {{server}}; Protect {{version}}.",
-  "A project chosen from the server is loaded with its devices, keys and map.": "Een project dat je van de server kiest wordt geladen met zijn apparaten, sleutels en kaart.",
   "Asking the server": "De server wordt gevraagd",
   "Asking the server for its projects": "De projecten worden bij de server opgevraagd",
   "Fetch the map now": "De kaart nu ophalen",
@@ -424,5 +421,9 @@
   "The server's projects could not be read: {{reason}}": "De projecten van de server konden niet worden gelezen: {{reason}}",
   "Use": "Gebruiken",
   "fetched {{when}}; {{cards}} SD cards; map on this laptop": "opgehaald {{when}}; {{cards}} SD-kaarten; kaart op deze laptop",
-  "fetched {{when}}; {{cards}} SD cards; no map yet": "opgehaald {{when}}; {{cards}} SD-kaarten; nog geen kaart"
+  "fetched {{when}}; {{cards}} SD cards; no map yet": "opgehaald {{when}}; {{cards}} SD-kaarten; nog geen kaart",
+  "Every project with an offload station is kept on this laptop, with its map, and compared with the server every five minutes while online": "Elk project met een offloadstation wordt op deze laptop bewaard, met zijn kaart, en elke vijf minuten met de server vergeleken terwijl je online bent",
+  "{{count}} projects on this laptop, up to date with the server, compared at {{checked}}_one": "{{count}} project op deze laptop, gelijk aan de server, vergeleken om {{checked}}",
+  "{{count}} projects on this laptop, up to date with the server, compared at {{checked}}_other": "{{count}} projecten op deze laptop, gelijk aan de server, vergeleken om {{checked}}",
+  "Every project with an offload station is kept on this laptop with its map and brought up to date while online; a switch changes the view alone.": "Elk project met een offloadstation wordt op deze laptop bewaard met zijn kaart en bijgewerkt terwijl je online bent; wisselen verandert alleen de weergave."
 }

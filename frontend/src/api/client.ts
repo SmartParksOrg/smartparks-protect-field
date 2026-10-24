@@ -76,6 +76,10 @@ export interface Connection {
   frames_read_again?: number;
   /** When the loaded project's map last came by itself (decision D32). */
   map_updated_at?: string | null;
+  /** The background sync of every project with a station (decision D34). */
+  projects_synced_at?: string | null;
+  projects_loaded?: number;
+  projects_on_laptop?: number;
 }
 
 export interface Bundle {

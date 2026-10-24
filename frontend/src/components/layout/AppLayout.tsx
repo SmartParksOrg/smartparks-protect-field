@@ -60,6 +60,17 @@ export function AppLayout({ setup }: { setup: Setup }) {
     void queryClient.invalidateQueries({ queryKey: queryKeys.map });
     void queryClient.invalidateQueries({ queryKey: queryKeys.laptopProjects });
   }, [mapUpdatedAt, queryClient]);
+  // the background sync ran through (D34): the projects on the laptop and their maps may
+  // have changed, so the switcher and the maps read again
+  const syncedAt = connection.data?.projects_synced_at ?? null;
+  const lastSync = useRef<string | null>(null);
+  useEffect(() => {
+    if (!syncedAt || syncedAt === lastSync.current) return;
+    lastSync.current = syncedAt;
+    void queryClient.invalidateQueries({ queryKey: queryKeys.laptopProjects });
+    void queryClient.invalidateQueries({ queryKey: queryKeys.map });
+    void queryClient.invalidateQueries({ queryKey: queryKeys.bundle });
+  }, [syncedAt, queryClient]);
   const [seenUpdate, setSeenUpdate] = useState<string | null>(() => {
     try {
       return localStorage.getItem("protect-go-seen-bundle-update");

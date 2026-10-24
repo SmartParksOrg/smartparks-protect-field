@@ -108,7 +108,7 @@ export function ProjectSwitcher({ signedIn, online, className }: { signedIn: boo
                   ? t("Asking the server for its projects")
                   : server.isError
                     ? t("The server's projects could not be read: {{reason}}", { reason: server.error.message })
-                    : t("A project chosen from the server is loaded with its devices, keys and map.")}
+                    : t("Every project with an offload station is kept on this laptop with its map and brought up to date while online; a switch changes the view alone.")}
           </div>
           {error && (
             <div className="px-2 pb-2">

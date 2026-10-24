@@ -100,7 +100,7 @@ export function ServerPage({ current }: { current: Setup }) {
                   <dd>
                     {!state?.bundle_checked_at
                       ? t(
-                          "Compared with the server every five minutes while online",
+                          "Every project with an offload station is kept on this laptop, with its map, and compared with the server every five minutes while online",
                         )
                       : state.bundle_outdated
                         ? t(
@@ -115,8 +115,8 @@ export function ServerPage({ current }: { current: Setup }) {
                               },
                             )
                           : t(
-                              "Up to date with the server, compared at {{checked}}",
-                              { checked: formatTime(state.bundle_checked_at) },
+                              "{{count}} projects on this laptop, up to date with the server, compared at {{checked}}",
+                              { count: state.projects_on_laptop ?? 0, checked: formatTime(state.bundle_checked_at) },
                             )}
                   </dd>
                 </dl>

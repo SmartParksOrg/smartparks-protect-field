@@ -2,6 +2,12 @@
 
 All notable changes to Smart Parks Protect Go. The format follows Keep a Changelog; versions are git tags. Each entry names the Protect commit the release decodes with.
 
+## v0.17.0, 2026-10-24
+
+### Added
+
+- **Every project with an offload station is kept on this laptop, with its map, in the background** (Tim, 2026-10-24, decision D34: after v0.16.0 a switch to another project showed no map, since the app fetched one project's map at a time; switching should be a view change, with nothing left to fetch). While the app is online and signed in, a sync every five minutes lists the server's projects, loads the ones with an offload station that are not on the laptop yet, loads again the ones that changed on the server, and fetches a map that is missing, all beside the loaded project, which stays the loaded one. The switcher and the Server page say so, and the Server page's Project line counts the projects on the laptop. `GET /api/setup/connection` answers `projects_synced_at`, `projects_loaded` and `projects_on_laptop`.
+
 ## v0.16.0, 2026-10-24
 
 ### Added
